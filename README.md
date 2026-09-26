@@ -18,6 +18,11 @@ l'UI via `/api/live` : on voit le texte arriver token par token, la vitesse, le
 raisonnement, et on peut afficher un **aperçu HTML live** de la page en cours d'écriture.
 Voir « Suivi en direct » ci-dessous.
 
+**v1.3.0** : **réglages par run** (température, `max_tokens`, raisonnement choisis dans
+l'UI) et **comparaison de deux runs** — un tableau prompt par prompt avec durée / tok/s /
+tokens des deux côtés, écarts colorés, et une page `/compare` qui affiche les **deux rendus
+HTML côte à côte** dans l'app. Voir « Comparer deux runs » ci-dessous.
+
 ---
 
 ## Démarrage
@@ -165,7 +170,9 @@ Deux prompts récupérés dans l'historique du dépôt public **`lukesdevlab/you
     ├── prompts.json      # copie des prompts DU RUN (format v2, run sélectionné uniquement)
     ├── 01_lorenz-attractor/
     │   ├── index.html    # LE livrable
-    │   ├── meta.json     # prompt envoyé, tokens, tok/s, durée, statut
+    │   ├── meta.json     # prompt envoyé, tokens, tok/s, durée, statut, réglages
+    │   ├── reasoning.txt # SEULEMENT si le modèle a produit du raisonnement
+    │   ├── partial.txt   # SEULEMENT si le tir a été coupé en cours de route
     │   └── raw.txt       # SEULEMENT si l'extraction HTML a échoué
     └── 02_mandelbrot-zoom/…
 ```
@@ -175,6 +182,10 @@ Deux prompts récupérés dans l'historique du dépôt public **`lukesdevlab/you
   et le contexte réel (`GET /props` → `default_generation_settings.n_ctx`).
   Exemple réellement observé le 25/09/2026 : `Qwen3.8-27B-UD-Q2_K_XL.gguf`, ctx 131072
   → `runs/2026-09-25_2315__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/`.
+- Depuis la v1.3, le nom porte aussi **`__mt<n>`** quand le `max_tokens` choisi diffère du
+  défaut (`16384`) : `…__t0.5__nothink__mt8192`. C'est ce qui évite qu'un run avec d'autres
+  réglages écrase ou réutilise le run par défaut. Le `max_tokens` par défaut n'apparaît pas,
+  donc les dossiers produits par les v1.1/v1.2 gardent exactement le même nom.
 - Depuis l'UI, les liens « ouvrir » passent par `/runs/<run>/…`.
 
 ## API
@@ -182,17 +193,76 @@ Deux prompts récupérés dans l'historique du dépôt public **`lukesdevlab/you
 | Méthode | Route | Rôle |
 |---|---|---|
 | GET | `/` | UI (français, dark, sans dépendance) |
-| GET | `/api/state` | état complet (LLM, `prompts_version`, `groups`, prompts, `already_done`, run en cours, progression, résultats, runs passés) |
+| GET | `/api/state` | état complet (LLM, `prompts_version`, `groups`, prompts, `already_done`, run en cours, progression, résultats, runs passés, `params`, `default_params`) |
 | GET | `/api/state?refresh=1` | idem en forçant la re-sonde du LLM (bouton « Re-tester ») |
-| POST | `/api/run` | body `{"ids":[1,4,7]}` → run séquentiel (**jusqu'à 34 ids**, aucun plafond) ; 400 si sélection vide **ou id inconnu**, 409 si un run tourne déjà, 503 si le LLM est éteint |
+| GET | `/api/state?t=…&mt=…&think=…` | idem, mais les badges « déjà fait » sont calculés pour **ces réglages** (c'est ce que l'UI envoie à chaque poll) |
+| POST | `/api/run` | body `{"ids":[1,4,7],"temperature":0.2,"max_tokens":16384,"enable_thinking":false}` → run séquentiel (**jusqu'à 34 ids**, aucun plafond) ; les réglages sont optionnels (défauts sinon) ; 400 si sélection vide **ou id inconnu**, 409 si un run tourne déjà, 503 si le LLM est éteint |
 | POST | `/api/stop` | arrêt demandé : le prompt en cours va au bout, le suivant n'est pas lancé |
 | GET | `/api/log?since=N` | lignes de journal depuis l'index N |
 | GET | `/api/live?since=C&rsince=R` | suivi en direct : uniquement la suite du texte (`C`) et du raisonnement (`R`) depuis ces curseurs **en caractères** |
+| GET | `/api/compare?a=<run>&b=<run>` | comparaison de deux runs : identité + réglages des deux, une ligne par prompt (union) avec `status`, `duree_s`, `tok_s`, tokens, `open_url`, et les écarts `delta` (b − a) ; 404 si un run est introuvable |
+| GET | `/compare?a=<run>&b=<run>[&ids=26,29]` | page de comparaison visuelle : les deux rendus HTML en `<iframe>` côte à côte, prompt par prompt |
 | GET | `/runs/…` | fichiers générés (+ listing de dossier) |
 
 - `groups` = `[{id, title, note, count, prompt_ids}]`, dans l'ordre du fichier.
 - `already_done` = `{"<id>": "<run_id>"}` : prompts déjà générés avec **le même modèle**
-  (`model_slug` + `n_ctx` + même température). L'UI affiche « déjà fait · \<run_id\> ».
+  (`model_slug` + `n_ctx` + mêmes réglages). L'UI affiche « déjà fait · \<run_id\> ».
+
+## Réglages du run (v1.3)
+
+Dans la carte de lancement : **température**, **max_tokens** et **raisonnement**
+(`chat_template_kwargs.enable_thinking`). Valeurs par défaut : `t0.2`, `mt16384`,
+raisonnement **off** — réinitialisables par le bouton « défauts ». Les réglages sont
+gardés dans le `localStorage` du navigateur et rappelés au prochain chargement.
+
+- Le résumé à droite des champs montre le **suffixe de dossier** qui sera appliqué
+  (`…__t0.5__nothink__mt8192`) : on voit donc *avant* de lancer si le run ira dans un
+  nouveau dossier ou rejoindra un dossier existant (idempotence).
+- Les badges « déjà fait » sont recalculés pour **les réglages affichés** (l'UI envoie
+  `?t=…&mt=…&think=…` à `/api/state`) : changer la température fait donc réapparaître
+  les prompts comme à faire.
+- ⚠️ Activer le raisonnement sur ce build peut envoyer la réponse dans
+  `reasoning_content` : le texte s'affiche alors dans le bloc violet du suivi en direct
+  et `content` peut être vide (statut `error`, raisonnement conservé dans
+  `reasoning.txt`). Le `meta.json` de chaque prompt garde les réglages utilisés.
+
+## Comparer deux runs (v1.3)
+
+Ouvrir la carte **« Comparer deux runs »** : deux listes déroulantes (A = référence,
+B = comparé, la plus récente en tête), un bouton « B = run courant » pour opposer le
+dernier run à un autre, et le tableau se charge tout seul avec les deux runs les plus
+récents.
+
+Le tableau (alimenté par `/api/compare`) montre, **sur la même ligne**, le même prompt
+dans les deux runs :
+
+| colonne | contenu |
+|---|---|
+| `#` / Titre | id et titre du prompt (groupe en infobulle) |
+| A · état | pastille verte `ok`, orange `no_html`, rouge `error`, violet `deja_genere` + lien `↗` vers le fichier |
+| A · durée / tok/s / tokens | les chiffres du run A (tokens = `completion_tokens`, survoler donne les tokens du prompt) |
+| B · … | idem pour le run B |
+| écart (B−A) | Δ durée en secondes et Δ tok/s, **verts quand B est meilleur**, rouges sinon |
+| `voir les 2` | ouvre `/compare?a=…&b=…&ids=<id>` sur ce prompt |
+
+- Ligne estompée = prompt présent d'un seul côté (`—` de l'autre côté) ; la case
+  « seulement les prompts présents des deux côtés » filtre ces lignes.
+- Un prompt absent des deux côtés n'apparaît pas.
+
+### Page `/compare` — les rendus côte à côte
+
+`/compare?a=<runA>&b=<runB>[&ids=26,29]` est une page autonome (même style sombre) :
+
+- en tête, l'identité des deux runs (modèle, ctx, réglages, date, nombre de prompts,
+  lien vers le dossier) et les cases de filtrage ;
+- pour chaque prompt, les **deux rendus HTML dans deux `<iframe>` côte à côte**, avec
+  au-dessus les chiffres de chaque côté, un bouton `↻` pour recharger un aperçu et un
+  lien **plein écran ↗** (ouvre le fichier seul dans un onglet) ;
+- les aperçus sont en `loading="lazy"` : ils se chargent quand on arrive sur la ligne
+  (utile quand on compare 10 prompts canvas/WebGL) ;
+- les iframes portent `sandbox="allow-scripts allow-same-origin allow-pointer-lock
+  allow-modals allow-downloads allow-popups"` : les pages générées s'exécutent
+  normalement (c'est le même rendu qu'en plein écran), mais elles restent dans leur cadre.
 
 ## Suivi en direct
 
@@ -233,9 +303,9 @@ Cas particuliers :
    - `POST /slots/0?action=erase` en best-effort ; si 404/405, le journal note
      `slot erase non supporté — stateless par construction` et le run continue.
 3. **POST `/v1/chat/completions`** (streaming SSE depuis la v1.2 — `LLM_STREAM=0` pour
-   revenir au tir en un bloc — timeout 1800 s) avec
-   `temperature 0.2`, `top_p 0.95`, `max_tokens 16384` (ou la valeur propre au prompt),
-   `chat_template_kwargs.enable_thinking=false` — **obligatoire**, sinon la réponse
+   revenir au tir en un bloc — timeout 1800 s) avec les **réglages du run**
+   (`temperature`, `top_p`, `max_tokens`, `enable_thinking` — voir « Réglages du run »),
+   `chat_template_kwargs.enable_thinking=false` par défaut — **obligatoire**, sinon la réponse
    part dans `reasoning_content` et `content` peut revenir vide.
    Les morceaux reçus alimentent le suivi en direct (voir « Suivi en direct ») ; le
    `content` final reconstitué est strictement celui du tir en un bloc.

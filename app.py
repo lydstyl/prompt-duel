@@ -12,6 +12,11 @@ poussé dans un tampon mémoire (LiveStore) que l'UI lit en incrémental via
 `/api/live`, ce qui donne un vrai suivi en direct (texte, raisonnement, vitesse,
 aperçu HTML). Couper le streaming : `LLM_STREAM=0` (retour au tir en un bloc).
 
+v1.3 : **réglages par run** (température, max_tokens, raisonnement choisis dans
+l'UI — le nom du dossier de run les enregistre) et **comparaison de deux runs**
+(`/api/compare`, page `/compare` avec les deux rendus HTML côte à côte) pour
+opposer deux modèles ou deux réglages prompt par prompt.
+
 Python 3 stdlib UNIQUEMENT — aucune dépendance externe.
 
 Lancement :
@@ -39,7 +44,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 # Libellé affiché dans l'UI (utile si plusieurs instances)
 APP_TITLE = os.environ.get("APP_TITLE") or "Prompt Duel"
@@ -88,6 +93,18 @@ MAX_TOKENS = _env_int("MAX_TOKENS", 16384)
 ENABLE_THINKING = False          # OBLIGATOIRE : sinon la réponse part dans reasoning_content
 CACHE_PROMPT = False             # interdit la réutilisation du cache KV
 
+# v1.3 : ces réglages ne sont plus figés — l'UI peut les choisir pour chaque run
+# (température, max_tokens, raisonnement). Ils restent les valeurs PAR DÉFAUT.
+DEFAULT_PARAMS = {
+    "temperature": TEMPERATURE,
+    "top_p": TOP_P,
+    "max_tokens": MAX_TOKENS,
+    "enable_thinking": ENABLE_THINKING,
+    "cache_prompt": CACHE_PROMPT,
+}
+PARAMS_MIN_TOKENS = 64
+PARAMS_MAX_TOKENS = 400000
+
 REQUEST_TIMEOUT_S = 1800         # un tir peut être très long
 SLOT_POLL_S = 5                  # poll de /slots en attente de slot libre
 HEALTH_TIMEOUT_S = 3
@@ -125,6 +142,54 @@ def slugify(value):
 
 def now_iso():
     return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def normalize_params(raw=None):
+    """Réglages d'un tir, validés (accepte du partiel, des chaînes, du JSON d'UI).
+
+    Toujours un dict complet : temperature, top_p, max_tokens, enable_thinking,
+    cache_prompt. Une valeur hors bornes est ignorée (on garde le défaut) : l'app
+    ne doit jamais partir en vrille à cause d'un champ de formulaire.
+    """
+    p = dict(DEFAULT_PARAMS)
+    raw = raw if isinstance(raw, dict) else {}
+    try:
+        t = float(raw.get("temperature", p["temperature"]))
+        if 0.0 <= t <= 2.0:
+            p["temperature"] = round(t, 3)
+    except (TypeError, ValueError):
+        pass
+    try:
+        mt = int(raw.get("max_tokens", p["max_tokens"]))
+        if PARAMS_MIN_TOKENS <= mt <= PARAMS_MAX_TOKENS:
+            p["max_tokens"] = mt
+    except (TypeError, ValueError):
+        pass
+    think = raw.get("enable_thinking", p["enable_thinking"])
+    if isinstance(think, str):
+        think = think.strip().lower() not in ("", "0", "false", "no", "off")
+    p["enable_thinking"] = bool(think)
+    return p
+
+
+def params_suffix(params):
+    """Bouts de nom de dossier qui identifient les réglages NON standard.
+
+    Le max_tokens par défaut n'apparaît pas : les dossiers de runs déjà produits
+    (v1.1/v1.2) gardent donc exactement le même nom, et restent réutilisables.
+    """
+    bits = []
+    if params.get("max_tokens") != MAX_TOKENS:
+        bits.append(f"mt{params['max_tokens']}")
+    return ("__" + "__".join(bits)) if bits else ""
+
+
+def params_label(params):
+    """Résumé court et lisible des réglages : « t0.2 · nothink · mt16384 »."""
+    params = normalize_params(params)
+    return (f"t{params['temperature']:g} · "
+            f"{'think' if params['enable_thinking'] else 'nothink'} · "
+            f"mt{params['max_tokens']}")
 
 
 def model_slug_from_path(path):
@@ -217,16 +282,18 @@ class LiveStore:
         self.finish_reason = None
         self.erreur = None
         self.max_tokens = None
+        self.params = normalize_params()
         self._t0 = None
         self.updated_at = None
 
     # -- écriture (worker) -------------------------------------------------
-    def begin(self, run_id, pid, title, slug, mode="stream", max_tokens=None):
+    def begin(self, run_id, pid, title, slug, mode="stream", max_tokens=None, params=None):
         with self._lock:
             self._clear_locked()
             self.run_id = run_id
             self.pid, self.title, self.slug = pid, title, slug
             self.mode, self.max_tokens = mode, max_tokens
+            self.params = normalize_params(params)
             self.status = "running"
             self.started_at = now_iso()
             self._t0 = time.time()
@@ -325,6 +392,8 @@ class LiveStore:
                 "finish_reason": self.finish_reason,
                 "erreur": self.erreur,
                 "max_tokens": self.max_tokens,
+                "params": dict(self.params),
+                "params_label": params_label(self.params),
                 "truncated": self.truncated,
                 "updated_at": (datetime.fromtimestamp(self.updated_at).strftime("%H:%M:%S")
                                if self.updated_at else None),
@@ -418,18 +487,19 @@ def erase_slot_best_effort():
         LOG.add("slot erase non supporté — stateless par construction")
 
 
-def _chat_payload(prompt, max_tokens, stream=False):
+def _chat_payload(prompt, max_tokens, stream=False, params=None):
+    params = normalize_params(params)
     payload = {
         "model": "local",  # ignoré par llama.cpp (serveur mono-modèle)
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
         ],
-        "temperature": TEMPERATURE,
-        "top_p": TOP_P,
-        "max_tokens": int(max_tokens or MAX_TOKENS),
-        "cache_prompt": CACHE_PROMPT,
-        "chat_template_kwargs": {"enable_thinking": ENABLE_THINKING},
+        "temperature": params["temperature"],
+        "top_p": params["top_p"],
+        "max_tokens": int(max_tokens or params["max_tokens"]),
+        "cache_prompt": params["cache_prompt"],
+        "chat_template_kwargs": {"enable_thinking": params["enable_thinking"]},
         "stream": bool(stream),
     }
     if stream:
@@ -454,14 +524,14 @@ class StreamIncomplete(RuntimeError):
         self.morceaux = morceaux
 
 
-def chat_completion_stream(prompt, max_tokens=None, on_delta=None):
+def chat_completion_stream(prompt, max_tokens=None, on_delta=None, params=None):
     """POST /v1/chat/completions en streaming SSE (llama.cpp).
 
     Renvoie (payload, duree_s) avec EXACTEMENT la même forme que
     chat_completion() : le reste du worker ne voit pas la différence.
     on_delta(kind, morceau) est appelé au fil de l'eau ("content"|"reasoning").
     """
-    payload = _chat_payload(prompt, max_tokens, stream=True)
+    payload = _chat_payload(prompt, max_tokens, stream=True, params=params)
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(f"{LLM_BASE}/v1/chat/completions", data=body, method="POST")
     req.add_header("Content-Type", "application/json")
@@ -549,16 +619,19 @@ def chat_completion_stream(prompt, max_tokens=None, on_delta=None):
     }, elapsed
 
 
-def chat_completion(prompt, max_tokens=None, on_delta=None):
+def chat_completion(prompt, max_tokens=None, on_delta=None, params=None):
     """POST /v1/chat/completions. Renvoie (payload, duree_s).
 
     Si `on_delta` est fourni et que le streaming est actif (LLM_STREAM=1, défaut),
     le tir se fait en SSE et le texte arrive au fur et à mesure. Si le streaming
     échoue AVANT le moindre morceau, on retombe proprement sur le tir en un bloc.
+    `params` porte les réglages du run (température, top_p, max_tokens, thinking).
     """
+    params = normalize_params(params)
     if on_delta is not None and STREAM:
         try:
-            data, elapsed = chat_completion_stream(prompt, max_tokens=max_tokens, on_delta=on_delta)
+            data, elapsed = chat_completion_stream(prompt, max_tokens=max_tokens,
+                                                  on_delta=on_delta, params=params)
             n = (data.get("_stream") or {}).get("morceaux") or 0
             LOG.add(f"streaming SSE : {n} morceau(x) reçu(s) en {elapsed:.1f} s")
             return data, elapsed
@@ -573,7 +646,7 @@ def chat_completion(prompt, max_tokens=None, on_delta=None):
                     "repli sur le tir en un bloc")
         # repli : on garde on_delta, la réponse entière sera poussée d'un coup à la fin
 
-    payload = _chat_payload(prompt, max_tokens, stream=False)
+    payload = _chat_payload(prompt, max_tokens, stream=False, params=params)
     t0 = time.time()
     status, raw = http_request(
         f"{LLM_BASE}/v1/chat/completions",
@@ -764,13 +837,15 @@ def load_prompts(path=None):
 _ALREADY_DONE_CACHE = {"at": 0.0, "key": None, "value": {}}
 
 
-def list_already_done(model_slug=None, n_ctx=None, max_age=5.0):
-    """{ "<id>": "<run_id>" } des prompts déjà générés avec le MÊME modèle + ctx + température.
+def list_already_done(model_slug=None, n_ctx=None, params=None, max_age=5.0):
+    """{ "<id>": "<run_id>" } des prompts déjà générés avec les MÊMES modèle, ctx et réglages.
 
     Lecture seule, tolérante à l'absence/illisibilité des fichiers, jamais bloquante.
     Résultat mémorisé quelques secondes (l'UI polle /api/state toutes les secondes).
     """
-    key = (model_slug, n_ctx)
+    params = normalize_params(params)
+    key = (model_slug, n_ctx, params["temperature"], params["max_tokens"],
+           params["enable_thinking"])
     now = time.time()
     if _ALREADY_DONE_CACHE["key"] == key and (now - _ALREADY_DONE_CACHE["at"]) < max_age:
         return dict(_ALREADY_DONE_CACHE["value"])
@@ -794,7 +869,13 @@ def list_already_done(model_slug=None, n_ctx=None, max_age=5.0):
             continue
         if n_ctx is not None and data.get("n_ctx") != n_ctx:
             continue
-        if (data.get("params") or {}).get("temperature") != TEMPERATURE:
+        # mêmes réglages → même sortie attendue : température, max_tokens, raisonnement
+        rp = data.get("params") or {}
+        if rp.get("temperature") != params["temperature"]:
+            continue
+        if rp.get("max_tokens") != params["max_tokens"]:
+            continue
+        if bool(rp.get("enable_thinking")) != params["enable_thinking"]:
             continue
         for res in data.get("results") or []:
             try:
@@ -885,10 +966,12 @@ def probe_llm(force=False):
 # Gestion des runs sur disque
 # --------------------------------------------------------------------------
 
-def run_suffix(model_slug, n_ctx):
+def run_suffix(model_slug, n_ctx, params=None):
+    params = normalize_params(params)
     ctx = n_ctx if n_ctx else 0
-    think = "think" if ENABLE_THINKING else "nothink"
-    return f"__{model_slug}__ctx{ctx}__t{TEMPERATURE:g}__{think}"
+    think = "think" if params["enable_thinking"] else "nothink"
+    return (f"__{model_slug}__ctx{ctx}__t{params['temperature']:g}__{think}"
+            f"{params_suffix(params)}")
 
 
 def find_reusable_run(suffix, ids):
@@ -972,6 +1055,9 @@ def list_past_runs(limit=RUNS_LIST_LIMIT):
             "n_ctx": None,
             "dry_run": None,
             "status": None,
+            "params": {},
+            "params_label": "",
+            "selected_ids": [],
             "counts": {},
         }
         meta = d / "run.json"
@@ -984,6 +1070,9 @@ def list_past_runs(limit=RUNS_LIST_LIMIT):
                 info["n_ctx"] = data.get("n_ctx")
                 info["dry_run"] = data.get("dry_run")
                 info["status"] = data.get("status")
+                info["params"] = data.get("params") or {}
+                info["params_label"] = params_label(info["params"])
+                info["selected_ids"] = data.get("selected_ids") or []
                 counts = {}
                 for res in data.get("results") or []:
                     st = res.get("status") or "?"
@@ -993,6 +1082,327 @@ def list_past_runs(limit=RUNS_LIST_LIMIT):
                 pass
         out.append(info)
     return out
+
+
+# --------------------------------------------------------------------------
+# Comparaison de deux runs (v1.3)
+# --------------------------------------------------------------------------
+
+def run_id_is_safe(run_id):
+    """Un run_id est un NOM DE DOSSIER simple — jamais un chemin."""
+    rid = str(run_id or "")
+    if not rid or len(rid) > 200:
+        return False
+    if rid in (".", "..") or "/" in rid or "\\" in rid or rid.startswith("."):
+        return False
+    return True
+
+
+def load_run_details(run_id):
+    """Détails d'un run pour la comparaison : identité, réglages, un enregistrement par prompt.
+
+    Lit run.json + vérifie l'existence du fichier produit (index.html, sinon raw.txt,
+    sinon partial.txt). Renvoie None si le run n'existe pas / n'est pas lisible.
+    """
+    if not run_id_is_safe(run_id):
+        return None
+    d = RUNS_DIR / str(run_id)
+    rj = d / "run.json"
+    if not d.is_dir() or d.is_symlink() or not rj.exists():
+        return None
+    try:
+        data = json.loads(rj.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    params = data.get("params") or {}
+    counts = {}
+    for r in data.get("results") or []:
+        st = r.get("status") or "?"
+        counts[st] = counts.get(st, 0) + 1
+    out = {
+        "run_id": str(run_id),
+        "url": f"/runs/{run_id}/",
+        "started_at": data.get("started_at"),
+        "finished_at": data.get("finished_at"),
+        "model_slug": data.get("model_slug"),
+        "n_ctx": data.get("n_ctx"),
+        "params": params,
+        "params_label": params_label(params),
+        "status": data.get("status"),
+        "dry_run": data.get("dry_run"),
+        "app_version": data.get("app_version"),
+        "counts": counts,
+        "selected_ids": data.get("selected_ids") or [],
+        "results": {},
+    }
+    for r in data.get("results") or []:
+        try:
+            rid = int(r.get("id"))
+        except (TypeError, ValueError):
+            continue
+        rel = str(r.get("rel") or "")
+        if not rel or ".." in rel:
+            continue
+        open_file = None
+        for name in ("index.html", "raw.txt", "partial.txt", "reasoning.txt"):
+            try:
+                if (d / rel / name).exists():
+                    open_file = name
+                    break
+            except Exception:
+                continue
+        out["results"][rid] = {
+            "id": rid,
+            "title": r.get("title"),
+            "group": r.get("group"),
+            "status": r.get("status"),
+            "duree_s": r.get("duree_s"),
+            "tok_s": r.get("tok_s"),
+            "prompt_tokens": r.get("prompt_tokens"),
+            "completion_tokens": r.get("completion_tokens"),
+            "erreur": r.get("erreur"),
+            "rel": rel,
+            "file": open_file,
+            "open_url": (f"/runs/{run_id}/{rel}/{open_file}" if open_file else None),
+        }
+    return out
+
+
+def _delta(b, a):
+    """b - a, ou None si l'une des deux valeurs manque."""
+    try:
+        if a is None or b is None:
+            return None
+        return round(float(b) - float(a), 2)
+    except (TypeError, ValueError):
+        return None
+
+
+def compare_rows(a, b, params_keys=("duree_s", "tok_s", "completion_tokens", "prompt_tokens")):
+    """Une ligne par prompt (union des deux runs), avec les deux côtés et les écarts."""
+    ids = sorted(set(a["results"]) | set(b["results"]))
+    rows = []
+    for rid in ids:
+        ra, rb = a["results"].get(rid), b["results"].get(rid)
+        ref = ra or rb or {}
+        delta = {}
+        for k in params_keys:
+            delta[k] = _delta((rb or {}).get(k), (ra or {}).get(k))
+        rows.append({
+            "id": rid,
+            "title": ref.get("title"),
+            "group": ref.get("group"),
+            "a": ra,
+            "b": rb,
+            "delta": delta,
+            "in_both": bool(ra and rb),
+            "html_both": bool(ra and ra.get("file") == "index.html"
+                             and rb and rb.get("file") == "index.html"),
+        })
+    return rows
+
+
+def compare_payload(run_a, run_b):
+    a = load_run_details(run_a)
+    b = load_run_details(run_b)
+    if a is None or b is None:
+        return None, {
+            "error": "run introuvable ou illisible",
+            "missing": [x for x, v in ((run_a, a), (run_b, b)) if v is None],
+        }
+    return {"a": a, "b": b, "rows": compare_rows(a, b)}, None
+
+
+COMPARE_CSS = """
+:root{--bg:#12141a;--card:#1b1e26;--fg:#e6e8ee;--dim:#98a0b3;--acc:#4da3ff;--ok:#2ecc71;
+--warn:#f39c12;--err:#e74c3c;--line:#2a2f3a;--a:#4da3ff;--b:#b58cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:12px 18px;background:#0f1116;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+h1{font-size:16px;margin:0;font-weight:600}
+main{padding:14px 18px 40px}
+.ids{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.id{flex:1 1 380px;min-width:300px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.id.a{border-left:3px solid var(--a)} .id.b{border-left:3px solid var(--b)}
+.id .lab{font-weight:700;font-size:13px}
+.id .lab.a{color:var(--a)} .id .lab.b{color:var(--b)}
+.id code{font-size:12px;color:var(--dim);word-break:break-all}
+.ctrl{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:6px 0 14px;color:var(--dim);font-size:13px}
+label.chk{display:flex;gap:6px;align-items:center;cursor:pointer}
+button{background:#242a36;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer;font:inherit}
+button:hover{border-color:var(--acc)}
+a{color:var(--acc)}
+.block{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:14px}
+.block>h2{font-size:14px;margin:0 0 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tag{font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:1px 7px}
+.pair{display:flex;gap:12px;align-items:stretch}
+.pane{flex:1 1 0;min-width:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.pane.a{border-color:rgba(77,163,255,.45)} .pane.b{border-color:rgba(181,140,255,.45)}
+.pane .head{display:flex;gap:8px;align-items:center;padding:6px 9px;background:#0f1116;border-bottom:1px solid var(--line);font-size:12.5px;flex-wrap:wrap}
+.pane .head .lab{font-weight:700}
+.pane.a .head .lab{color:var(--a)} .pane.b .head .lab{color:var(--b)}
+.pane .head .num{color:var(--dim)}
+.pane iframe{width:100%;height:62vh;min-height:320px;border:0;background:#fff;display:block}
+.absent{padding:18px;color:var(--dim);font-size:13px;text-align:center;background:#0d0f14;height:62vh;min-height:320px;display:flex;align-items:center;justify-content:center}
+.st{font-weight:600}.st.ok{color:var(--ok)}.st.no_html{color:var(--warn)}
+.st.error{color:var(--err)}.st.pending,.st.skipped{color:var(--dim)}
+.st.running{color:var(--acc)}.st.deja_genere{color:#b58cff}
+.win{color:var(--ok)}.lose{color:var(--err)}
+@media (max-width:900px){.pair{flex-direction:column}.pane iframe,.absent{height:70vh}}
+"""
+
+
+def _pane_html(side, run, r, pid, label):
+    cls = "a" if side == "a" else "b"
+    if not r:
+        return (f'<div class="pane {cls}"><div class="head"><span class="lab">{label}</span>'
+                '<span class="num">absent de ce run</span></div>'
+                '<div class="absent">aucun résultat pour ce prompt dans ce run</div></div>')
+    st = str(r.get("status") or "?")
+    bits = [f'<span class="st {html.escape(st)}">{html.escape(st)}</span>']
+    if r.get("duree_s") is not None:
+        bits.append(f'<span class="num">{r["duree_s"]} s</span>')
+    if r.get("tok_s") is not None:
+        bits.append(f'<span class="num">{r["tok_s"]} tok/s</span>')
+    if r.get("completion_tokens") is not None:
+        bits.append(f'<span class="num">{r["completion_tokens"]} tok</span>')
+    if r.get("prompt_tokens") is not None:
+        bits.append(f'<span class="num">prompt {r["prompt_tokens"]} tok</span>')
+    if r.get("file"):
+        bits.append(f'<span class="num">{html.escape(str(r["file"]))}</span>')
+    link = ""
+    if r.get("open_url"):
+        link = (f'<a href="{html.escape(r["open_url"])}" target="_blank" '
+                'rel="noopener">plein écran ↗</a>')
+    else:
+        link = '<span class="num">aucun fichier</span>'
+    reload_btn = f'<button onclick="reloadPane(\'f{side}{pid}\')">↻</button>'
+    inner = ""
+    if r.get("file") == "index.html" and r.get("open_url"):
+        inner = (f'<iframe id="f{side}{pid}" src="{html.escape(r["open_url"])}" '
+                 'loading="lazy" referrerpolicy="no-referrer" '
+                 'sandbox="allow-scripts allow-same-origin allow-pointer-lock '
+                 'allow-modals allow-downloads allow-popups"></iframe>')
+    elif r.get("erreur"):
+        inner = f'<div class="absent">erreur : {html.escape(str(r["erreur"])[:400])}</div>'
+    else:
+        txt = ("pas de HTML exploitable — " +
+               (f'<a href="{html.escape(r["open_url"])}" target="_blank" rel="noopener">'
+                f'ouvrir {html.escape(str(r["file"]))} ↗</a>' if r.get("open_url") else "aucun fichier"))
+        inner = f'<div class="absent">{txt}</div>'
+    return (f'<div class="pane {cls}"><div class="head"><span class="lab">{label}</span>'
+            + " · ".join(bits) + f'<span style="flex:1"></span>{reload_btn}{link}</div>{inner}</div>')
+
+
+def render_compare_page(query):
+    """Page autonome : deux rendus côte à côte, prompt par prompt."""
+    run_a = (query.get("a") or [""])[0]
+    run_b = (query.get("b") or [""])[0]
+    ids_raw = (query.get("ids") or [""])[0]
+    payload, err = compare_payload(run_a, run_b)
+
+    head = ('<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            '<title>Comparaison · Prompt Duel</title>'
+            f'<style>{COMPARE_CSS}</style></head><body>'
+            '<header><h1>Comparaison de deux runs</h1>'
+            '<span style="flex:1"></span>'
+            '<a href="/">← retour à Prompt Duel</a></header><main>')
+
+    if err:
+        missing = ", ".join(html.escape(str(m)) for m in err["missing"])
+        return (head + f'<div class="block"><h2>{html.escape(err["error"])}</h2>'
+                f'<p>Run(s) manquant(s) : <code>{missing}</code></p>'
+                '<p>Choisis deux runs dans la carte « Comparer deux runs » de l\'UI.</p>'
+                '</div></main></body></html>')
+
+    a, b = payload["a"], payload["b"]
+    rows = payload["rows"]
+    want = set()
+    for chunk in str(ids_raw).replace(" ", "").split(","):
+        if chunk.isdigit():
+            want.add(int(chunk))
+    if want:
+        rows = [r for r in rows if r["id"] in want]
+    rows = [r for r in rows if (r["a"] and r["a"].get("file")) or (r["b"] and r["b"].get("file"))]
+
+    def ident(side, run, label):
+        cls = "a" if side == "a" else "b"
+        return (f'<div class="id {cls}"><div class="lab {cls}">{label}</div>'
+                f'<div><code>{html.escape(run["run_id"])}</code></div>'
+                f'<div class="num" style="color:var(--dim);font-size:12.5px">'
+                f'modèle {html.escape(str(run.get("model_slug") or "?"))} · '
+                f'ctx {html.escape(str(run.get("n_ctx") or "?"))} · '
+                f'{html.escape(run.get("params_label") or "")} · '
+                f'{html.escape(str(run.get("started_at") or "?"))} · '
+                f'{len(run["results"])} prompt(s) · '
+                f'<a href="{html.escape(run["url"])}" target="_blank" rel="noopener">'
+                'parcourir le dossier ↗</a></div></div>')
+
+    parts = [head,
+             '<div class="ids">', ident("a", a, "RUN A — référence"),
+             ident("b", b, "RUN B — comparé"), '</div>',
+             '<div class="ctrl">',
+             f'<label class="chk"><input type="checkbox" id="onlyboth"> '
+             'seulement les prompts présents des deux côtés</label>',
+             f'<label class="chk"><input type="checkbox" id="onlyhtml"> '
+             'seulement les prompts avec un rendu HTML des deux côtés</label>',
+             '<button onclick="reloadAll()">↻ recharger les deux aperçus</button>',
+             f'<span>{len(rows)} prompt(s) affiché(s)</span>',
+             '</div>']
+
+    if not rows:
+        parts.append('<div class="block">Aucun prompt comparable entre ces deux runs '
+                     '(aucun fichier produit de part et d\'autre).</div>')
+
+    for r in rows:
+        delta = r["delta"]
+        dbits = []
+        if delta.get("tok_s") is not None:
+            d = delta["tok_s"]
+            cls = "win" if d > 0 else ("lose" if d < 0 else "")
+            dbits.append(f'<span class="{cls}">tok/s {d:+.1f}</span>')
+        if delta.get("duree_s") is not None:
+            d = delta["duree_s"]
+            cls = "win" if d < 0 else ("lose" if d > 0 else "")
+            dbits.append(f'<span class="{cls}">durée {d:+.1f} s</span>')
+        if delta.get("completion_tokens") is not None:
+            dbits.append(f'<span class="num">tokens {delta["completion_tokens"]:+.0f}</span>')
+        title = html.escape(str(r.get("title") or f'prompt {r["id"]}'))
+        parts.append(
+            f'<div class="block" data-both="{int(r["in_both"])}" '
+            f'data-html="{int(r["html_both"])}">'
+            f'<h2>#{r["id"]} · {title}'
+            f'<span class="tag">{html.escape(str(r.get("group") or ""))}</span>'
+            f'{" ".join(dbits)}'
+            f'<span style="flex:1"></span>'
+            f'<a href="/runs/{html.escape(a["run_id"])}/{html.escape(str((r["a"] or {}).get("rel") or ""))}/index.html" '
+            f'target="_blank" rel="noopener">A ↗</a>'
+            f'<a href="/runs/{html.escape(b["run_id"])}/{html.escape(str((r["b"] or {}).get("rel") or ""))}/index.html" '
+            f'target="_blank" rel="noopener">B ↗</a></h2>'
+            f'<div class="pair">{_pane_html("a", a, r["a"], r["id"], "A")}'
+            f'{_pane_html("b", b, r["b"], r["id"], "B")}</div></div>')
+
+    parts.append("""
+<script>
+function reloadPane(id){const f=document.getElementById(id);if(f)f.src=f.src;}
+function reloadAll(){document.querySelectorAll('iframe').forEach(f=>{f.src=f.src;});}
+function applyFilters(){
+  const both=document.getElementById('onlyboth').checked;
+  const html=document.getElementById('onlyhtml').checked;
+  document.querySelectorAll('.block[data-both]').forEach(b=>{
+    let show=true;
+    if(both && b.dataset.both!=='1') show=false;
+    if(html && b.dataset.html!=='1') show=false;
+    b.style.display=show?'':'none';
+  });
+}
+document.getElementById('onlyboth').onchange=applyFilters;
+document.getElementById('onlyhtml').onchange=applyFilters;
+</script>""")
+    parts.append("</main></body></html>")
+    return "".join(parts)
 
 
 # --------------------------------------------------------------------------
@@ -1024,14 +1434,15 @@ def wait_for_free_slot():
                     return False
 
 
-def make_result(prompt):
+def make_result(prompt, params=None):
+    params = normalize_params(params)
     return {
         "id": prompt["id"],
         "title": prompt["title"],
         "group": prompt["group"],
         "category": prompt["category"],
         "slug": prompt["slug"],
-        "max_tokens": prompt.get("max_tokens") or MAX_TOKENS,
+        "max_tokens": prompt.get("max_tokens") or params["max_tokens"],
         "rel": f"{prompt['id']:02d}_{prompt['slug']}",
         "status": "pending",
         "duree_s": None,
@@ -1045,8 +1456,9 @@ def make_result(prompt):
     }
 
 
-def run_worker(ids):
+def run_worker(ids, params=None):
     """Exécute les prompts un par un, dans l'ordre croissant des ids."""
+    params = normalize_params(params)
     try:
         # --- identité du LLM, figée AVANT le premier tir -------------------
         if DRY_RUN:
@@ -1066,7 +1478,8 @@ def run_worker(ids):
                 write_run_json()
                 return
 
-        suffix = run_suffix(model_slug, n_ctx)
+        suffix = run_suffix(model_slug, n_ctx, params)
+        LOG.add(f"réglages du run : {params_label(params)}")
         with STATE.lock:
             reuse = find_reusable_run(suffix, ids)
             previous_started_at = None
@@ -1131,7 +1544,7 @@ def run_worker(ids):
                     break
                 res = next(r for r in STATE.run["results"] if r["id"] == pid)
                 prompt = next(p for p in STATE.prompts if p["id"] == pid)
-            eff_max_tokens = prompt.get("max_tokens") or MAX_TOKENS
+            eff_max_tokens = prompt.get("max_tokens") or params["max_tokens"]
 
             sub = run_dir / res["rel"]
             index_html = sub / "index.html"
@@ -1166,7 +1579,7 @@ def run_worker(ids):
             # le suivi en direct repart de zéro pour ce prompt
             LIVE.begin(run_dir.name, pid, prompt["title"], prompt["slug"],
                        mode=("dry" if DRY_RUN else ("stream" if STREAM else "bloc")),
-                       max_tokens=eff_max_tokens)
+                       max_tokens=eff_max_tokens, params=params)
 
             try:
                 if not DRY_RUN:
@@ -1184,7 +1597,7 @@ def run_worker(ids):
                     data, elapsed = dry_run_completion(pid, on_delta=LIVE.append)
                 else:
                     data, elapsed = chat_completion(prompt["prompt"], max_tokens=eff_max_tokens,
-                                                    on_delta=LIVE.append)
+                                                    on_delta=LIVE.append, params=params)
 
                 choices = data.get("choices") or []
                 if not choices:
@@ -1225,6 +1638,12 @@ def run_worker(ids):
                     LOG.add(f"prompt {pid} : réponse tronquée (length) — HTML probablement incomplet "
                             f"(max_tokens={eff_max_tokens})")
 
+                if reasoning:
+                    # trace du raisonnement (utile quand enable_thinking est activé)
+                    (sub / "reasoning.txt").write_text(reasoning, encoding="utf-8")
+                    LOG.add(f"[{pid:02d}] raisonnement conservé ({len(reasoning)} caractères) "
+                            "dans reasoning.txt")
+
                 if (usage or {}).get("completion_tokens_estimes"):
                     LOG.add(f"[{pid:02d}] tokens estimés d'après les morceaux SSE "
                             "(ce build llama.cpp n'a pas renvoyé d'usage)")
@@ -1246,16 +1665,11 @@ def run_worker(ids):
                     "completion_tokens": completion_tokens,
                     "tok_s": tok_s,
                     "response_chars": len(content),
+                    "reasoning_chars": len(reasoning),
                     "finish_reason": finish_reason,
                     "prompt": prompt["prompt"],
                     "system_prompt": SYSTEM_PROMPT,
-                    "params": {
-                        "temperature": TEMPERATURE,
-                        "top_p": TOP_P,
-                        "max_tokens": eff_max_tokens,
-                        "enable_thinking": ENABLE_THINKING,
-                        "cache_prompt": CACHE_PROMPT,
-                    },
+                    "params": {**params, "max_tokens": eff_max_tokens},
                     "model_path": model_path,
                     "model_slug": model_slug,
                     "n_ctx": n_ctx,
@@ -1304,10 +1718,7 @@ def run_worker(ids):
                         "duree_s": round(time.time() - t_start, 2),
                         "prompt": prompt["prompt"], "model_path": model_path,
                         "model_slug": model_slug, "n_ctx": n_ctx, "fichier": None,
-                        "params": {"temperature": TEMPERATURE, "top_p": TOP_P,
-                                   "max_tokens": eff_max_tokens,
-                                   "enable_thinking": ENABLE_THINKING,
-                                   "cache_prompt": CACHE_PROMPT},
+                        "params": {**params, "max_tokens": eff_max_tokens},
                         "dry_run": DRY_RUN,
                     }, ensure_ascii=False, indent=2), encoding="utf-8")
                 except Exception:
@@ -1348,7 +1759,8 @@ def run_worker(ids):
         probe_llm(force=True)
 
 
-def start_run(ids):
+def start_run(ids, params=None):
+    params = normalize_params(params)
     prompts = {p["id"]: p for p in STATE.prompts}
     ids = sorted(int(i) for i in ids)
     with STATE.lock:
@@ -1370,13 +1782,8 @@ def start_run(ids):
             "model_path": None,
             "model_slug": None,
             "n_ctx": None,
-            "params": {
-                "temperature": TEMPERATURE,
-                "top_p": TOP_P,
-                "max_tokens": MAX_TOKENS,
-                "enable_thinking": ENABLE_THINKING,
-                "cache_prompt": CACHE_PROMPT,
-            },
+            "params": dict(params),
+            "params_label": params_label(params),
             "python_version": sys.version.split()[0],
             "app_version": APP_VERSION,
             "prompts_version": STATE.prompts_version,
@@ -1385,16 +1792,18 @@ def start_run(ids):
             "dry_run": DRY_RUN,
             "selected_ids": ids,
             "status": "running",
-            "results": [make_result(prompts[i]) for i in ids],
+            "results": [make_result(prompts[i], params) for i in ids],
         }
-        worker = threading.Thread(target=run_worker, args=(ids,), name="prompt-duel-worker", daemon=True)
+        worker = threading.Thread(target=run_worker, args=(ids, params),
+                                  name="prompt-duel-worker", daemon=True)
         STATE.worker = worker
         worker.start()
-    LOG.add(f"run lancé — {len(ids)} prompt(s) : {ids}")
+    LOG.add(f"run lancé — {len(ids)} prompt(s) : {ids} · réglages {params_label(params)}")
     return True, "run lancé"
 
 
-def build_state(force_probe=False):
+def build_state(force_probe=False, params=None):
+    params = normalize_params(params)
     probe = probe_llm(force=force_probe)
     with STATE.lock:
         run = None
@@ -1419,7 +1828,10 @@ def build_state(force_probe=False):
             "groups": json.loads(json.dumps(STATE.groups)),
             "prompts": [dict(p) for p in STATE.prompts],
             "already_done": list_already_done(model_slug=probe.get("model_slug"),
-                                              n_ctx=probe.get("n_ctx")),
+                                              n_ctx=probe.get("n_ctx"),
+                                              params=params),
+            "params": params,                    # réglages demandés par l'UI (badges « déjà fait »)
+            "default_params": dict(DEFAULT_PARAMS),
             "run": run,
             "is_running": is_running,
             "stop_requested": stop_requested,
@@ -1534,6 +1946,23 @@ pre#live-reasoning{margin:0;max-height:180px;overflow:auto;font-size:12px;color:
 #liveframe{width:100%;height:520px;border:1px solid var(--line);border-radius:8px;background:#fff}
 label.chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--dim);cursor:pointer}
 details.rz>summary{cursor:pointer;font-size:12.5px;color:var(--dim);margin-bottom:6px}
+/* --- réglages du run + comparaison (v1.3) --- */
+#settings{align-items:center;margin:8px 0;font-size:12.5px}
+#settings input[type=number]{width:88px;background:#0d0f14;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit}
+#settings input[type=checkbox]{accent-color:var(--acc)}
+select{background:#0d0f14;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit;max-width:360px}
+#cmp-table table{font-size:12.5px;white-space:nowrap}
+#cmp-table th{padding:4px 6px}
+#cmp-table th.gA{color:var(--acc);text-align:center;border-bottom:1px solid rgba(77,163,255,.35)}
+#cmp-table th.gB{color:#b58cff;text-align:center;border-bottom:1px solid rgba(181,140,255,.35)}
+#cmp-table td{padding:4px 6px}
+#cmp-table td.n{text-align:right;font-variant-numeric:tabular-nums}
+#cmp-table tr.miss td{opacity:.55}
+#cmp-table .dot{font-size:15px;line-height:1}
+#cmp-table .d-win{color:var(--ok)}
+#cmp-table .d-lose{color:var(--err)}
+#cmp-table .d-zero{color:var(--dim)}
+.cmpbtn{padding:2px 7px;font-size:11.5px}
 </style>
 </head>
 <body>
@@ -1563,9 +1992,36 @@ details.rz>summary{cursor:pointer;font-size:12.5px;color:var(--dim);margin-botto
       <div class="spacer"></div>
       <span id="prog" class="dim">—</span>
     </div>
+    <div class="row" id="settings">
+      <span class="dim">Réglages du run :</span>
+      <label class="chk">température <input type="number" id="set-temp" step="0.05" min="0" max="2" value="0.2"></label>
+      <label class="chk">max_tokens <input type="number" id="set-mt" step="1024" min="64" value="16384"></label>
+      <label class="chk" title="Raisonnement du modèle (chat_template_kwargs.enable_thinking). Sur ce build, l'activer peut envoyer la réponse dans reasoning_content : le texte part alors dans le panneau raisonnement et le HTML peut manquer.">raisonnement <input type="checkbox" id="set-think"></label>
+      <button id="set-reset">défauts</button>
+      <span id="set-note" class="dim"></span>
+    </div>
     <div class="bar"><div id="barfill"></div></div>
     <div id="msg"></div>
     <div id="runinfo" class="dim">Aucun run pour l'instant.</div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <h2>Comparer deux runs</h2>
+      <span class="dim">même prompt, deux modèles ou deux réglages</span>
+      <div class="spacer"></div>
+      <a id="cmp-page" class="dim" href="#" target="_blank" rel="noopener">ouvrir la page côte à côte ↗</a>
+    </div>
+    <div class="row">
+      <label class="chk">A (référence) <select id="cmp-a"></select></label>
+      <label class="chk">B (comparé) <select id="cmp-b"></select></label>
+      <button id="cmp-swap">inverser A/B</button>
+      <button id="cmp-cur">B = run courant</button>
+      <button id="cmp-load" class="primary">Comparer</button>
+      <label class="chk"><input type="checkbox" id="cmp-both"> seulement les prompts présents des deux côtés</label>
+    </div>
+    <div id="cmp-summary" class="dim" style="margin:8px 0">Choisis deux runs puis « Comparer ».</div>
+    <div id="cmp-table" style="overflow-x:auto"><span class="dim">—</span></div>
   </section>
 
   <section class="card">
@@ -1622,6 +2078,12 @@ const TERMINAL = ["ok","no_html","error","deja_genere","skipped"];
 
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function num(v,d){return (v===null||v===undefined||isNaN(v))?"—":Number(v).toFixed(d);}
+function paramsLabel(p){
+  p=p||{};
+  return "t"+(p.temperature==null?"?":p.temperature)
+    +" · "+(p.enable_thinking?"think":"nothink")
+    +" · mt"+(p.max_tokens==null?"?":p.max_tokens);
+}
 
 function wireList(){
   // les sections et les lignes sont rendues côté serveur : ici on ne fait que câbler
@@ -1734,6 +2196,7 @@ function renderRun(s){
     ' <span class="dim">· ctx</span> '+esc(run.n_ctx||"?")+
     ' <span class="dim">· endpoint</span> <code>'+esc(run.endpoint||"?")+'</code>'+
     ' <span class="dim">· dry_run</span> '+esc(String(run.dry_run))+
+    ' <span class="dim">· réglages</span> '+esc(run.params_label||paramsLabel(run.params))+
     ' <span class="dim">· suivi live</span> '+esc(s.stream===false?"non (LLM_STREAM=0)":"streaming SSE")+'</div>'+
     '<div class="row"><span class="dim">Début :</span> '+esc(run.started_at||"?")+
     ' <span class="dim">· fin :</span> '+esc(run.finished_at||"—")+
@@ -1779,17 +2242,22 @@ function renderDone(s){
 
 function render(s){
   lastState=s;
+  if(s.default_params) Object.assign(DEFAULT_SETTINGS,s.default_params);
   renderLLM(s);
   renderStatuses(s);
   renderDone(s);
   renderRun(s);
   renderPast(s);
+  fillRunSelects(s);
   updateCount();
 }
 
 async function refresh(force){
+  const st=readSettings();
+  const q="?t="+encodeURIComponent(st.temperature)+"&mt="+encodeURIComponent(st.max_tokens)
+          +"&think="+(st.enable_thinking?1:0)+(force?"&refresh=1":"");
   try{
-    const r=await fetch("/api/state"+(force?"?refresh=1":""),{cache:"no-store"});
+    const r=await fetch("/api/state"+q,{cache:"no-store"});
     render(await r.json());
   }catch(e){
     const el=document.getElementById("llm");
@@ -1811,6 +2279,152 @@ async function pollLog(){
     if(all.length>210) pre.textContent=all.slice(-200).join("\n");
     if(near) pre.scrollTop=pre.scrollHeight;
   }catch(e){}
+}
+
+/* ---------------- réglages du run (v1.3) ----------------
+   Température / max_tokens / raisonnement sont choisis ici et envoyés à
+   /api/run ; le serveur les range dans le dossier du run (…) et dans run.json. */
+let DEFAULT_SETTINGS={temperature:0.2,max_tokens:16384,enable_thinking:false};
+const SETTINGS_KEY="promptduel.settings.v1";
+
+function readSettings(){
+  const t=parseFloat(document.getElementById("set-temp").value);
+  const mt=parseInt(document.getElementById("set-mt").value,10);
+  return {
+    temperature: isNaN(t)?DEFAULT_SETTINGS.temperature:t,
+    max_tokens: isNaN(mt)?DEFAULT_SETTINGS.max_tokens:mt,
+    enable_thinking: document.getElementById("set-think").checked
+  };
+}
+function settingsNote(){
+  const s=readSettings();
+  const suff="__t"+s.temperature+(s.enable_thinking?"__think":"__nothink")
+             +(s.max_tokens!==DEFAULT_SETTINGS.max_tokens?("__mt"+s.max_tokens):"");
+  let txt="→ dossiers de run : …"+suff;
+  if(s.max_tokens!==DEFAULT_SETTINGS.max_tokens) txt+=" (max_tokens non standard → run distinct)";
+  if(s.enable_thinking) txt+=" ⚠️ raisonnement activé : le HTML peut partir dans reasoning_content";
+  document.getElementById("set-note").textContent=txt;
+}
+function saveSettings(s){
+  try{ localStorage.setItem(SETTINGS_KEY,JSON.stringify(s)); }catch(e){}
+  settingsNote();
+}
+function loadSettings(){
+  let v=null;
+  try{ v=JSON.parse(localStorage.getItem(SETTINGS_KEY)||"null"); }catch(e){ v=null; }
+  const s=Object.assign({},DEFAULT_SETTINGS,v||{});
+  document.getElementById("set-temp").value=s.temperature;
+  document.getElementById("set-mt").value=s.max_tokens;
+  document.getElementById("set-think").checked=!!s.enable_thinking;
+  settingsNote();
+}
+
+/* ---------------- comparaison de deux runs (v1.3) ---------------- */
+const CMP={sig:null,data:null};
+
+function shortModel(m){
+  m=String(m||"?");
+  return m.length>28?(m.slice(0,26)+"…"):m;
+}
+function runLabel(r){
+  const d=String(r.started_at||r.run_id||"?").slice(0,16).replace("T"," ");
+  const n=(r.selected_ids||[]).length;
+  const c=r.counts||{};
+  const ok=(c.ok||0)+(c.no_html||0)+(c.deja_genere||0);
+  return d+" · "+shortModel(r.model_slug)+" · ctx"+(r.n_ctx==null?"?":r.n_ctx)
+         +" · "+(r.params_label||"")+" · "+ok+"/"+(n||"?")+" ok";
+}
+function fillRunSelects(s){
+  const runs=(s.runs||[]);
+  const sig=runs.map(r=>r.run_id).join("|");
+  if(sig===CMP.sig) return;
+  CMP.sig=sig;
+  const vals=runs.map(r=>r.run_id);
+  [["cmp-a",1],["cmp-b",0]].forEach(([id,fallback])=>{
+    const sel=document.getElementById(id);
+    const old=sel.value;
+    sel.innerHTML=runs.map(r=>'<option value="'+esc(r.run_id)+'">'+esc(runLabel(r))+'</option>').join("");
+    if(vals.indexOf(old)>=0) sel.value=old;
+    else if(vals.length) sel.value=vals[Math.min(fallback,vals.length-1)];
+  });
+  if(!CMP.autoLoaded && vals.length>=2){
+    // première fois qu'on connaît les runs : on montre tout de suite la comparaison
+    // des deux plus récents, plutôt que de laisser un tableau vide à cliquer.
+    CMP.autoLoaded=true;
+    loadCompare();
+  }
+}
+function cmpDelta(v,lowerIsBetter){
+  if(v===null||v===undefined||isNaN(v)) return '<span class="d-zero">—</span>';
+  const cls=v===0?"d-zero":((lowerIsBetter?v<0:v>0)?"d-win":"d-lose");
+  return '<span class="'+cls+'">'+(v>0?"+":"")+Number(v).toFixed(1)+'</span>';
+}
+function cmpCellA(r,side){
+  const x=r[side];
+  if(!x) return '<td class="dot" title="absent">·</td><td class="n">—</td><td class="n">—</td><td class="n">—</td>';
+  const st=String(x.status||"?");
+  const col={ok:"var(--ok)",no_html:"var(--warn)",error:"var(--err)",deja_genere:"#b58cff"}[st]||"var(--dim)";
+  const dot='<span class="dot" style="color:'+col+'" title="'+esc(st)+(x.erreur?(" — "+esc(x.erreur)):"")+'">●</span>';
+  const link=x.open_url?(' <a href="'+esc(x.open_url)+'" target="_blank" rel="noopener" title="ouvrir le fichier">↗</a>'):"";
+  return '<td>'+dot+link+'</td>'
+    +'<td class="n">'+(x.duree_s==null?"—":num(x.duree_s,1))+'</td>'
+    +'<td class="n">'+(x.tok_s==null?"—":num(x.tok_s,1))+'</td>'
+    +'<td class="n" title="prompt '+(x.prompt_tokens==null?"?":x.prompt_tokens)+' tok">'
+    +(x.completion_tokens==null?"—":x.completion_tokens)+'</td>';
+}
+function renderCompare(){
+  const d=CMP.data;
+  const box=document.getElementById("cmp-table");
+  if(!d){box.innerHTML='<span class="dim">—</span>';return;}
+  const onlyBoth=document.getElementById("cmp-both").checked;
+  const rows=(d.rows||[]).filter(r=>!onlyBoth||r.in_both);
+  const bothTok=rows.filter(r=>r.a&&r.b&&r.a.tok_s!=null&&r.b.tok_s!=null);
+  const dts=bothTok.map(r=>r.delta.tok_s);
+  const faster=dts.filter(v=>v>0).length, slower=dts.filter(v=>v<0).length;
+  const mean=dts.length?(dts.reduce((a,b)=>a+b,0)/dts.length):null;
+  document.getElementById("cmp-summary").innerHTML=
+    '<b>A</b> '+esc(runLabel(d.a))+' <span class="dim">vs</span> <b>B</b> '+esc(runLabel(d.b))
+    +'<br>'+rows.length+' prompt(s) comparé(s) · '+bothTok.length+' avec tok/s des deux côtés'
+    +(mean==null?"":" · B plus rapide sur "+faster+", plus lent sur "+slower
+      +" · Δ moyen "+(mean>0?"+":"")+num(mean,1)+" tok/s");
+  const head='<table><thead><tr>'
+    +'<th rowspan="2">#</th><th rowspan="2">Titre</th>'
+    +'<th class="gA" colspan="4">A · '+esc(shortModel(d.a.model_slug))+'</th>'
+    +'<th class="gB" colspan="4">B · '+esc(shortModel(d.b.model_slug))+'</th>'
+    +'<th colspan="2">écart (B−A)</th><th rowspan="2"></th></tr>'
+    +'<tr><th class="gA">état</th><th class="gA">durée</th><th class="gA">tok/s</th><th class="gA">tokens</th>'
+    +'<th class="gB">état</th><th class="gB">durée</th><th class="gB">tok/s</th><th class="gB">tokens</th>'
+    +'<th>durée s</th><th>tok/s</th></tr></thead><tbody>';
+  const body=rows.map(r=>{
+    const t=esc(r.title||("prompt "+r.id));
+    const g=esc(r.group||"");
+    const link='/compare?a='+encodeURIComponent(d.a.run_id)+'&b='+encodeURIComponent(d.b.run_id)
+               +'&ids='+r.id;
+    return '<tr'+(r.in_both?"":' class="miss"')+'><td>'+r.id+'</td>'
+      +'<td title="'+esc(g)+'">'+t+'</td>'
+      +cmpCellA(r,"a")+cmpCellA(r,"b")
+      +'<td class="n">'+cmpDelta(r.delta.duree_s,true)+'</td>'
+      +'<td class="n">'+cmpDelta(r.delta.tok_s,false)+'</td>'
+      +'<td><a class="cmpbtn" href="'+link+'" target="_blank" rel="noopener">voir les 2</a></td></tr>';
+  }).join("");
+  box.innerHTML=head+body+'</tbody></table>';
+}
+async function loadCompare(){
+  const a=document.getElementById("cmp-a").value;
+  const b=document.getElementById("cmp-b").value;
+  const summary=document.getElementById("cmp-summary");
+  document.getElementById("cmp-page").href="/compare?a="+encodeURIComponent(a)+"&b="+encodeURIComponent(b);
+  if(!a||!b){summary.textContent="Choisis deux runs.";return;}
+  if(a===b){summary.textContent="A et B sont le même run — choisis deux runs différents.";}
+  try{
+    const r=await fetch("/api/compare?a="+encodeURIComponent(a)+"&b="+encodeURIComponent(b),{cache:"no-store"});
+    const d=await r.json();
+    if(!r.ok||d.error){
+      summary.textContent=d.error||("HTTP "+r.status);
+      CMP.data=null;renderCompare();return;
+    }
+    CMP.data=d;renderCompare();
+  }catch(e){summary.textContent="Erreur réseau : "+e;}
 }
 
 /* ---------------- suivi en direct (v1.2) ----------------
@@ -1838,6 +2452,7 @@ function liveStats(d){
   else if(d.chunks) bits.push("≈"+d.chunks+" tok");
   bits.push((d.chars||0)+" car.");
   if(d.max_tokens) bits.push("max "+d.max_tokens);
+  if(d.params_label) bits.push(esc(d.params_label));
   if(d.finish_reason) bits.push("fin : "+esc(d.finish_reason));
   if(d.truncated) bits.push("affichage borné (tampon)");
   return bits.join(" · ");
@@ -1905,9 +2520,12 @@ async function launch(){
   const ids=Array.from(checked).sort((a,b)=>a-b);
   document.getElementById("msg").textContent="";
   if(!ids.length){document.getElementById("msg").textContent="Sélection vide.";return;}
+  const st=readSettings();
+  saveSettings(st);
   try{
     const r=await fetch("/api/run",{method:"POST",headers:{"content-type":"application/json"},
-      body:JSON.stringify({ids:ids})});
+      body:JSON.stringify({ids:ids,temperature:st.temperature,max_tokens:st.max_tokens,
+                           enable_thinking:st.enable_thinking})});
     const d=await r.json();
     if(!r.ok||d.error) document.getElementById("msg").textContent=d.error||("HTTP "+r.status);
     refresh(true);
@@ -1925,6 +2543,38 @@ document.getElementById("none").onclick=()=>{checked.clear();
 document.getElementById("launch").onclick=launch;
 document.getElementById("stop").onclick=stopRun;
 document.getElementById("retest").onclick=()=>refresh(true);
+
+// --- réglages du run
+["set-temp","set-mt","set-think"].forEach(id=>{
+  document.getElementById(id).oninput=()=>saveSettings(readSettings());
+  document.getElementById(id).onchange=()=>saveSettings(readSettings());
+});
+document.getElementById("set-reset").onclick=()=>{
+  document.getElementById("set-temp").value=DEFAULT_SETTINGS.temperature;
+  document.getElementById("set-mt").value=DEFAULT_SETTINGS.max_tokens;
+  document.getElementById("set-think").checked=!!DEFAULT_SETTINGS.enable_thinking;
+  saveSettings(readSettings());refresh(true);
+};
+
+// --- comparaison
+document.getElementById("cmp-load").onclick=loadCompare;
+document.getElementById("cmp-a").onchange=loadCompare;
+document.getElementById("cmp-b").onchange=loadCompare;
+document.getElementById("cmp-both").onchange=()=>renderCompare();
+document.getElementById("cmp-swap").onclick=()=>{
+  const a=document.getElementById("cmp-a"), b=document.getElementById("cmp-b");
+  const t=a.value; a.value=b.value; b.value=t; loadCompare();
+};
+document.getElementById("cmp-cur").onclick=()=>{
+  const r=lastState&&lastState.run;
+  const summary=document.getElementById("cmp-summary");
+  if(!r||!r.run_id){summary.textContent="Aucun run courant à mettre en B.";return;}
+  const b=document.getElementById("cmp-b");
+  const has=Array.prototype.some.call(b.options,o=>o.value===r.run_id);
+  if(!has){summary.textContent="Le run courant n'est pas (encore) dans la liste — réessaie dans une seconde.";return;}
+  b.value=r.run_id;
+  loadCompare();
+};
 
 // --- suivi en direct
 document.getElementById("livepreview").onchange=()=>{LIVE.lastPreview=0;updateLivePreview();};
@@ -1952,6 +2602,7 @@ document.getElementById("livecopy").onclick=async()=>{
 };
 
 wireList();
+loadSettings();
 refresh(true);
 pollLog();
 pollLive();
@@ -2053,7 +2704,25 @@ class Handler(BaseHTTPRequestHandler):
 
             if path == "/api/state" and method in ("GET", "HEAD"):
                 force = str((query.get("refresh") or ["0"])[0]).lower() in ("1", "true", "yes")
-                return self._json(200, build_state(force_probe=force), head)
+                # l'UI envoie les réglages qu'elle a sous les yeux : les badges
+                # « déjà fait » correspondent alors vraiment à ce qui serait relancé
+                wanted = {
+                    "temperature": (query.get("t") or [None])[0],
+                    "max_tokens": (query.get("mt") or [None])[0],
+                    "enable_thinking": (query.get("think") or [None])[0],
+                }
+                return self._json(200, build_state(force_probe=force, params=wanted), head)
+
+            if path == "/api/compare" and method in ("GET", "HEAD"):
+                run_a = (query.get("a") or [""])[0]
+                run_b = (query.get("b") or [""])[0]
+                payload, err = compare_payload(run_a, run_b)
+                if err:
+                    return self._json(404, err, head)
+                return self._json(200, payload, head)
+
+            if path in ("/compare", "/compare.html") and method in ("GET", "HEAD"):
+                return self._send(200, render_compare_page(query), "text/html; charset=utf-8", head)
 
             if path == "/api/log" and method in ("GET", "HEAD"):
                 try:
@@ -2103,8 +2772,10 @@ class Handler(BaseHTTPRequestHandler):
                                  "démarre ton serveur llama.cpp puis réessaie "
                                  f"({probe.get('error') or 'injoignable'})",
                     })
-                ok, msg = start_run(ids)
-                return self._json(200 if ok else 409, {"ok": ok, "error": None if ok else msg, "message": msg})
+                ok, msg = start_run(ids, params=normalize_params(body))
+                return self._json(200 if ok else 409, {"ok": ok, "error": None if ok else msg,
+                                                       "message": msg,
+                                                       "params": normalize_params(body)})
 
             if path == "/api/stop" and method == "POST":
                 with STATE.lock:
@@ -2174,6 +2845,8 @@ def main():
     for g in STATE.groups:
         LOG.add(f"  groupe {g['id']} — {g['title']} : {g['count']} prompt(s)")
     LOG.add(f"format prompts.json : v{STATE.prompts_version} · max_tokens par défaut : {MAX_TOKENS}")
+    LOG.add(f"réglages par défaut : {params_label(DEFAULT_PARAMS)} "
+            "(modifiables dans l'UI, pour chaque run)")
     LOG.add(f"endpoint LLM : {LLM_BASE}")
     if DRY_RUN:
         LOG.add("MODE LLM_DRY_RUN=1 — aucun appel réseau vers llama.cpp")
