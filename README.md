@@ -200,6 +200,7 @@ Deux prompts récupérés dans l'historique du dépôt public **`lukesdevlab/you
 | POST | `/api/stop` | arrêt demandé : le prompt en cours va au bout, le suivant n'est pas lancé |
 | GET | `/api/log?since=N` | lignes de journal depuis l'index N |
 | GET | `/api/live?since=C&rsince=R` | suivi en direct : uniquement la suite du texte (`C`) et du raisonnement (`R`) depuis ces curseurs **en caractères** |
+| GET | `/api/runs?limit=N` | liste des runs (défaut 500, max 2000), utilisée par les sélecteurs de comparaison — au-delà des 30 du polling `/api/state` |
 | GET | `/api/compare?a=<run>&b=<run>` | comparaison de deux runs : identité + réglages des deux, une ligne par prompt (union) avec `status`, `duree_s`, `tok_s`, tokens, `open_url`, et les écarts `delta` (b − a) ; 404 si un run est introuvable |
 | GET | `/compare?a=<run>&b=<run>[&ids=26,29]` | page de comparaison visuelle : les deux rendus HTML en `<iframe>` côte à côte, prompt par prompt |
 | GET | `/runs/…` | fichiers générés (+ listing de dossier) |

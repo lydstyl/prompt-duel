@@ -111,6 +111,7 @@ HEALTH_TIMEOUT_S = 3
 PROBE_CACHE_S = 3.0              # l'UI polle toutes les 1 s : on lisse les sondes
 LOG_MAX = 2000
 RUNS_LIST_LIMIT = 30
+RUNS_COMPARE_LIMIT = 500     # runs listés pour les sélecteurs de comparaison (/api/runs)
 RUN_REUSE_S = 1800               # idempotence : on reprend un run identique récent
 
 # --- suivi en direct (v1.2) -------------------------------------------------
@@ -1082,6 +1083,20 @@ def list_past_runs(limit=RUNS_LIST_LIMIT):
                 pass
         out.append(info)
     return out
+
+
+_RUNS_CACHE = {"at": 0.0, "limit": None, "value": []}
+
+
+def list_past_runs_cached(limit=RUNS_COMPARE_LIMIT, max_age=3.0):
+    """Version mémorisée de list_past_runs, pour lister TOUS les runs (sélecteurs de
+    comparaison) sans relire des centaines de run.json à chaque poll."""
+    now = time.time()
+    if _RUNS_CACHE["limit"] == limit and (now - _RUNS_CACHE["at"]) < max_age:
+        return _RUNS_CACHE["value"]
+    value = list_past_runs(limit=limit)
+    _RUNS_CACHE.update({"at": now, "limit": limit, "value": value})
+    return value
 
 
 # --------------------------------------------------------------------------
@@ -2320,7 +2335,7 @@ function loadSettings(){
 }
 
 /* ---------------- comparaison de deux runs (v1.3) ---------------- */
-const CMP={sig:null,data:null};
+const CMP={sig:null,data:null,runs:[]};
 
 function shortModel(m){
   m=String(m||"?");
@@ -2334,8 +2349,16 @@ function runLabel(r){
   return d+" · "+shortModel(r.model_slug)+" · ctx"+(r.n_ctx==null?"?":r.n_ctx)
          +" · "+(r.params_label||"")+" · "+ok+"/"+(n||"?")+" ok";
 }
+async function fetchRuns(){          // liste complète (au-delà des 30 du polling)
+  try{
+    const r=await fetch("/api/runs?limit=500",{cache:"no-store"});
+    const d=await r.json();
+    CMP.runs=d.runs||[];
+    fillRunSelects();
+  }catch(e){}
+}
 function fillRunSelects(s){
-  const runs=(s.runs||[]);
+  const runs=CMP.runs.length?(CMP.runs):((s&&s.runs)||[]);
   const sig=runs.map(r=>r.run_id).join("|");
   if(sig===CMP.sig) return;
   CMP.sig=sig;
@@ -2604,11 +2627,13 @@ document.getElementById("livecopy").onclick=async()=>{
 wireList();
 loadSettings();
 refresh(true);
+fetchRuns();
 pollLog();
 pollLive();
 setInterval(()=>refresh(false),1000);
 setInterval(pollLog,1000);
 setInterval(pollLive,LIVE_POLL_MS);
+setInterval(fetchRuns,15000);       // la liste des runs pour comparer bouge rarement
 </script>
 </body>
 </html>
@@ -2712,6 +2737,15 @@ class Handler(BaseHTTPRequestHandler):
                     "enable_thinking": (query.get("think") or [None])[0],
                 }
                 return self._json(200, build_state(force_probe=force, params=wanted), head)
+
+            if path == "/api/runs" and method in ("GET", "HEAD"):
+                # liste complète des runs pour les sélecteurs de comparaison
+                try:
+                    limit = int((query.get("limit") or [str(RUNS_COMPARE_LIMIT)])[0])
+                except ValueError:
+                    limit = RUNS_COMPARE_LIMIT
+                limit = max(1, min(limit, 2000))
+                return self._json(200, {"limit": limit, "runs": list_past_runs_cached(limit)}, head)
 
             if path == "/api/compare" and method in ("GET", "HEAD"):
                 run_a = (query.get("a") or [""])[0]
