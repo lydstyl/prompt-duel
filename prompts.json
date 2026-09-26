@@ -1,0 +1,476 @@
+{
+  "version": 2,
+  "groups": [
+    {
+      "id": "canvas-2d",
+      "title": "Canvas 2D — niveau facile (v1)",
+      "note": "10 prompts déjà validés le 25/09/2026"
+    },
+    {
+      "id": "canvas-2d-avance",
+      "title": "Canvas 2D — niveau avancé",
+      "note": "algorithmes non triviaux, toujours zéro librairie"
+    },
+    {
+      "id": "webgl-3d",
+      "title": "3D / WebGL (three.js r160 CDN)",
+      "note": "seul groupe autorisé à charger une librairie externe"
+    },
+    {
+      "id": "logique-jeu",
+      "title": "Logique & jeu",
+      "note": "règles complètes + IA / solveur"
+    },
+    {
+      "id": "importes",
+      "title": "Prompts importés (lukesdevlab/youtube)",
+      "note": "sand-physics + dungeon-game — récupérés dans l'historique git, fichiers supprimés en amont le 08/09/2026"
+    }
+  ],
+  "prompts": [
+    {
+      "id": 1,
+      "slug": "lorenz-attractor",
+      "title": "Attracteur de Lorenz",
+      "category": "physique",
+      "prompt": "Single self-contained HTML file. Render a 2D projection of the Lorenz attractor on a canvas: integrate the system with RK4, draw a long trailing path with a colour gradient that fades with age, and add sliders for sigma, rho and beta plus a reset button. Dark background, no external libraries.",
+      "criteria": [
+        "la trajectoire ne s'arrête pas au bord",
+        "sigma/rho/beta modifient visiblement le tracé",
+        "bouton reset fonctionnel"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 2,
+      "slug": "mandelbrot-zoom",
+      "title": "Explorateur de Mandelbrot",
+      "category": "fractale",
+      "prompt": "Single self-contained HTML file. Render the Mandelbrot set on a canvas with a smooth colouring based on the escape count, support zoom with the mouse wheel centred on the cursor and pan with drag, and show the current zoom level and iteration count. Dark theme, no external libraries.",
+      "criteria": [
+        "le zoom suit la position du curseur",
+        "le niveau de zoom et le nombre d'itérations sont affichés",
+        "le glisser-déposer déplace la vue"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 3,
+      "slug": "game-of-life",
+      "title": "Jeu de la vie",
+      "category": "automate",
+      "prompt": "Single self-contained HTML file. Implement Conway's Game of Life on a canvas grid with play/pause, step, clear, random fill and a speed slider, display the generation counter and the live cell count, and let the user draw cells with the mouse. No external libraries.",
+      "criteria": [
+        "play/pause et pas-à-pas fonctionnent",
+        "le compteur de générations et de cellules vivantes s'incrémente",
+        "on peut dessiner/effacer des cellules à la souris"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 4,
+      "slug": "double-pendulum",
+      "title": "Double pendule",
+      "category": "physique",
+      "prompt": "Single self-contained HTML file. Simulate a double pendulum on a canvas with adjustable masses and initial angles, animate the motion, draw the fading trace of the second bob, and show a small phase-space plot of the angles. No external libraries.",
+      "criteria": [
+        "l'animation est continue et fluide",
+        "la trace du second pendule s'estompe avec le temps",
+        "les masses et angles initiaux sont réglables et influencent le mouvement"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 5,
+      "slug": "boids",
+      "title": "Boids (nuée d'oiseaux)",
+      "category": "émergence",
+      "prompt": "Single self-contained HTML file. Simulate boids flocking on a canvas with sliders for separation, alignment and cohesion weights plus an avoidance radius, draw each boid as a small triangle oriented along its velocity, and show the frame rate. No external libraries.",
+      "criteria": [
+        "les boids forment des groupes cohérents",
+        "chaque curseur modifie visiblement le comportement",
+        "le triangle est orienté selon la vitesse et le FPS est affiché"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 6,
+      "slug": "gravity-sandbox",
+      "title": "Bac à sable gravitationnel",
+      "category": "physique",
+      "prompt": "Single self-contained HTML file. Simulate N particles under Newtonian gravity on a canvas: click and drag to launch a new particle with the drag vector as its initial velocity, draw fading trails, and add sliders for the gravitational constant, trail length and particle count. No external libraries.",
+      "criteria": [
+        "clic-glisser lance une particule avec la bonne vitesse initiale",
+        "les traînées s'estompent",
+        "constante gravitationnelle, longueur de traînée et nombre de particules sont réglables"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 7,
+      "slug": "sandpile",
+      "title": "Tas de sable critique",
+      "category": "automate",
+      "prompt": "Single self-contained HTML file. Implement the Abelian sandpile model on a canvas: drop grains at the centre or on click, animate the toppling cascades, and display the toppling event counter, the grid size selector and a reset button. No external libraries.",
+      "criteria": [
+        "les avalanches se propagent et se stabilisent",
+        "le compteur d'événements de basculement augmente",
+        "sélecteur de taille de grille et bouton reset fonctionnels"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 8,
+      "slug": "brownian-motion",
+      "title": "Mouvement brownien",
+      "category": "statistique",
+      "prompt": "Single self-contained HTML file. Simulate Brownian motion of several particles on a canvas, draw their random-walk paths, and plot the mean squared displacement over time in a second canvas to show the linear trend. Add a particle-count slider and a reset button. No external libraries.",
+      "criteria": [
+        "les trajectoires sont bien aléatoires",
+        "le déplacement quadratique moyen croît linéairement dans le second canvas",
+        "curseur du nombre de particules et reset fonctionnels"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 9,
+      "slug": "voronoi",
+      "title": "Diagramme de Voronoï",
+      "category": "géométrie",
+      "prompt": "Single self-contained HTML file. Build a Voronoi diagram on a canvas from a set of points: click to add a point, shift-click to remove the nearest one, recompute the diagram and colour each cell differently, and add buttons to scatter 10 or 50 random points and to clear. No external libraries.",
+      "criteria": [
+        "chaque cellule est colorée différemment",
+        "clic ajoute un point, shift-clic retire le plus proche",
+        "boutons 10 / 50 points et effacer fonctionnels"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 10,
+      "slug": "synchronized-fireflies",
+      "title": "Lucioles synchronisées",
+      "category": "émergence",
+      "prompt": "Single self-contained HTML file. Simulate a population of fireflies on a canvas using coupled phase oscillators that pulse brighter together over time: draw each firefly with a brightness that follows its phase, and add sliders for coupling strength, natural frequency spread and population size. No external libraries.",
+      "criteria": [
+        "la synchronisation émerge progressivement",
+        "la luminosité de chaque luciole suit sa phase",
+        "les trois curseurs modifient le comportement"
+      ],
+      "group": "canvas-2d"
+    },
+    {
+      "id": 11,
+      "slug": "fluid-simulation",
+      "title": "Simulation de fluide (Stable Fluids)",
+      "group": "canvas-2d-avance",
+      "category": "physique",
+      "prompt": "Single self-contained HTML file. Implement a 2D incompressible fluid solver on a canvas using the Stable Fluids scheme: semi-Lagrangian advection plus an iterative pressure projection (Jacobi or Gauss-Seidel). Dragging the mouse injects velocity and coloured dye that then swirls and dissipates realistically. Add sliders for viscosity, dye dissipation and injection force, plus a clear button. No external libraries.",
+      "criteria": [
+        "les volutes de colorant persistent et tourbillonnent",
+        "la traînée suit la souris sans artefacts de blocs",
+        "les trois curseurs modifient visiblement l'écoulement"
+      ]
+    },
+    {
+      "id": 12,
+      "slug": "reaction-diffusion",
+      "title": "Réaction-diffusion (Gray-Scott)",
+      "group": "canvas-2d-avance",
+      "category": "chimie",
+      "prompt": "Single self-contained HTML file. Simulate the Gray-Scott reaction-diffusion model on a canvas using two ping-ponged Float32 buffers and a 9-point toroidal neighbourhood, drawing chemical B concentration as a colour map. Provide four presets (spots, stripes, mitosis, worms) and sliders for the feed rate f and the kill rate k, and let the user paint extra chemical B with the mouse. No external libraries.",
+      "criteria": [
+        "les motifs caractéristiques apparaissent (taches, rayures, mitose)",
+        "les presets changent réellement le motif",
+        "le pinceau souris ajoute de la substance B"
+      ]
+    },
+    {
+      "id": 13,
+      "slug": "raytracer-cpu",
+      "title": "Lanceur de rayons CPU progressif",
+      "group": "canvas-2d-avance",
+      "category": "rendu",
+      "prompt": "Single self-contained HTML file. Write a CPU ray tracer that renders progressively onto a canvas (a few hundred scanlines per frame so the picture builds up in front of the user): several spheres with diffuse, specular and reflective materials, a checked ground plane, one point light casting soft shadows, and ambient occlusion approximated with a few shadow rays. Add sliders for the sample count and the recursion depth, and display the elapsed render time. No external libraries.",
+      "criteria": [
+        "l'image se construit progressivement sans figer le navigateur",
+        "les sphères sont diffusantes, spéculaires ET réfléchissantes",
+        "temps de rendu affiché et mis à jour"
+      ]
+    },
+    {
+      "id": 14,
+      "slug": "maze-astar",
+      "title": "Labyrinthe + résolution A*",
+      "group": "canvas-2d-avance",
+      "category": "algorithmique",
+      "prompt": "Single self-contained HTML file. Generate a perfect maze on a canvas with recursive backtracking (or randomised Prim), then animate an A* search from the top-left cell to the bottom-right cell, drawing the explored frontier, the final path and the number of steps. Add a speed slider, a grid-size selector and a new-maze button. No external libraries.",
+      "criteria": [
+        "le labyrinthe est parfait (aucun mur traversé, aucun îlot isolé)",
+        "la frontière explorée puis le chemin final sont visibles et distincts",
+        "taille de grille et nouvelle génération fonctionnelles"
+      ]
+    },
+    {
+      "id": 15,
+      "slug": "wave-interference",
+      "title": "Équation des ondes 2D (interférences)",
+      "group": "canvas-2d-avance",
+      "category": "physique",
+      "prompt": "Single self-contained HTML file. Solve the 2D wave equation on a canvas grid with fixed reflecting borders, colour-map the height field, and provide three presets: a single point source with circular ripples, two sources showing interference fringes, and a plane wave through a double slit. Add sliders for wave speed, damping and source frequency, and let a click drop a pulse anywhere. No external libraries.",
+      "criteria": [
+        "les rides circulaires se propagent et rebondissent sur les bords",
+        "le preset deux sources crée des franges d'interférence nettes",
+        "le preset double fente montre une figure de diffraction"
+      ]
+    },
+    {
+      "id": 16,
+      "slug": "metaballs",
+      "title": "Métaballs (marching squares)",
+      "group": "canvas-2d-avance",
+      "category": "géométrie",
+      "prompt": "Single self-contained HTML file. Render an animated field of about a dozen metaballs on a canvas and extract the iso-surface with marching squares: colour each blob region differently so blobs visibly merge and split as they drift, and add sliders for the ball count, the iso threshold, the radius and the drift speed. No external libraries.",
+      "criteria": [
+        "les blobs fusionnent et se séparent continûment",
+        "le contour est calculé par marching squares (pas de flou gaussien sur les pixels)",
+        "les curseurs nombre, seuil, rayon et vitesse agissent"
+      ]
+    },
+    {
+      "id": 17,
+      "slug": "mandelbulb-raymarch",
+      "title": "Mandelbulb (raymarching GLSL)",
+      "group": "webgl-3d",
+      "category": "fractale",
+      "prompt": "Single self-contained HTML file that loads three.js r160 from a pinned ESM import map: <script type=\"importmap\">{\"imports\":{\"three\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js\",\"three/addons/\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/\"}}</script>. Only three.js and its own addons may be loaded; no other library, no build step, no bundler.\nRaymarch a Mandelbulb (power 8) inside a fullscreen fragment shader driven by a three.js ShaderMaterial: sphere tracing with a distance estimator, soft shadows and ambient occlusion, an orbit camera driven by the mouse, and sliders for the fractal power and the iteration count. Show the frame rate.",
+      "criteria": [
+        "la fractale est bien rendue (pas un brouillard uniforme)",
+        "la caméra orbite à la souris sans sauter",
+        "les curseurs puissance et itérations changent la forme"
+      ]
+    },
+    {
+      "id": 18,
+      "slug": "dollhouse-room",
+      "title": "Scène 3D interactive (maison de poupées)",
+      "group": "webgl-3d",
+      "category": "3D",
+      "prompt": "Single self-contained HTML file that loads three.js r160 from a pinned ESM import map: <script type=\"importmap\">{\"imports\":{\"three\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js\",\"three/addons/\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/\"}}</script>. Only three.js and its own addons may be loaded; no other library, no build step, no bundler.\nBuild a small furnished room from primitives (floor, walls, bed, table, chairs, lamp): a warm point light with real-time shadows plus a soft ambient light, and OrbitControls from three/addons/controls/OrbitControls.js to walk around the scene. Add a toggle to switch the lamp on and off and a wireframe toggle. Show the frame rate.",
+      "criteria": [
+        "au moins 6 meubles distincts et reconnaissables",
+        "les ombres suivent la lampe, l'interrupteur a un effet visible",
+        "OrbitControls fonctionne (rotation, zoom)"
+      ]
+    },
+    {
+      "id": 19,
+      "slug": "procedural-planet",
+      "title": "Planète procédurale + atmosphère",
+      "group": "webgl-3d",
+      "category": "3D",
+      "prompt": "Single self-contained HTML file that loads three.js r160 from a pinned ESM import map: <script type=\"importmap\">{\"imports\":{\"three\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js\",\"three/addons/\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/\"}}</script>. Only three.js and its own addons may be loaded; no other library, no build step, no bundler.\nRender a procedural planet: a sphere whose surface colours come from a noise function (continents and oceans, computed in the fragment shader or from a simplex-noise implementation), an animated semi-transparent cloud layer at a slightly larger radius, a thin blue atmospheric rim shader, and a small moon orbiting the planet. Add OrbitControls and a slider for the noise seed.",
+      "criteria": [
+        "les continents sont dessinés par du bruit, pas par une texture externe",
+        "la couche nuageuse tourne indépendamment de la surface",
+        "le halo atmosphérique est visible sur le limbe"
+      ]
+    },
+    {
+      "id": 20,
+      "slug": "infinite-terrain",
+      "title": "Terrain infini procédural",
+      "group": "webgl-3d",
+      "category": "3D",
+      "prompt": "Single self-contained HTML file that loads three.js r160 from a pinned ESM import map: <script type=\"importmap\">{\"imports\":{\"three\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js\",\"three/addons/\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/\"}}</script>. Only three.js and its own addons may be loaded; no other library, no build step, no bundler.\nRender an infinite procedural terrain: hill heights from a layered noise function, chunks generated around the camera as the user flies with WASD plus mouse look, vertex colours by height (sand, grass, rock, snow), distance fog, and a directional light with shadows. Recycle the chunks so memory stays bounded and keep the frame rate displayed.",
+      "criteria": [
+        "le terrain défile sans fin, sans trou ni couture visible",
+        "le relief est bien en 3D (sommets déplacés, pas une simple texture)",
+        "WASD + souris pilotent la caméra"
+      ]
+    },
+    {
+      "id": 21,
+      "slug": "hypercube-4d",
+      "title": "Hypercube 4D (tesseract)",
+      "group": "webgl-3d",
+      "category": "4D",
+      "prompt": "Single self-contained HTML file that loads three.js r160 from a pinned ESM import map: <script type=\"importmap\">{\"imports\":{\"three\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js\",\"three/addons/\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/\"}}</script>. Only three.js and its own addons may be loaded; no other library, no build step, no bundler.\nRender a rotating four-dimensional hypercube (tesseract): its 16 vertices and 32 edges projected from 4D to 3D with a 4D perspective projection, animated by rotations in the XY, XZ and ZW planes, with sliders for the three rotation speeds and for the 4D camera distance, plus OrbitControls to look at it from outside.",
+      "criteria": [
+        "16 sommets et 32 arêtes (vérifiable visuellement, structure fermée)",
+        "la rotation ZW produit la déformation caractéristique",
+        "les 4 curseurs agissent"
+      ]
+    },
+    {
+      "id": 22,
+      "slug": "solar-system",
+      "title": "Système solaire animé",
+      "group": "webgl-3d",
+      "category": "3D",
+      "prompt": "Single self-contained HTML file that loads three.js r160 from a pinned ESM import map: <script type=\"importmap\">{\"imports\":{\"three\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js\",\"three/addons/\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/\"}}</script>. Only three.js and its own addons may be loaded; no other library, no build step, no bundler.\nRender an animated solar system: the Sun with a glowing sprite, the eight planets on elliptical orbits with roughly correct relative periods, Saturn rings, a moon around the Earth, a starfield background, OrbitControls and a time-scale slider.",
+      "criteria": [
+        "les 8 planètes orbitent à des vitesses relatives crédibles",
+        "les anneaux de Saturne et la Lune sont présents",
+        "le curseur d'échelle de temps change visiblement la vitesse"
+      ]
+    },
+    {
+      "id": 23,
+      "slug": "black-hole-lensing",
+      "title": "Trou noir (disque + lentille gravitationnelle)",
+      "group": "webgl-3d",
+      "category": "shader",
+      "prompt": "Single self-contained HTML file that loads three.js r160 from a pinned ESM import map: <script type=\"importmap\">{\"imports\":{\"three\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js\",\"three/addons/\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/\"}}</script>. Only three.js and its own addons may be loaded; no other library, no build step, no bundler.\nRender a black hole in a fullscreen fragment shader: ray-march light rays through a Schwarzschild-like gravitational field, bend them around a black sphere so the shadow and the lensed background appear, sample a rotating accretion disk where the rays cross the disk plane, and add a Doppler/beaming brightness asymmetry plus a starfield background. Add OrbitControls and sliders for the disk radius and the spin direction.",
+      "criteria": [
+        "l'arrière-plan est visiblement déformé (lentille gravitationnelle)",
+        "le disque d'accrétion est plus lumineux d'un côté (effet Doppler)",
+        "l'ombre du trou noir est bien un disque noir"
+      ]
+    },
+    {
+      "id": 24,
+      "slug": "gpu-particle-galaxy",
+      "title": "Galaxie de 100 000 particules (GPU)",
+      "group": "webgl-3d",
+      "category": "shader",
+      "prompt": "Single self-contained HTML file that loads three.js r160 from a pinned ESM import map: <script type=\"importmap\">{\"imports\":{\"three\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js\",\"three/addons/\":\"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/\"}}</script>. Only three.js and its own addons may be loaded; no other library, no build step, no bundler.\nRender a galaxy of 100 000 particles as a THREE.Points cloud with a custom vertex shader: a spiral-arm density distribution, per-particle colour from a blackbody-like gradient, size attenuation, additive blending and a slow orbital rotation. Add OrbitControls and a slider for the number of visible particles.",
+      "criteria": [
+        "100 000 particules affichées (compteur visible ou valeur dans le code)",
+        "les bras spiraux sont reconnaissables",
+        "la rotation reste fluide (FPS affiché > 20)"
+      ]
+    },
+    {
+      "id": 25,
+      "slug": "go-9x9",
+      "title": "Go 9×9 avec IA",
+      "group": "logique-jeu",
+      "category": "jeu/IA",
+      "prompt": "Single self-contained HTML file. Implement a playable 9x9 Go game on a canvas: legal move detection with no suicide and the ko rule, captures and liberties, scoring by territory plus captures, pass and resign buttons, and a simple computer opponent (random-ish play or a shallow heuristic that prefers moves which capture or save a group). Show the score and the move number. No external libraries.",
+      "criteria": [
+        "les captures sont correctes et les groupes sans liberté disparaissent",
+        "la règle de ko et le suicide interdit sont gérés",
+        "le score territoire + prisonniers est affiché et cohérent"
+      ]
+    },
+    {
+      "id": 26,
+      "slug": "connect-four-minimax",
+      "title": "Puissance 4 (minimax alpha-bêta)",
+      "group": "logique-jeu",
+      "category": "jeu/IA",
+      "prompt": "Single self-contained HTML file. Implement Connect Four on a canvas with human versus a minimax AI using alpha-beta pruning at depth 6 or more and a window-of-four heuristic, animated piece drops, a highlight of the winning line, an undo button, and a difficulty selector that changes the search depth. No external libraries.",
+      "criteria": [
+        "l'IA bloque systématiquement un alignement de 3 menaçant",
+        "la ligne gagnante est mise en évidence",
+        "le sélecteur de difficulté change la profondeur de recherche"
+      ]
+    },
+    {
+      "id": 27,
+      "slug": "2048-expectimax",
+      "title": "2048 + IA expectimax",
+      "group": "logique-jeu",
+      "category": "jeu/IA",
+      "prompt": "Single self-contained HTML file. Implement the game 2048 with arrow-key controls, smooth sliding and merge animations, a score plus a best score, an undo button and a game-over overlay. Add an auto-play mode driven by an expectimax search at depth 3 or 4 that plays one move roughly every 150 ms. No external libraries.",
+      "criteria": [
+        "les fusions et animations d'une seule tuile à l'autre sont correctes",
+        "l'auto-play atteint au moins 512 sans intervention",
+        "l'annulation restaure exactement l'état précédent"
+      ]
+    },
+    {
+      "id": 28,
+      "slug": "minesweeper",
+      "title": "Démineur (premier clic sûr)",
+      "group": "logique-jeu",
+      "category": "jeu",
+      "prompt": "Single self-contained HTML file. Implement Minesweeper on a canvas with three difficulty levels, a first click that is always safe and opens a zero-cell flood reveal, right-click flags, a timer, a remaining-mine counter and a restart button. Reveal all mines on loss. No external libraries.",
+      "criteria": [
+        "le premier clic n'est jamais une mine et ouvre une zone",
+        "clic droit pose/retire un drapeau sans révéler",
+        "chronomètre et compteur de mines restantes corrects"
+      ]
+    },
+    {
+      "id": 29,
+      "slug": "pool-billiards",
+      "title": "Billard (physique + collisions)",
+      "group": "logique-jeu",
+      "category": "physique/jeu",
+      "prompt": "Single self-contained HTML file. Implement a billiards table on a canvas: drag from the cue ball to aim and set the power, elastic ball-to-ball collisions for equal masses, wall bounces with friction, six pockets that capture balls, and a scoreboard counting the potted balls per player. No external libraries.",
+      "criteria": [
+        "les chocs entre billes sont élastiques et sans interpénétration visible",
+        "les six poches capturent réellement les billes",
+        "la puissance et l'angle du tir dépendent du glisser-déposer"
+      ]
+    },
+    {
+      "id": 30,
+      "slug": "mini-golf",
+      "title": "Mini-golf (niveaux + puissance)",
+      "group": "logique-jeu",
+      "category": "jeu",
+      "prompt": "Single self-contained HTML file. Implement a mini-golf game on a canvas with at least four levels defined as data (walls, sand traps that slow the ball, water hazards that cost a stroke), drag-to-aim shooting with a power bar, a stroke counter compared with the par, and a level selector that resets the ball. No external libraries.",
+      "criteria": [
+        "au moins 4 niveaux distincts, définis en données",
+        "sable = ralentissement, eau = pénalité",
+        "le compteur de coups et le par sont affichés"
+      ]
+    },
+    {
+      "id": 31,
+      "slug": "sokoban-solver",
+      "title": "Sokoban + solveur A*",
+      "group": "logique-jeu",
+      "category": "jeu/algorithmique",
+      "prompt": "Single self-contained HTML file. Implement Sokoban on a canvas with at least three hand-made levels, arrow-key movement, undo and restart, a move counter, and an A* solver with simple corner deadlock detection that can animate the solution to the current level step by step. No external libraries.",
+      "criteria": [
+        "les 3 niveaux sont résolvables (le solveur trouve la solution)",
+        "l'animation du solveur est jouée coup par coup",
+        "undo et restart remettent le niveau dans un état exact"
+      ]
+    },
+    {
+      "id": 32,
+      "slug": "tetris",
+      "title": "Tetris (SRS, hold, ghost)",
+      "group": "logique-jeu",
+      "category": "jeu",
+      "prompt": "Single self-contained HTML file. Implement a complete Tetris on a canvas: 7-bag randomiser, hold slot, next-three preview, ghost piece, wall kicks with basic SRS rotation, soft and hard drop, gravity that speeds up with the level, scoring for single/double/triple/tetris, a line-clear animation, pause and game over. No external libraries.",
+      "criteria": [
+        "le 7-bag fonctionne (les 7 pièces sortent avant de répéter)",
+        "les wall kicks permettent les rotations près des murs",
+        "score, niveau, gravité et pièce fantôme cohérents"
+      ]
+    },
+    {
+      "id": 33,
+      "slug": "sand-physics",
+      "title": "Physique du sable (automate cellulaire)",
+      "group": "importes",
+      "category": "physique",
+      "source": "lukesdevlab/youtube — prompts/sand-physics.txt @ a5398076 (12/08/2026)",
+      "criteria": [
+        "sable, eau et acide tombent et s'écoulent (aucun bloc figé)",
+        "l'acide dissout le sable et les murs au contact",
+        "pinceau souris, curseur de taille et bouton de nettoyage fonctionnels"
+      ],
+      "prompt": "Act as an expert software engineer specializing in low-level graphics and simulation algorithms. \n\nYour task is to build a self-contained \"Falling Sand Physics Simulation\" (cellular automata) inside a single, beautifully styled HTML file. The entire application must be written in vanilla HTML, CSS, and JavaScript with NO external libraries or dependencies. \n\n### Visual & UI Requirements:\n1. UI Layout: A clean, modern, dark-themed dashboard. Center the simulation canvas. Provide a control panel on the side or top with styled buttons to select the active material, a \"Clear Canvas\" button, and a slider to adjust brush/drop size.\n2. Canvas Dimensions: Fixed at 400x400 pixels, but stylized via CSS to look crisp and sharp (use `image-rendering: pixelated;`). The internal simulation grid should map to a resolution that ensures high performance (e.g., 100x100 or 150x150 grid cells mapped onto the 400x400 canvas).\n3. Visuals: Elements must have distinct, vibrant colors:\n   - Empty Space: Deep charcoal/black (#1e1e24)\n   - Sand: Rich gold/yellow (#e9c46a)\n   - Water: Vibrant blue (#457b9d)\n   - Wall (Impassable): Solid slate gray (#6c757d)\n   - Acid: Glowing neon green (#55ff33)\n\n### Simulation Mechanics & Physics Rules:\nYou must implement a discrete 2D grid array state and update it using a strict frame-by-frame loop via `requestAnimationFrame`. The physics elements must interact according to these exact rules:\n1. Wall: Static. Cannot move, fall, or be displaced.\n2. Sand: Falls straight down into empty space. If the space directly below is blocked by Sand or Wall, it must attempt to slide diagonally down-left or down-right at random if those spaces are empty. If it falls into Water or Acid, it should sink through it (displace it upward).\n3. Water: Falls straight down. If blocked below, it flows diagonally down-left or down-right. If those are blocked, it must spread out horizontally left or right into empty space until it hits a wall or another element.\n4. Acid: Falls down and flows horizontally exactly like Water, but with a unique property: if it comes into direct contact with Sand or Wall (top, bottom, or sides), it \"dissolves\" both itself and one pixel of that material, turning both cells back into Empty Space.\n\n### Critical Implementation Rules (The Coding Trap):\n- Multi-Pass / Directional Processing: To prevent a single particle from \"teleporting\" from the top of the screen to the bottom in a single frame, you must iterate through the grid from the BOTTOM row up to the top row when processing movement rules.\n- Horizontal Shuffling: When processing diagonal or horizontal movement, randomize whether the engine checks left or right first. If you do not randomize this, the liquids and sand will unnaturally pile up or skew heavily toward one side of the screen.\n- Interaction: Implement smooth mouse dragging on the canvas so the user can \"paint\" streams of elements into the sandbox in real-time.\n\n### Deliverable:\nWrite the complete, production-ready code inside a single HTML file containing the full HTML, CSS, and JavaScript. Do not omit any logic, do not use placeholders, and do not use \"code shortcuts\". It must work immediately when saved as an .html file and opened in a browser.\n\nNote: You may not have access to a browser, dev server, or vision tools — do not rely on running or visually inspecting the simulation for verification. Validate by reading and reasoning about the code instead.\n\nBefore finishing, review the code to confirm:\n- UI control panel (material select, clear canvas, brush size) is wired to the simulation\n- Grid processes bottom-to-top; horizontal/diagonal checks randomize left vs right first\n- Sand, water, and acid follow the stated movement and interaction rules (including acid dissolve)\n- Mouse dragging paints the selected material onto the grid\n- Complete single HTML file with no placeholders or omitted logic"
+    },
+    {
+      "id": 34,
+      "slug": "dungeon-game",
+      "title": "Donjon procédural + brouillard de guerre",
+      "group": "importes",
+      "category": "jeu",
+      "source": "lukesdevlab/youtube — prompts/dungeon-game.txt @ 3288d191 (03/09/2026)",
+      "criteria": [
+        "le donjon généré est connexe (toutes les zones atteignables)",
+        "les tuiles déjà vues restent visibles en sombre (jamais reconverties en noir)",
+        "le raycasting bloque la vision derrière les murs et le god mode révèle tout"
+      ],
+      "prompt": "Act as an expert game engineer specializing in retro rogue-like mechanics and 2D graphics math.\n\nYour task is to build a complete, self-contained \"Procedural Dungeon Generator with Dynamic Fog of War\" inside a single, beautifully styled HTML file. Use vanilla HTML, CSS, and JavaScript with NO external libraries or dependencies.\n\n### Visual & UI Requirements:\n1. UI Layout: A clean, dark cyber-grid theme. Center the canvas. Include a control panel with:\n   - A button to \"Regenerate Map\"\n   - Text display showing current player coordinates\n   - A button to toggle \"God Mode\" (revealing the entire map layout completely for debugging/demonstration).\n2. Canvas Dimensions: Fixed at 600x600 pixels. Use `image-rendering: pixelated;` in CSS. The internal simulation grid should map to exactly 60x60 cells (meaning each map tile is a 10x10 pixel square on the canvas).\n3. Theme Colors:\n   - Unexplored (Never Seen): Absolute pitch black (#000000)\n   - Explored but Not Currently Visible: Dimmed/darker versions of the tile colors (e.g. walls #2a2d3f, floor #5c5360) — the player can still see the layout of areas they have already visited, but not at full brightness\n   - Currently Visible Walls: Deep stone gray (#4a4e69)\n   - Currently Visible Floor: Soft slate gray (#9a8c98)\n   - Player Character: A bright, distinct green square or sprite (#55ff33)\n\n### Core Mechanics & Algorithmic Rules:\nYou must implement a 2D grid array representing the map states (0 = Floor, 1 = Wall) and a secondary 2D array tracking exploration (0 = Unexplored, 1 = Explored). Fog of War must use two layers:\n   - **Explored**: Tiles the player has ever had line of sight to. Once a tile is marked explored, it stays explored permanently for the rest of the session — explored areas do NOT return to full darkness when the player moves away or leaves line of sight.\n   - **Currently Visible**: Tiles within the player's current line-of-sight radius. This is recalculated each frame/move; tiles can leave current visibility but remain explored.\n   Rendering rule: Unexplored tiles render as pitch black. Explored-but-not-visible tiles render dimmed. Currently visible tiles render at full brightness.\n\n1. Map Generation (Choose One Engine):\n   - Option A: Binary Space Partitioning (BSP) to split the grid recursively into rectangular rooms, then carving straight hallway connections between them.\n   - Option B: Cellular Automata (Fill grid randomly with ~45% walls, then run 4-5 simulation steps of Conway's-like rules to create organic cave layouts). Ensure there is an algorithm to connect isolated cavern pockets.\n2. Player Movement: Spawn the player on a valid Floor tile. Implement standard keyboard controls (Arrow keys or WASD) to move the player exactly 1 grid tile per keypress. Prevent walking through Wall tiles.\n3. Raycasting Line of Sight (The Core Math Challenge):\n   - You must calculate the player's real-time visibility radius (limited to 8-10 tiles away).\n   - To do this, cast virtual rays from the player's tile out to every single grid tile along the perimeter of their visibility radius.\n   - For EACH ray, you MUST implement a generalized Bresenham's Line Algorithm to trace the line of grid cells step-by-step from the player to the destination tile.\n   - Trace rules: Mark cells along the line as both \"Explored\" (permanent) and \"Currently Visible\" (temporary). If the line hits a cell marked as a Wall, immediately stop tracing that ray further (blocking vision behind the wall).\n   - After each move, clear the \"Currently Visible\" layer and recalculate it from scratch — but never clear the \"Explored\" layer.\n\n### Deliverable:\nWrite the complete, working code inside a single HTML file containing the HTML, CSS, and JavaScript. Do not leave any functions empty, do not use comments like \"// implement logic here\", and do not omit edge cases. It must run immediately when opened in a web browser.\n\nNote: You may not have access to a browser, dev server, or vision tools — do not rely on running or visually inspecting the game for verification. Validate by reading and reasoning about the code instead.\n\nBefore finishing, review the code to confirm:\n- Map generation (BSP or cellular automata) produces valid floor tiles with connectivity between areas\n- Player moves one tile per keypress and cannot walk through walls\n- Bresenham raycasting marks explored and currently visible cells along each ray and stops at walls\n- Explored tiles remain visible (dimmed) after the player leaves; only never-seen tiles stay pitch black\n- God mode toggle reveals the full map; regenerate resets the map and exploration state\n- Complete single HTML file with no empty functions or placeholder logic"
+    }
+  ]
+}

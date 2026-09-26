@@ -1,0 +1,286 @@
+# Prompt Duel 224
+
+Web app locale qui envoie des prompts à un LLM local (llama.cpp) et génère
+**un fichier HTML autonome par prompt**. Les sorties sont rangées dans
+`runs/<horodatage>__<slug du modèle>__ctx<contexte>__t<température>__nothink/`,
+pour qu'on sache toujours **quel modèle et quels réglages** ont produit quel fichier.
+
+Python 3 **stdlib uniquement** — aucune dépendance, aucun `pip install`, aucun `npm install`.
+
+**v1.1.0** : catalogue porté à **32 prompts répartis en 4 groupes** (canvas 2D facile, canvas 2D
+avancé, 3D/WebGL, logique & jeu), affichés par sections dans l'UI, et `max_tokens` porté à
+**16384** — les prompts 3D et jeu produisent 8k→15k tokens et étaient tronqués à 8192.
+**+2 prompts importés** (groupe `importes`, ids 33→34) : voir « Prompts importés » ci-dessous.
+
+**v1.2.0** : **suivi en direct pendant un tir** — les tirs passent en **streaming SSE**
+(`stream: true` vers llama.cpp), chaque morceau est poussé dans un tampon mémoire lu par
+l'UI via `/api/live` : on voit le texte arriver token par token, la vitesse, le
+raisonnement, et on peut afficher un **aperçu HTML live** de la page en cours d'écriture.
+Voir « Suivi en direct » ci-dessous.
+
+---
+
+## Démarrage
+
+```bash
+cd ~/apps/prompt-duel
+python3 app.py                 # bind 0.0.0.0:8791
+```
+
+UI : **http://<ip-de-la-machine>:8791**
+
+Endpoint du LLM : par défaut `http://127.0.0.1:8080` (llama.cpp local).
+Pour un serveur sur une autre machine : `LLM_BASE=http://192.168.1.50:8080 python3 app.py`.
+
+Variantes :
+
+```bash
+PORT=8899 python3 app.py            # autre port
+HOST=127.0.0.1 python3 app.py       # écoute locale seulement
+LLM_DRY_RUN=1 python3 app.py        # aucun appel à llama.cpp (tests / démo)
+LLM_STREAM=0 python3 app.py         # pas de streaming (tir en un bloc, comme en v1.1)
+LIVE_MAX_CHARS=400000 python3 app.py  # taille max du tampon de suivi en direct
+RUNS_DIR=/tmp/runs-test python3 app.py  # runs ailleurs (instance de test isolée)
+LLM_BASE=http://autre-pc:8080 python3 app.py   # autre endpoint serveur
+```
+
+Le LLM lui-même n'est **pas** lancé par cette app : c'est à l'utilisateur de démarrer
+son serveur llama.cpp. Si llama.cpp est éteint, l'app le détecte,
+affiche une pastille rouge « LLM éteint » et reste utilisable (le journal
+explique l'erreur, pas de traceback dans l'UI).
+
+## Arrêt
+
+`Ctrl-C` dans le terminal, ou, si le service systemd est actif :
+`systemctl --user stop prompt-duel`.
+
+## Service systemd (optionnel)
+
+Exemple d'unité utilisateur — à adapter, `%h` désigne le home de l'utilisateur :
+
+```bash
+systemctl --user status prompt-duel     # doit être « active (running) »
+systemctl --user restart prompt-duel    # après une modification de app.py
+systemctl --user stop prompt-duel
+journalctl --user -u prompt-duel -n 50  # journal systemd
+```
+
+Pour le (re)créer à l'identique :
+
+```bash
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/prompt-duel.service <<'EOF'
+[Unit]
+Description=Prompt Duel 224 (LLM local -> HTML)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 %h/apps/prompt-duel/app.py
+WorkingDirectory=%h/apps/prompt-duel
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now prompt-duel
+```
+
+Si `loginctl enable-linger $USER` demandait sudo : ne pas insister, `python3 app.py`
+dans un terminal suffit parfaitement.
+
+## Catalogue des prompts (`prompts.json`)
+
+Depuis la v1.1, `prompts.json` est un **objet** (format v2) : les prompts sont regroupés,
+et `groups` ordonne l'affichage.
+
+```json
+{
+  "version": 2,
+  "groups": [
+    { "id": "canvas-2d",        "title": "Canvas 2D — niveau facile (v1)", "note": "…" },
+    { "id": "canvas-2d-avance", "title": "Canvas 2D — niveau avancé",      "note": "…" },
+    { "id": "webgl-3d",         "title": "3D / WebGL (three.js r160 CDN)", "note": "…" },
+    { "id": "logique-jeu",      "title": "Logique & jeu",                  "note": "…" }
+  ],
+  "prompts": [
+    { "id": 1, "slug": "lorenz-attractor", "title": "…", "group": "canvas-2d",
+      "category": "physique", "prompt": "…", "criteria": ["…", "…", "…"] }
+  ]
+}
+```
+
+| Groupe | Prompts | Contenu |
+|---|---|---|
+| `canvas-2d` | 10 (ids 1→10) | v1 — canvas 2D, JS vanilla, zéro librairie |
+| `canvas-2d-avance` | 6 (ids 11→16) | Stable Fluids, Gray-Scott, ray tracer CPU, labyrinthe + A*, ondes 2D, métaballs |
+| `webgl-3d` | 8 (ids 17→24) | Mandelbulb, scène 3D, planète procédurale, terrain infini, tesseract, système solaire, trou noir, galaxie GPU |
+| `logique-jeu` | 8 (ids 25→32) | Go 9×9, Puissance 4, 2048, démineur, billard, mini-golf, Sokoban, Tetris |
+| `importes` | 2 (ids 33→34) | Physique du sable (automate cellulaire), Donjon procédural + brouillard de guerre |
+
+- Chaque prompt porte `group` (id de groupe) **et** `category` (domaine fin, affiché en étiquette).
+- **Rétrocompatibilité v1** : un ancien `prompts.json` (tableau racine) reste accepté ; tous ses
+  prompts tombent alors dans le groupe de secours `divers`. Un `group` absent ou inconnu →
+  `divers`, avec une ligne dans le journal. Jamais de plantage, jamais de prompt perdu.
+- ⚠️ Les 8 prompts du groupe `webgl-3d` chargent **three.js r160 depuis un CDN épinglé**
+  (`https://cdn.jsdelivr.net/npm/three@0.160.0/…`) : **connexion Internet requise pour afficher
+  ces 8 pages**. C'est le seul groupe autorisé à charger une librairie externe.
+
+### Prompts importés (groupe `importes`)
+
+Deux prompts récupérés dans l'historique du dépôt public **`lukesdevlab/youtube`**, d'où ils ont
+été **supprimés le 08/09/2026** (commit `a92c9930`, « clear out promots ») :
+
+| id | slug | version récupérée | origine |
+|---|---|---|---|
+| 33 | `sand-physics` | `a5398076` (12/08/2026) | `prompts/sand-physics.txt` |
+| 34 | `dungeon-game` | `3288d191` (03/09/2026) | `prompts/dungeon-game.txt` |
+
+- Textes **verbatim** (aucune reformulation) ; leur `prompt` s'adresse à un agent de code mais
+  demande explicitement « a single HTML file » sans librairie externe, donc compatible avec le
+  message système de l'app. L'extraction HTML tolère la checklist de vérification qui suit le code.
+- Champ `source` conservé dans `prompts.json`, dans `/api/state` et dans la copie
+  `prompts.json` de chaque run (traçabilité).
+
+### `max_tokens`
+
+- Défaut **16384**, surchargeable globalement : `MAX_TOKENS=8192 python3 app.py`.
+- Surcharge **par prompt** : un champ optionnel `"max_tokens"` dans une entrée de `prompts.json`
+  s'applique à ce prompt uniquement (aucun des 34 prompts fournis n'en a besoin — porte de sortie).
+- Le `max_tokens` **effectif** apparaît dans `meta.json` (`params.max_tokens`) et dans `run.json`.
+  Le nommage des dossiers de run ne change pas (`…__t0.2__nothink`).
+- Réponse terminée en `finish_reason: "length"` → le journal le signale
+  (`prompt N : réponse tronquée (length) — HTML probablement incomplet`) : c'est un signal de
+  qualité, pas un crash, et le fichier est écrit normalement.
+
+## Où sont les runs
+
+```
+~/apps/prompt-duel/runs/
+├── latest -> 2026-09-25_2310__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink   (symlink)
+└── 2026-09-25_2310__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink/
+    ├── run.json          # identité du LLM + réglages + résultats
+    ├── prompts.json      # copie des prompts DU RUN (format v2, run sélectionné uniquement)
+    ├── 01_lorenz-attractor/
+    │   ├── index.html    # LE livrable
+    │   ├── meta.json     # prompt envoyé, tokens, tok/s, durée, statut
+    │   └── raw.txt       # SEULEMENT si l'extraction HTML a échoué
+    └── 02_mandelbrot-zoom/…
+```
+
+- `runs/latest` pointe sur le dernier run (recréé à chaque run).
+- Le dossier de run reprend **le nom du `.gguf` réellement chargé** (`GET /v1/models`)
+  et le contexte réel (`GET /props` → `default_generation_settings.n_ctx`).
+  Exemple réellement observé le 25/09/2026 : `Qwen3.8-27B-UD-Q2_K_XL.gguf`, ctx 131072
+  → `runs/2026-09-25_2315__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/`.
+- Depuis l'UI, les liens « ouvrir » passent par `/runs/<run>/…`.
+
+## API
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| GET | `/` | UI (français, dark, sans dépendance) |
+| GET | `/api/state` | état complet (LLM, `prompts_version`, `groups`, prompts, `already_done`, run en cours, progression, résultats, runs passés) |
+| GET | `/api/state?refresh=1` | idem en forçant la re-sonde du LLM (bouton « Re-tester ») |
+| POST | `/api/run` | body `{"ids":[1,4,7]}` → run séquentiel (**jusqu'à 34 ids**, aucun plafond) ; 400 si sélection vide **ou id inconnu**, 409 si un run tourne déjà, 503 si le LLM est éteint |
+| POST | `/api/stop` | arrêt demandé : le prompt en cours va au bout, le suivant n'est pas lancé |
+| GET | `/api/log?since=N` | lignes de journal depuis l'index N |
+| GET | `/api/live?since=C&rsince=R` | suivi en direct : uniquement la suite du texte (`C`) et du raisonnement (`R`) depuis ces curseurs **en caractères** |
+| GET | `/runs/…` | fichiers générés (+ listing de dossier) |
+
+- `groups` = `[{id, title, note, count, prompt_ids}]`, dans l'ordre du fichier.
+- `already_done` = `{"<id>": "<run_id>"}` : prompts déjà générés avec **le même modèle**
+  (`model_slug` + `n_ctx` + même température). L'UI affiche « déjà fait · \<run_id\> ».
+
+## Suivi en direct
+
+Pendant un tir, l'UI affiche dans la carte **« Suivi en direct »** :
+
+- le **texte** produit par le LLM, token par token (défilement auto, bouton *agrandir*) ;
+- le **raisonnement** (`reasoning_content`) s'il y en a — vide en principe, puisque
+  `enable_thinking=false` ; le bloc n'apparaît que s'il y a du contenu ;
+- une ligne d'état : `#id titre · mode · durée · ≈tok/s · ≈tokens · caractères · max_tokens · fin: stop` ;
+- un **aperçu HTML live** (case à cocher, désactivée par défaut) : la page en cours
+  d'écriture est injectée dans une `<iframe sandbox>` et rechargée au plus une fois
+  toutes les 1,5 s. Le HTML partiel est refermé à la volée (`</body></html>`) — les
+  prompts canvas/WebGL commencent donc à s'animer **pendant** la génération ;
+- **copier le texte** (utile pour récupérer une réponse qui ne finit jamais).
+
+Côté serveur : le tir part avec `"stream": true` + `stream_options.include_usage`
+(pour garder les vrais compteurs de tokens), les morceaux sont accumulés dans un
+`LiveStore` borné (`LIVE_MAX_CHARS`, défaut 400 000 caractères) et l'UI ne demande
+que les incréments depuis ses curseurs — elle ne reçoit jamais deux fois le même texte.
+
+Cas particuliers :
+
+- llama.cpp absent / streaming refusé **avant** le premier morceau → repli automatique
+  sur un tir en un bloc (le journal le dit), le prompt n'est pas perdu ;
+- streaming coupé **après** le premier morceau → statut `error`, mais le texte déjà
+  produit est conservé dans `<id>_<slug>/partial.txt` et reste affiché ;
+- `LLM_STREAM=0` → comportement v1.1 (un bloc à la fin) ; le panneau se remplit alors
+  d'un coup au lieu de progresser.
+
+## Le cœur : comment un prompt est tiré
+
+1. **Attente d'un slot libre** — boucle sur `GET /slots` tant que `is_processing`
+   est vrai (poll 5 s), avec « en attente du slot » dans l'UI. Un seul serveur,
+   **un seul slot : jamais deux inférences en parallèle** (un seul worker, séquentiel).
+2. **Remise à zéro du contexte** (les trois mesures à chaque tir) :
+   - `messages` = exactement 1 message système + 1 message utilisateur, jamais d'historique ;
+   - `"cache_prompt": false` ;
+   - `POST /slots/0?action=erase` en best-effort ; si 404/405, le journal note
+     `slot erase non supporté — stateless par construction` et le run continue.
+3. **POST `/v1/chat/completions`** (streaming SSE depuis la v1.2 — `LLM_STREAM=0` pour
+   revenir au tir en un bloc — timeout 1800 s) avec
+   `temperature 0.2`, `top_p 0.95`, `max_tokens 16384` (ou la valeur propre au prompt),
+   `chat_template_kwargs.enable_thinking=false` — **obligatoire**, sinon la réponse
+   part dans `reasoning_content` et `content` peut revenir vide.
+   Les morceaux reçus alimentent le suivi en direct (voir « Suivi en direct ») ; le
+   `content` final reconstitué est strictement celui du tir en un bloc.
+4. **Extraction HTML** : fences ``` retirées, du premier `<!DOCTYPE html` / `<html`
+   au dernier `</html>`. Trouvé → `index.html` ; sinon `raw.txt` + statut `no_html`
+   (le run continue).
+5. **`meta.json`** : prompt envoyé, statut, tokens, tok/s
+   (`timings.predicted_per_second`, sinon `completion_tokens / durée`), durée,
+   timestamp, longueur de la réponse.
+6. **Prompt suivant.** Erreur réseau / HTTP ≠ 200 / timeout → statut `error`
+   enregistré, **la file continue**.
+
+**Idempotence** : si `runs/<run_dir>/<id>_<slug>/index.html` existe déjà, le prompt
+est marqué `déjà généré` et sauté — rien n'est réécrit. Un run identique
+(même modèle, même contexte, mêmes réglages, mêmes ids) relancé dans les
+30 minutes reprend le **même** dossier de run, ce qui rend le « relancer »
+réellement idempotent ; passé ce délai, un nouveau dossier est créé.
+
+## Mode `LLM_DRY_RUN=1`
+
+Aucun contact avec llama.cpp : après 3 s, l'app renvoie un HTML bidon valide
+(`<h1>DRY RUN prompt N</h1>`) plus un `timings` factice, avec le slug `dry-run`.
+Le streaming est **simulé** (12 morceaux espacés) : le suivi en direct est donc
+testable sans llama.cpp. Tout le reste du pipeline est exercé (nommage, écriture,
+`meta.json`, progression, UI). C'est le mode utilisé par les tests automatisés.
+
+## Dépannage
+
+| Symptôme | Cause / solution |
+|---|---|
+| Pastille rouge « LLM éteint » | llama.cpp n'est pas lancé sur l'endpoint configuré. Démarrer le serveur, puis `curl http://127.0.0.1:8080/health` doit répondre `{"status":"ok"}`. |
+| Pastille orange « slot occupé » | Une autre inférence tourne sur le serveur (1 seul slot). L'app attend automatiquement. |
+| Le run semble figé | Normal pendant l'attente de slot ou pendant un long tir (timeout 1800 s). Vérifier le journal. |
+| `content` vide, `finish_reason: length` | Le modèle a raisonné : `enable_thinking` doit être **dans** `chat_template_kwargs` (c'est le cas ici) ou `max_tokens` est trop bas. |
+| Erreur « identité LLM indisponible » | `/v1/models` ou `/props` a échoué au démarrage du run : relancer une fois le serveur stable. |
+| Le nom du modèle dans le dossier ne correspond pas | Normal : il vient de `GET /v1/models` **au moment du run**, jamais d'une supposition. |
+| Journal : `slot erase non supporté — stateless par construction (HTTP 501)` | Information, pas une erreur : ce build de llama.cpp ne supporte pas l'effacement de slot. L'app est stateless par construction (`cache_prompt:false` + 2 messages), donc le tir est propre quand même. |
+| Port déjà utilisé | `PORT=8899 python3 app.py`. |
+| `OSError: [Errno 98] Address already in use` au lancement | Le service `prompt-duel` tourne **déjà** sur 8791 : l'app est donc déjà en ligne sur `http://127.0.0.1:8791`, il n'y a rien à relancer. Pour la lancer à la main : `systemctl --user stop prompt-duel` puis `python3 app.py`. Ou `PORT=8792 python3 app.py`. |
+| Repartir de zéro sur un run | Supprimer le dossier de run concerné (ou juste les `index.html` à régénérer). |
+
+## Fichiers
+
+- `app.py` — serveur HTTP + API + worker d'exécution (stdlib seule).
+- `prompts.json` — les 34 prompts en 5 groupes (format v2) : prompt en anglais, titres et
+  catégories en français, 3 critères vérifiables par prompt.
+- `README.md` — ce fichier.
+- `runs/` — sorties générées.

@@ -1,0 +1,8 @@
+# sorties générées : un dossier par run (HTML par prompt, meta.json, ~1,4 Mo)
+runs/
+# caches Python
+__pycache__/
+*.pyc
+# sauvegardes locales (non versionnées)
+*.bak
+*.bak-*
