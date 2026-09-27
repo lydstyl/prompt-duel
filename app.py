@@ -1194,6 +1194,20 @@ def _delta(b, a):
         return None
 
 
+def _delta_pct(b, a):
+    """Écart relatif (b - a) / a en %, arrondi à 0,1. None si une valeur manque ou si a = 0."""
+    try:
+        if a is None or b is None:
+            return None
+        a = float(a)
+        b = float(b)
+        if a == 0:
+            return None
+        return round((b - a) / abs(a) * 100.0, 1)
+    except (TypeError, ValueError):
+        return None
+
+
 def compare_rows(a, b, params_keys=("duree_s", "tok_s", "completion_tokens", "prompt_tokens")):
     """Une ligne par prompt (union des deux runs), avec les deux côtés et les écarts."""
     ids = sorted(set(a["results"]) | set(b["results"]))
@@ -1204,6 +1218,8 @@ def compare_rows(a, b, params_keys=("duree_s", "tok_s", "completion_tokens", "pr
         delta = {}
         for k in params_keys:
             delta[k] = _delta((rb or {}).get(k), (ra or {}).get(k))
+        delta["duree_pct"] = _delta_pct((rb or {}).get("duree_s"), (ra or {}).get("duree_s"))
+        delta["tok_s_pct"] = _delta_pct((rb or {}).get("tok_s"), (ra or {}).get("tok_s"))
         rows.append({
             "id": rid,
             "title": ref.get("title"),
@@ -1376,12 +1392,16 @@ def render_compare_page(query):
         dbits = []
         if delta.get("tok_s") is not None:
             d = delta["tok_s"]
+            p = delta.get("tok_s_pct")
             cls = "win" if d > 0 else ("lose" if d < 0 else "")
-            dbits.append(f'<span class="{cls}">tok/s {d:+.1f}</span>')
+            extra = f" ({p:+.1f} %)" if p is not None else ""
+            dbits.append(f'<span class="{cls}">tok/s {d:+.1f}{extra}</span>')
         if delta.get("duree_s") is not None:
             d = delta["duree_s"]
+            p = delta.get("duree_pct")
             cls = "win" if d < 0 else ("lose" if d > 0 else "")
-            dbits.append(f'<span class="{cls}">durée {d:+.1f} s</span>')
+            extra = f" ({p:+.1f} %)" if p is not None else ""
+            dbits.append(f'<span class="{cls}">durée {d:+.1f} s{extra}</span>')
         if delta.get("completion_tokens") is not None:
             dbits.append(f'<span class="num">tokens {delta["completion_tokens"]:+.0f}</span>')
         title = html.escape(str(r.get("title") or f'prompt {r["id"]}'))
@@ -2382,6 +2402,11 @@ function cmpDelta(v,lowerIsBetter){
   const cls=v===0?"d-zero":((lowerIsBetter?v<0:v>0)?"d-win":"d-lose");
   return '<span class="'+cls+'">'+(v>0?"+":"")+Number(v).toFixed(1)+'</span>';
 }
+function cmpDeltaPct(v,lowerIsBetter){
+  if(v===null||v===undefined||isNaN(v)) return '<span class="d-zero">—</span>';
+  const cls=v===0?"d-zero":((lowerIsBetter?v<0:v>0)?"d-win":"d-lose");
+  return '<span class="'+cls+'">'+(v>0?"+":"")+Number(v).toFixed(1)+'%</span>';
+}
 function cmpCellA(r,side){
   const x=r[side];
   if(!x) return '<td class="dot" title="absent">·</td><td class="n">—</td><td class="n">—</td><td class="n">—</td>';
@@ -2414,10 +2439,10 @@ function renderCompare(){
     +'<th rowspan="2">#</th><th rowspan="2">Titre</th>'
     +'<th class="gA" colspan="4">A · '+esc(shortModel(d.a.model_slug))+'</th>'
     +'<th class="gB" colspan="4">B · '+esc(shortModel(d.b.model_slug))+'</th>'
-    +'<th colspan="2">écart (B−A)</th><th rowspan="2"></th></tr>'
+    +'<th colspan="4">écart (B−A)</th><th rowspan="2"></th></tr>'
     +'<tr><th class="gA">état</th><th class="gA">durée</th><th class="gA">tok/s</th><th class="gA">tokens</th>'
     +'<th class="gB">état</th><th class="gB">durée</th><th class="gB">tok/s</th><th class="gB">tokens</th>'
-    +'<th>durée s</th><th>tok/s</th></tr></thead><tbody>';
+    +'<th>durée s</th><th>tok/s</th><th>durée %</th><th>tok/s %</th></tr></thead><tbody>';
   const body=rows.map(r=>{
     const t=esc(r.title||("prompt "+r.id));
     const g=esc(r.group||"");
@@ -2428,6 +2453,8 @@ function renderCompare(){
       +cmpCellA(r,"a")+cmpCellA(r,"b")
       +'<td class="n">'+cmpDelta(r.delta.duree_s,true)+'</td>'
       +'<td class="n">'+cmpDelta(r.delta.tok_s,false)+'</td>'
+      +'<td class="n">'+cmpDeltaPct(r.delta.duree_pct,true)+'</td>'
+      +'<td class="n">'+cmpDeltaPct(r.delta.tok_s_pct,false)+'</td>'
       +'<td><a class="cmpbtn" href="'+link+'" target="_blank" rel="noopener">voir les 2</a></td></tr>';
   }).join("");
   box.innerHTML=head+body+'</tbody></table>';
