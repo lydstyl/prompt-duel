@@ -23,6 +23,12 @@ l'UI) et **comparaison de deux runs** — un tableau prompt par prompt avec dur�
 tokens des deux côtés, écarts colorés, et une page `/compare` qui affiche les **deux rendus
 HTML côte à côte** dans l'app. Voir « Comparer deux runs » ci-dessous.
 
+**v1.4.0** : **index unifié des tests** — `bench_index.py` agrège les duels,
+les mesures de vitesse, les batteries de petites tâches, HumanEval et les
+remplissages de contexte dans un `index.json` rangé dans le **vault Obsidian**
+(source de vérité), et la page **`/benchmarks`** les affiche dans l'app.
+Voir « Index des tests et page /benchmarks » ci-dessous.
+
 ---
 
 ## Démarrage
@@ -204,6 +210,7 @@ Deux prompts récupérés dans l'historique du dépôt public **`lukesdevlab/you
 | GET | `/api/compare?a=<run>&b=<run>` | comparaison de deux runs : identité + réglages des deux, une ligne par prompt (union) avec `status`, `duree_s`, `tok_s`, tokens, `open_url`, et les écarts `delta` (b − a) ; 404 si un run est introuvable |
 | GET | `/compare?a=<run>&b=<run>[&ids=26,29]` | page de comparaison visuelle : les deux rendus HTML en `<iframe>` côte à côte, prompt par prompt |
 | GET | `/runs/…` | fichiers générés (+ listing de dossier) |
+| GET | `/benchmarks` | index unifié des tests LLM (duels, vitesse/VRAM, batteries, HumanEval, contexte) — lu dans le vault, copie locale en secours |
 
 - `groups` = `[{id, title, note, count, prompt_ids}]`, dans l'ordre du fichier.
 - `already_done` = `{"<id>": "<run_id>"}` : prompts déjà générés avec **le même modèle**
@@ -264,6 +271,45 @@ dans les deux runs :
 - les iframes portent `sandbox="allow-scripts allow-same-origin allow-pointer-lock
   allow-modals allow-downloads allow-popups"` : les pages générées s'exécutent
   normalement (c'est le même rendu qu'en plein écran), mais elles restent dans leur cadre.
+
+## Index des tests et page `/benchmarks` (v1.4.0)
+
+Les tests LLM d'un même parc vivent éparpillés : duels HTML dans `runs/`, mesures de
+vitesse dans `~/llm/case-*.log`, batteries de petites tâches dans
+`~/llm/smalltasks/results_*.json`, remplissages de contexte dans `~/llm/fill-*.out`.
+`bench_index.py` les **regroupe dans un seul index** et **copie les artefacts dans le
+vault Obsidian**, qui devient la source de vérité :
+
+```
+documents/llm-benchmarks/
+  index.json                  <- l'index (généré)
+  <campagne>/vitesse/         <- case-*.log (miroir de ~/llm)
+  <campagne>/contexte/        <- fill-*.out
+  <campagne>/batteries/       <- results_*.json
+  duels/<run_id>/run.json     <- métadonnées de chaque run de duel
+  humaneval/<test>/humaneval-summary.json
+```
+
+```bash
+python3 bench_index.py              # miroir + parsing + écriture de l'index
+python3 bench_index.py --no-mirror  # ne lit que ce qui est déjà dans le vault
+python3 bench_index.py --print      # affiche l'index au lieu de l'écrire
+```
+
+Variables d'environnement : `BENCH_VAULT_ROOT` (défaut
+`/home/gab/NAS/AgentsMirror/vaults/personnel`), `BENCH_DOCS`, `BENCH_WIKI`, `BENCH_LOG_SRC`
+(défaut `~/llm`), `BENCH_MACHINE`, `BENCH_CAMPAIGN`, `RUNS_DIR`.
+
+La page **`/benchmarks`** (lien « 📊 Benchmarks » dans l'en-tête de l'UI, et lien depuis
+`/compare`) rend cet index : duels HTML (durée, tok/s, prompts aboutis), vitesse & VRAM,
+batteries de 13 petites tâches (score, latence médiane, échecs), HumanEval et remplissages
+de contexte. Elle lit `index.json` dans le vault et retombe sur la copie locale
+`bench_index.json` si le NAS n'est pas monté.
+
+**Méthode des chiffres de vitesse** : le bench envoie **3 fois le même prompt** (489 tokens
+en entrée, 128 en sortie) ; on garde la moyenne des `eval time` du log serveur, seule
+façon d'obtenir des valeurs comparables entre modèles. Un log sans mesure de prefill
+(HumanEval, remplissage de contexte) est ignoré : ce n'est pas un bench de vitesse.
 
 ## Suivi en direct
 
@@ -355,3 +401,8 @@ testable sans llama.cpp. Tout le reste du pipeline est exercé (nommage, écritu
   catégories en français, 3 critères vérifiables par prompt.
 - `README.md` — ce fichier.
 - `runs/` — sorties générées.
+- `benchmarks.py` — page `/benchmarks` : rend l'index unifié (stdlib seule).
+- `bench_index.py` — construit l'index : scanne les runs, miroite les artefacts
+  dans le vault, écrit `index.json` (vault + copie locale).
+- `bench_index.json` — copie locale de l'index (généré ; versionné pour garder
+  l'historique des résultats dans git).

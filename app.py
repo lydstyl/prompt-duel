@@ -44,7 +44,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-APP_VERSION = "1.3.0"
+from benchmarks import render_benchmarks_page  # page /benchmarks (index des tests)
+
+APP_VERSION = "1.4.0"
 
 # Libellé affiché dans l'UI (utile si plusieurs instances)
 APP_TITLE = os.environ.get("APP_TITLE") or "Prompt Duel"
@@ -1339,6 +1341,7 @@ def render_compare_page(query):
             f'<style>{COMPARE_CSS}</style></head><body>'
             '<header><h1>Comparaison de deux runs</h1>'
             '<span style="flex:1"></span>'
+            '<a href="/benchmarks" style="margin-right:14px">benchmarks</a>'
             '<a href="/">← retour à Prompt Duel</a></header><main>')
 
     if err:
@@ -1998,6 +2001,8 @@ select{background:#0d0f14;color:var(--fg);border:1px solid var(--line);border-ra
 #cmp-table .d-lose{color:var(--err)}
 #cmp-table .d-zero{color:var(--dim)}
 .cmpbtn{padding:2px 7px;font-size:11.5px}
+.navlink{color:var(--acc);text-decoration:none;font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+.navlink:hover{background:#171c26}
 </style>
 </head>
 <body>
@@ -2006,6 +2011,7 @@ select{background:#0d0f14;color:var(--fg);border:1px solid var(--line);border-ra
   <div id="llm" class="badge off">état LLM…</div>
   <button id="retest">Re-tester</button>
   <div class="spacer"></div>
+  <a class="navlink" href="/benchmarks">📊 Benchmarks</a>
   <span class="dim" id="ver">v__APP_VERSION__</span>
 </header>
 <main>
@@ -2753,6 +2759,10 @@ class Handler(BaseHTTPRequestHandler):
                         .replace("__APP_VERSION__", APP_VERSION)
                         .replace("__APP_TITLE__", html.escape(APP_TITLE)))
                 return self._send(200, page, "text/html; charset=utf-8", head)
+
+            if path in ("/benchmarks", "/benchmarks/") and method in ("GET", "HEAD"):
+                # index unifie des tests LLM (duels, vitesse, batteries, HumanEval, contexte)
+                return self._send(200, render_benchmarks_page(), "text/html; charset=utf-8", head)
 
             if path == "/api/state" and method in ("GET", "HEAD"):
                 force = str((query.get("refresh") or ["0"])[0]).lower() in ("1", "true", "yes")
