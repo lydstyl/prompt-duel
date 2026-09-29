@@ -154,7 +154,7 @@ def render_body(data):
         rows = []
         for e in speeds:
             rows.append([
-                f'<td>{_esc(e.get("model"))}</td>',
+                f'<td>{_esc(e.get("model"))}<br><span class="dim">{_esc(e.get("label"))}</span></td>',
                 f'<td class="n">{_num(e.get("ctx"),0)}</td>',
                 f'<td class="n">{_num(e.get("tg"))}</td>',
                 f'<td class="n">{_num(e.get("pp"),0)}</td>',
@@ -173,7 +173,7 @@ def render_body(data):
         for e in bat:
             fails = e.get("fails") or []
             rows.append([
-                f'<td>{_esc(e.get("model"))}</td>',
+                f'<td>{_esc(e.get("model"))}<br><span class="dim">{_esc(e.get("label"))}</span></td>',
                 f'<td class="tag">{_esc(e.get("mode"))}</td>',
                 f'<td class="n">{_esc(e.get("score"))}/{_esc(e.get("tasks"))}</td>',
                 f'<td>{_kind_of_score(e.get("score"), e.get("tasks"))}</td>',

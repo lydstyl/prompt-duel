@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-29T20:59:41",
+ "generated_at": "2026-09-29T21:01:10",
  "generator": "bench_index.py (224)",
  "campaign": "224-2026-09-29",
  "vault_root": "/home/gab/NAS/AgentsMirror/vaults/personnel",
@@ -484,7 +484,7 @@
    "tokens": 238115,
    "needle": true,
    "prefill_tps": 904.2,
-   "peak_vram": "10.6 Go Go",
+   "peak_vram": "10.6 Go",
    "note": null,
    "source": "llm-benchmarks/224-2026-09-29/contexte/fill-35b_iq4nl_256k.out",
    "elapsed_s": 263.3
@@ -500,7 +500,7 @@
    "tokens": null,
    "needle": false,
    "prefill_tps": null,
-   "peak_vram": "11.8 Go Go",
+   "peak_vram": "11.8 Go",
    "note": "coupure a 2.6s : RemoteDisconnected",
    "source": "llm-benchmarks/224-2026-09-29/contexte/fill-35b_q4kxl_256k.out"
   },

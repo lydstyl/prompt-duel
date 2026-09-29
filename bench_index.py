@@ -212,7 +212,7 @@ def parse_fill_out(path):
         "tokens": None,
         "needle": None,
         "prefill_tps": None,
-        "peak_vram": (" / ".join(f"{int(p)/1024:.1f} Go" for p in pic) + " Go") if pic else None,
+        "peak_vram": (" / ".join(f"{int(p)/1024:.1f} Go" for p in pic)) if pic else None,
         "note": None,
         "source": os.path.relpath(path, os.path.dirname(VAULT_DOCS)),
     }
