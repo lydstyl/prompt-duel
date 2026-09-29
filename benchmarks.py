@@ -190,7 +190,7 @@ def render_body(data):
 
     # 4) HumanEval
     he = sorted([e for e in entries if e.get("kind") == "humaneval"],
-                key=lambda e: -(e.get("score_pct") or 0))
+                key=lambda e: (-(e.get("total") or 0), -(e.get("score_pct") or 0)))
     if he:
         rows = []
         for e in he:
@@ -206,6 +206,8 @@ def render_body(data):
         out.append('<section class="card"><h2>HumanEval <span class="dim">'
                    'sous-ensemble 0-49, extraction validee 5/5 avant le run, reasoning coupe</span></h2>'
                    + _table(["modele", "config", "passes", "score", "latence/probleme", "temps mural", "date"], rows)
+                   + '<p class="dim">Tri : jeux complets (164 problemes) d\'abord, puis score. '
+                     'Les sous-ensembles courts (5, 23 ou 38 problemes) ne se comparent pas aux runs complets.</p>'
                    + '</section>')
 
     # 5) Contexte (remplissages reels)
