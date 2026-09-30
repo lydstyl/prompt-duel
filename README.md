@@ -29,6 +29,13 @@ remplissages de contexte dans un `index.json` rangé dans le **vault Obsidian**
 (source de vérité), et la page **`/benchmarks`** les affiche dans l'app.
 Voir « Index des tests et page /benchmarks » ci-dessous.
 
+**v1.4.1** : **`reasoning_effort` au premier niveau** du body, en plus de
+`chat_template_kwargs.enable_thinking` (valeur `none` quand le run est demandé sans
+raisonnement, `medium` avec). Certains modèles — le **Ternary Bonsai 2** de PrismML — ignorent
+`enable_thinking` et raisonnent par défaut : sans ce champ, un run « nothink » était en
+réalité un run « think » (durée multipliée, comparaison faussée). Les runtimes qui ne
+connaissent pas le champ l'ignorent, donc aucun effet de bord sur Qwen3.6/3.8 ni Swift.
+
 ---
 
 ## Démarrage

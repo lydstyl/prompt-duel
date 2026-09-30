@@ -140,12 +140,50 @@ def render_body(data):
                 f'<td class="n">{_num(e.get("duration_s"),0," s")}</td>',
                 f'<td class="n">{_num(e.get("tokens_out"),0)}</td>',
                 f'<td class="n">{_num(e.get("tok_s"))}</td>',
+                (f'<td class="n">{_esc(e.get("vram_total_gb"))} Go<br>'
+                 f'<span class="dim">pic duel {_num(e.get("vram_peak_duel_mib"),0," MiB")}</span></td>'
+                 if e.get("vram_total_gb") else '<td class="dim">-</td>'),
                 f'<td><a href="/compare">comparer</a> &middot; <a href="{_esc(e.get("run_url"))}">fichiers</a></td>',
             ])
         out.append('<section class="card"><h2>Duels HTML <span class="dim">'
                    '32+ prompts canvas/3D/jeu &rarr; une page HTML par prompt</span></h2>'
                    + _table(["date", "modele", "ctx", "temp", "reasoning", "prompts", "duree",
-                             "tokens sortie", "tok/s", ""], rows) + '</section>')
+                             "tokens sortie", "tok/s", "VRAM", ""], rows) + '</section>')
+
+    # 1b) Empreinte VRAM (sampler 0,5 s + jalons de phase)
+    vrams = sorted([e for e in entries if e.get("kind") == "vram"],
+                   key=lambda e: (e.get("model") or "", -(e.get("ctx") or 0)))
+    if vrams:
+        rows = []
+        for e in vrams:
+            fits8 = ('<span class="ok">oui</span>' if e.get("fits_8gb") else
+                     '<span class="err">non</span>')
+            fits16 = ('<span class="ok">oui</span>' if e.get("fits_16gb") else
+                      '<span class="err">non</span>')
+            rows.append([
+                f'<td>{_esc(e.get("model"))}<br><span class="dim">{_esc(e.get("quant") or "")} '
+                f'&middot; {_esc(e.get("label"))}</span></td>',
+                f'<td class="n">{_num(e.get("ctx"),0)}</td>',
+                f'<td class="dim">{_esc(e.get("gpu"))}</td>',
+                f'<td class="n">{_num(e.get("loaded_mib"),0)}</td>',
+                f'<td class="n">{_num(e.get("peak_gen_mib"),0)}</td>',
+                f'<td class="n">{_num(e.get("peak_prefill_mib"),0)}</td>',
+                f'<td class="n">{_num(e.get("peak_duel_mib"),0)}</td>',
+                f'<td class="n"><b>{_num(e.get("total_gb"),2)} Go</b></td>',
+                f'<td>{fits8}</td>',
+                f'<td>{fits16}</td>',
+                f'<td class="n">{_num(e.get("tg"))}</td>',
+                f'<td class="dim">{_esc(e.get("note") or "")}</td>',
+            ])
+        out.append('<section class="card"><h2>Empreinte VRAM <span class="dim">'
+                   'echantillonnage 0,5 s sur une seule carte &middot; pic = maximum mesure '
+                   '(prefill et duel inclus)</span></h2>'
+                   + _table(["modele / quant", "ctx", "GPU", "charge MiB", "pic gen", "pic prefill",
+                             "pic duel", "total", "8 Go ?", "16 Go ?", "TG t/s", "note"], rows)
+                   + '<p class="dim">« charge » = mediane au repos apres <code>/health</code> ; '
+                     '« pic » = maximum des echantillons sur la fenetre de phase. '
+                     'Tient dans 8 Go = pic total &le; 7 800 MiB ; 16 Go = pic &le; 15 800 MiB '
+                     '(marge volontairement large : le bureau occupe la carte d\'affichage).</p></section>')
 
     # 2) Vitesse & VRAM
     speeds = sorted([e for e in entries if e.get("kind") == "speed"],

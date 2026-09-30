@@ -17,6 +17,19 @@ l'UI — le nom du dossier de run les enregistre) et **comparaison de deux runs*
 (`/api/compare`, page `/compare` avec les deux rendus HTML côte à côte) pour
 opposer deux modèles ou deux réglages prompt par prompt.
 
+v1.4.1 : envoi de `reasoning_effort` **au premier niveau** du body en plus de
+`chat_template_kwargs.enable_thinking` — certains modèles (Ternary Bonsai 2 de
+PrismML) ignorent ce dernier et raisonnent par défaut : sans ce champ, un run
+« sans raisonnement » est en réalité un run « avec raisonnement ». Valeurs :
+`none` (run demandé sans raisonnement) / `medium` (avec). Les runtimes qui ne
+connaissent pas ce champ l'ignorent → rétrocompatible (Qwen3.6/3.8, Swift).
+
+v1.5.0 : **tests cochables dans l'app** — vitesse (prefill/génération en t/s), mémoire
+de contexte (needle à 128k et 256k), intelligence (batterie de 13 tâches FR, HumanEval
+50/164), avec **estimation de la durée avant lancement** (mesures du modèle si connues,
+sinon valeurs par défaut) et résultats écrits dans `benches/<run>/` (+ `bench.json`,
+`bench.md`, `<test>.log`). Module `bench_tests.py`.
+
 Python 3 stdlib UNIQUEMENT — aucune dépendance externe.
 
 Lancement :
@@ -34,6 +47,7 @@ import errno
 import json
 import os
 import re
+import subprocess
 import sys
 import threading
 import time
@@ -44,9 +58,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
+import bench_tests  # tests vitesse / mémoire de contexte / intelligence (v1.5)
 from benchmarks import render_benchmarks_page  # page /benchmarks (index des tests)
 
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.5.0"
 
 # Libellé affiché dans l'UI (utile si plusieurs instances)
 APP_TITLE = os.environ.get("APP_TITLE") or "Prompt Duel"
@@ -61,6 +76,18 @@ BASE_DIR = Path(__file__).resolve().parent
 RUNS_DIR = Path(os.environ.get("RUNS_DIR") or (BASE_DIR / "runs"))
 RUNS_LATEST = RUNS_DIR / "latest"
 PROMPTS_FILE = BASE_DIR / "prompts.json"
+
+# --- tests (v1.5) ----------------------------------------------------------
+# Un dossier de bench par session de tests, à côté des runs de duel.
+BENCH_DIR = Path(os.environ.get("BENCH_DIR") or (BASE_DIR / "benches"))
+BENCH_CALIB_FILE = BENCH_DIR / "bench_calib.json"
+# Harnais HumanEval : lancé depuis le .102 (le serveur qui héberge l'app est le .224).
+BENCH_HE_SSH = os.environ.get("BENCH_HE_SSH", "lydstyl@192.168.3.102")
+BENCH_HE_DIR = os.environ.get("BENCH_HE_DIR", "/home/lydstyl/llm-bench")
+BENCH_HE_RESULTS = os.environ.get("BENCH_HE_RESULTS", "/home/lydstyl/llm-bench/results")
+# Harnais locaux du .224 (batterie de 13 tâches, bench de vitesse du parc).
+BENCH_LLM_HOME = os.environ.get("BENCH_LLM_HOME", "/home/gab/llm")
+BENCH_LOG_SRC = os.environ.get("BENCH_LOG_SRC", BENCH_LLM_HOME)
 
 HOST = os.environ.get("HOST", "0.0.0.0")
 try:
@@ -503,6 +530,12 @@ def _chat_payload(prompt, max_tokens, stream=False, params=None):
         "max_tokens": int(max_tokens or params["max_tokens"]),
         "cache_prompt": params["cache_prompt"],
         "chat_template_kwargs": {"enable_thinking": params["enable_thinking"]},
+        # v1.4.1 — champ de PREMIER NIVEAU : certains modèles (Ternary Bonsai 2,
+        # PrismML) ignorent `chat_template_kwargs.enable_thinking` et raisonnent
+        # par défaut. Seul `reasoning_effort` les éteint ("none") ; "medium"
+        # raccourcit le raisonnement quand il est demandé. Les runtimes qui ne
+        # connaissent pas le champ l'ignorent simplement (rétrocompatible).
+        "reasoning_effort": "medium" if params["enable_thinking"] else "none",
         "stream": bool(stream),
     }
     if stream:
@@ -723,6 +756,11 @@ class State:
         self.stop_requested = False
         self.worker = None
         self._run_json_path = None
+        # --- tests (v1.5) : un seul worker à la fois, comme pour les duels ------
+        self.bench = None
+        self.bench_worker = None
+        self.bench_stop = False
+        self._bench_json_path = None
 
 
 STATE = State()
@@ -1840,6 +1878,331 @@ def start_run(ids, params=None):
     return True, "run lancé"
 
 
+# --------------------------------------------------------------------------
+# Tests : vitesse / mémoire de contexte / intelligence (v1.5)
+#
+# Un test = un workload déclaré dans bench_tests.py, exécuté par le même genre de
+# worker que les duels (thread unique : le serveur llama.cpp n'a qu'un seul slot).
+# Les chiffres viennent du serveur (timings) ou des harnais du parc ; l'ESTIMATION
+# avant lancement vient de bench_calib.json (mesures déjà faites sur ce modèle).
+# --------------------------------------------------------------------------
+
+def llm_is_local():
+    """Vrai si le serveur LLM sert sur CETTE machine (scripts locaux + nvidia-smi)."""
+    try:
+        host = urlparse(LLM_BASE).hostname or ""
+    except Exception:
+        host = ""
+    return host in ("127.0.0.1", "localhost", "0.0.0.0", "::1")
+
+
+def bench_label(model_slug, n_ctx):
+    """Étiquette des artefacts : <slug court>-<ctx>k (convention des cas du parc)."""
+    slug = re.sub(r"[^a-z0-9]+", "-", (model_slug or "modele").lower()).strip("-")
+    slug = re.sub(r"-gguf$", "", slug)[:40].strip("-")
+    k = int(n_ctx or 0) // 1024
+    return f"{slug}-{k}k" if k else slug
+
+
+def bench_calib():
+    return bench_tests.load_calib(str(BENCH_CALIB_FILE))
+
+
+def bench_calib_entry(probe=None):
+    probe = probe if probe is not None else (STATE.probe or {})
+    key = bench_tests.calib_key(probe.get("model_slug"), probe.get("n_ctx"))
+    return bench_calib().get(key) or {}
+
+
+_HE_CACHE = {"at": 0.0, "ok": None, "err": None}
+
+
+def he_remote_ok(max_age=60.0):
+    """Le harnais HumanEval répond-il sur la machine d'à côté ? (mis en cache 60 s)"""
+    now = time.time()
+    if _HE_CACHE["ok"] is not None and (now - _HE_CACHE["at"]) < max_age:
+        return _HE_CACHE["ok"], _HE_CACHE["err"]
+    ok, err = False, None
+    try:
+        p = subprocess.run(
+            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", BENCH_HE_SSH,
+             f"test -f {BENCH_HE_DIR}/run_he.py && echo OK"],
+            capture_output=True, text=True, timeout=25)
+        ok = "OK" in (p.stdout or "")
+        if not ok:
+            err = f"harnais HumanEval injoignable ({BENCH_HE_SSH}:{BENCH_HE_DIR}/run_he.py)"
+    except Exception as exc:
+        err = f"ssh {BENCH_HE_SSH} impossible ({exc.__class__.__name__})"
+    _HE_CACHE.update({"at": now, "ok": ok, "err": err})
+    return ok, err
+
+
+_SERVER_NOTE = {"at": 0.0, "note": None}
+
+
+def llm_server_note(max_age=30.0):
+    """Note sur la ligne de commande du serveur local — le draft MTP fausse les scores
+    HumanEval (réponses corrompues observées le 11/08 : ~15 % avec draft, 1,8 % sans)."""
+    if not llm_is_local() or DRY_RUN:
+        return None
+    now = time.time()
+    if (now - _SERVER_NOTE["at"]) < max_age:
+        return _SERVER_NOTE["note"]
+    note = None
+    try:
+        out = subprocess.run(["ps", "-eo", "args="], capture_output=True, text=True,
+                             timeout=10).stdout
+        for line in out.splitlines():
+            if "llama-server" in line and "-m " in line:
+                if "--spec-type draft" in line or "--draft" in line:
+                    note = ("draft MTP actif sur le serveur : les scores HumanEval peuvent être "
+                            "corrompus (~15 % historiquement) — sans draft pour un run officiel")
+                break
+    except Exception:
+        note = None
+    _SERVER_NOTE.update({"at": now, "note": note})
+    return note
+
+
+def bench_availability(test, probe=None):
+    """(disponible, raison) — contexte réellement servi + harnais présents."""
+    probe = probe if probe is not None else (STATE.probe or {})
+    if DRY_RUN:
+        return True, None
+    need = test.get("needs_ctx") or 0
+    have = probe.get("n_ctx")
+    if need and have and have < need:
+        return False, (f"serveur à ctx {have} — il faut ≥ {need} "
+                       f"(recharge le modèle avec -c {need})")
+    if test["kind"] == "batterie":
+        if not llm_is_local():
+            return False, f"harnais local : LLM_BASE doit être 127.0.0.1 (ici {LLM_BASE})"
+        script = os.path.join(BENCH_LLM_HOME, test["script"])
+        if not os.path.exists(script):
+            return False, f"harnais absent : {script}"
+    if test["kind"] == "humaneval":
+        if not BENCH_HE_SSH or not BENCH_HE_DIR:
+            return False, "harnais HumanEval non configuré (BENCH_HE_SSH / BENCH_HE_DIR)"
+        ok, why = he_remote_ok()
+        if not ok:
+            return False, why
+    return True, None
+
+
+def bench_catalog(probe=None):
+    """Catalogue prêt pour l'UI : estimation, provenance, disponibilité, dernier chiffre."""
+    probe = probe if probe is not None else (STATE.probe or {})
+    entry = bench_calib_entry(probe)
+    return bench_tests.catalog(entry, availability=lambda t: bench_availability(t, probe))
+
+
+def make_bench_result(test, est_s):
+    return {"id": test["id"], "group": test["group"], "title": test["title"],
+            "status": "pending", "est_s": est_s, "duree_s": None, "summary": None,
+            "erreur": None, "metrics": {}, "log": f"{test['id']}.log", "vram_peak": None,
+            "started_at": None, "finished_at": None}
+
+
+def any_worker_running():
+    with STATE.lock:
+        return bool((STATE.worker and STATE.worker.is_alive())
+                    or (STATE.bench_worker and STATE.bench_worker.is_alive()))
+
+
+def write_bench_json():
+    """Écrit bench.json + bench.md — appelé après CHAQUE test (un run coupé reste exploitable)."""
+    path = STATE._bench_json_path
+    if not path:
+        return
+    with STATE.lock:
+        data = json.loads(json.dumps(STATE.bench or {}))
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        (path.parent / "bench.md").write_text(bench_tests.render_md(data), encoding="utf-8")
+    except OSError as exc:
+        LOG.add(f"écriture du bench impossible : {exc}")
+
+
+def bench_worker(ids):
+    """Exécute les tests choisis, un par un. Un test en échec n'arrête pas la suite."""
+    try:
+        if DRY_RUN:
+            model_path, model_slug, n_ctx = "dry-run", "dry-run", DRY_N_CTX
+        else:
+            try:
+                model_path, n_ctx = fetch_model_identity()
+                model_slug = model_slug_from_path(model_path)
+            except Exception as exc:
+                LOG.add(f"ERREUR tests : identité LLM indisponible ({exc})")
+                with STATE.lock:
+                    for r in STATE.bench["results"]:
+                        r["status"] = "error"
+                        r["erreur"] = f"LLM injoignable ({exc})"
+                    STATE.bench["status"] = "error"
+                    STATE.bench["finished_at"] = now_iso()
+                write_bench_json()
+                return
+
+        label = bench_label(model_slug, n_ctx)
+        base = datetime.now().strftime("%Y-%m-%d_%H%M") + f"__{label}__tests"
+        run_dir = BENCH_DIR / base
+        n = 2
+        while run_dir.exists():
+            run_dir = BENCH_DIR / f"{base}-{n}"
+            n += 1
+        run_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            port = urlparse(LLM_BASE).port or 8080
+        except Exception:
+            port = 8080
+        env = bench_tests.BenchEnv(
+            base=LLM_BASE, port=port, label=label, run_dir=str(run_dir),
+            local=llm_is_local(), dry=DRY_RUN, ssh=BENCH_HE_SSH, he_dir=BENCH_HE_DIR,
+            he_results=BENCH_HE_RESULTS, llm_home=BENCH_LLM_HOME, log_src=BENCH_LOG_SRC,
+            model_slug=model_slug, model_path=model_path, n_ctx=n_ctx)
+        with STATE.lock:
+            STATE._bench_json_path = run_dir / "bench.json"
+            STATE.bench.update({
+                "run_id": run_dir.name, "run_dir": str(run_dir),
+                "run_url": f"/benches/{run_dir.name}/", "label": label,
+                "model_path": model_path, "model_slug": model_slug, "n_ctx": n_ctx,
+                "status": "running",
+            })
+        LOG.add(f"bench {run_dir.name} — modèle {model_slug} (ctx {n_ctx})")
+        LIVE.clear_if_other_run(run_dir.name)
+        LIVE.begin(run_dir.name, "tests", "Tests", label, mode="tests")
+
+        for tid in ids:
+            with STATE.lock:
+                if STATE.bench_stop:
+                    LOG.add("tests : stop demandé — les tests restants ne sont pas lancés")
+                    break
+                res = next((r for r in STATE.bench["results"] if r["id"] == tid), None)
+                test = bench_tests.TESTS_BY_ID.get(tid)
+                if res is None or test is None:
+                    continue
+                res["status"] = "running"
+                res["started_at"] = now_iso()
+                LIVE.set_status("running")
+
+            def emit(line, _tid=tid):
+                LOG.add(f"[{_tid}] {line}")
+                LIVE.append("content", str(line) + "\n")
+
+            out = bench_tests.run_test(test, env, emit, lambda: STATE.bench_stop)
+            with STATE.lock:
+                res.update({k: out.get(k) for k in ("status", "metrics", "summary", "erreur",
+                                                    "duree_s", "log", "vram_peak")})
+                res["finished_at"] = now_iso()
+            calib = bench_calib()
+            key = bench_tests.calib_key(model_slug, n_ctx)
+            if out.get("calib"):
+                bench_tests.update_calib(calib, key, out["calib"],
+                                         last_summary=out.get("summary"), test_id=tid)
+                bench_tests.save_calib(str(BENCH_CALIB_FILE), calib)
+            write_bench_json()
+
+        with STATE.lock:
+            results = STATE.bench["results"]
+            if STATE.bench_stop:
+                for r in results:
+                    if r["status"] == "pending":
+                        r["status"] = "skipped"
+                STATE.bench["status"] = "stopped"
+            elif any(r["status"] == "error" for r in results):
+                STATE.bench["status"] = "partial"
+            else:
+                STATE.bench["status"] = "finished"
+            STATE.bench["finished_at"] = now_iso()
+        write_bench_json()
+        LOG.add(f"tests terminés — {STATE.bench['run_id']} ({STATE.bench['status']})")
+        LIVE.finish("ok")
+
+    except Exception as exc:  # filet : jamais de traceback, jamais de bench perdu
+        LOG.add(f"ERREUR worker tests : {exc!r}")
+        with STATE.lock:
+            if STATE.bench:
+                STATE.bench["status"] = "error"
+                STATE.bench["finished_at"] = now_iso()
+        write_bench_json()
+    finally:
+        with STATE.lock:
+            STATE.bench_stop = False
+            STATE.bench_worker = None
+        probe_llm(force=True)
+
+
+def start_bench(ids):
+    ids = [str(i) for i in ids]
+    with STATE.lock:
+        if any_worker_running():
+            return False, "un traitement est déjà en cours (duel ou tests)"
+        tests = [bench_tests.TESTS_BY_ID[i] for i in ids if i in bench_tests.TESTS_BY_ID]
+        if not tests:
+            return False, "sélection vide"
+        probe = dict(STATE.probe or {})
+        cat = {c["id"]: c for c in bench_catalog(probe)}
+        STATE.bench_stop = False
+        STATE.bench = {
+            "run_id": None, "run_dir": None, "run_url": None,
+            "started_at": now_iso(), "finished_at": None,
+            "endpoint": LLM_BASE, "model_path": None, "model_slug": None, "n_ctx": None,
+            "label": None, "dry_run": DRY_RUN, "app_version": APP_VERSION,
+            "python_version": sys.version.split()[0],
+            "vram_note": bench_tests.vram_now() if llm_is_local() else None,
+            "notes": llm_server_note(),
+            "selected_ids": ids, "status": "running",
+            "est_total_s": round(sum((cat.get(i) or {}).get("est_s") or 0 for i in ids), 1),
+            "results": [make_bench_result(t, (cat.get(t["id"]) or {}).get("est_s"))
+                        for t in tests],
+        }
+        worker = threading.Thread(target=bench_worker, args=(ids,), name="prompt-duel-bench",
+                                  daemon=True)
+        STATE.bench_worker = worker
+        worker.start()
+    LOG.add(f"tests lancés — {len(ids)} test(s) : {ids}")
+    return True, "tests lancés"
+
+
+def list_past_benches(limit=50):
+    """Sessions de tests passées (les plus récentes d'abord) — lues dans bench.json."""
+    if not BENCH_DIR.exists():
+        return []
+    out = []
+    try:
+        dirs = sorted([p for p in BENCH_DIR.iterdir() if p.is_dir()], key=lambda p: p.name,
+                      reverse=True)
+    except OSError:
+        return []
+    for d in dirs[:max(1, limit)]:
+        meta = d / "bench.json"
+        if not meta.exists():
+            continue
+        try:
+            data = json.loads(meta.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        res = data.get("results") or []
+        counts = {}
+        for r in res:
+            counts[r.get("status") or "?"] = counts.get(r.get("status") or "?", 0) + 1
+        out.append({
+            "run_id": data.get("run_id") or d.name,
+            "url": f"/benches/{d.name}/",
+            "model_slug": data.get("model_slug"),
+            "n_ctx": data.get("n_ctx"),
+            "label": data.get("label"),
+            "started_at": data.get("started_at"),
+            "finished_at": data.get("finished_at"),
+            "status": data.get("status"),
+            "tests": [(r.get("id"), r.get("summary")) for r in res],
+            "resumes": [r.get("summary") for r in res if r.get("summary")],
+            "counts": counts,
+        })
+    return out
+
+
 def build_state(force_probe=False, params=None):
     params = normalize_params(params)
     probe = probe_llm(force=force_probe)
@@ -1854,7 +2217,7 @@ def build_state(force_probe=False, params=None):
             run["is_running"] = bool(STATE.worker is not None and STATE.worker.is_alive())
         is_running = bool(STATE.worker is not None and STATE.worker.is_alive())
         stop_requested = STATE.stop_requested
-        return {
+        payload = {
             "app_version": APP_VERSION,
             "prompts_version": STATE.prompts_version,
             "dry_run": DRY_RUN,
@@ -1875,6 +2238,83 @@ def build_state(force_probe=False, params=None):
             "stop_requested": stop_requested,
             "runs": list_past_runs(),
         }
+    # hors du verrou : le catalogue des tests sonde la machine d'à côté (ssh, 60 s de cache)
+    payload["tests"] = build_tests_state(probe)
+    return payload
+
+
+def build_tests_state(probe=None):
+    """Bloc « tests » de /api/state : catalogue + estimation + session en cours."""
+    probe = probe if probe is not None else (STATE.probe or {})
+    with STATE.lock:
+        bench = json.loads(json.dumps(STATE.bench)) if STATE.bench else None
+        if bench:
+            results = bench.get("results") or []
+            done = sum(1 for r in results if r.get("status") in
+                       ("ok", "partial", "error", "skipped"))
+            est_total = bench.get("est_total_s") or 0
+            est_done = sum((r.get("est_s") or 0) for r in results
+                           if r.get("status") in ("ok", "partial", "error", "skipped"))
+            real_done = sum((r.get("duree_s") or 0) for r in results)
+            bench["progress"] = {"done": done, "total": len(results),
+                                 "est_done_s": round(est_done, 1),
+                                 "est_left_s": round(max(0.0, est_total - est_done), 1),
+                                 "real_done_s": round(real_done, 1)}
+            bench["current"] = next((r["id"] for r in results if r.get("status") == "running"),
+                                    None)
+            bench["is_running"] = bool(STATE.bench_worker and STATE.bench_worker.is_alive())
+        is_running = bool(STATE.bench_worker and STATE.bench_worker.is_alive())
+    return {
+        "groups": [dict(g) for g in bench_tests.GROUPS],
+        "catalog": bench_catalog(probe),
+        "run": bench,
+        "is_running": is_running,
+        "stop_requested": STATE.bench_stop,
+        "server_note": llm_server_note(),
+        "vram_now": bench_tests.vram_now() if llm_is_local() else None,
+        "benches": list_past_benches(20),
+        "calib_key": bench_tests.calib_key(probe.get("model_slug"), probe.get("n_ctx")),
+    }
+
+
+def render_tests_html():
+    """Lignes de tests rendues côté serveur (même logique que les prompts : lisibles sans JS).
+
+    Chaque ligne porte son `data-test` : le JS ne fait que réactualiser l'estimation,
+    la disponibilité (contexte réellement servi) et le statut, sans reconstruire le DOM.
+    """
+    catalog = bench_catalog()
+    by_group = {}
+    for c in catalog:
+        by_group.setdefault(c["group"], []).append(c)
+    parts = []
+    for g in bench_tests.GROUPS:
+        items = by_group.get(g["id"]) or []
+        if not items:
+            continue
+        rows = []
+        for c in items:
+            dis = "" if c["available"] else " disabled"
+            rows.append(
+                '<label class="prompt" title="%s">'
+                '<input type="checkbox" data-test="%s"%s>'
+                '<div><div class="t">%s <span class="done" id="tlast-%s"></span></div>'
+                '<div class="d">%s<br><span class="dim" id="test-est-%s">≈ %s (%s)</span>'
+                '<span class="dim" id="test-why-%s"></span></div></div>'
+                '<div class="st pending" id="tst-%s">en attente</div></label>'
+                % (html.escape(c["desc"]), c["id"], dis, html.escape(c["title"]), c["id"],
+                   html.escape(c["desc"]), c["id"], c["est_label"], c["est_source"],
+                   c["id"], c["id"])
+            )
+        note = f' <span class="note">{html.escape(g["note"])}</span>' if g.get("note") else ""
+        parts.append(
+            f'<details class="grp" open data-tgroup="{html.escape(g["id"])}">'
+            f'<summary><b>{html.escape(g["title"])}</b> · <span class="dim tcount"></span>{note}</summary>'
+            '<div class="grpbar"><button data-tact="all">cocher le groupe</button>'
+            '<button data-tact="none">décocher le groupe</button></div>'
+            f'<div class="grprows">{"".join(rows)}</div></details>'
+        )
+    return "\n".join(parts)
 
 
 def render_prompts_html():
@@ -2048,6 +2488,31 @@ select{background:#0d0f14;color:var(--fg);border:1px solid var(--line);border-ra
 
   <section class="card">
     <div class="row">
+      <h2>Tests — vitesse · mémoire · intelligence</h2>
+      <button id="t-all">Tout cocher</button>
+      <button id="t-none">Tout décocher</button>
+      <div class="spacer"></div>
+      <span id="t-count" class="dim">0 / 0 sélectionné(s)</span>
+    </div>
+    <div id="tests">__TESTS_HTML__</div>
+    <div class="row" style="margin-top:10px">
+      <button id="t-launch" class="primary" disabled>Lancer les tests</button>
+      <button id="t-stop" class="danger" disabled>Stop</button>
+      <div class="spacer"></div>
+      <span id="t-est" class="dim">—</span>
+    </div>
+    <div class="bar"><div id="t-barfill"></div></div>
+    <div id="t-msg"></div>
+    <div id="t-info" class="dim">Aucun test lancé pour l'instant — coche des tests puis « Lancer les tests ».</div>
+    <div id="t-results" style="margin-top:8px"><span class="dim">—</span></div>
+    <details class="rz" id="t-past" style="margin-top:10px">
+      <summary>tests passés (<span id="t-pastn">0</span>)</summary>
+      <div id="t-pastbox"><span class="dim">—</span></div>
+    </details>
+  </section>
+
+  <section class="card">
+    <div class="row">
       <h2>Comparer deux runs</h2>
       <span class="dim">même prompt, deux modèles ou deux réglages</span>
       <div class="spacer"></div>
@@ -2172,7 +2637,8 @@ function updateCount(){
 
 function updateButtons(s){
   const running = !!(s.run && s.run.is_running);
-  document.getElementById("launch").disabled = running || checked.size===0 || !llmUsable(s);
+  const tbusy = !!(s.tests && s.tests.is_running);
+  document.getElementById("launch").disabled = running || tbusy || checked.size===0 || !llmUsable(s);
   document.getElementById("stop").disabled = !running;
 }
 
@@ -2289,6 +2755,7 @@ function render(s){
   renderDone(s);
   renderRun(s);
   renderPast(s);
+  renderTests(s);
   fillRunSelects(s);
   updateCount();
 }
@@ -2371,9 +2838,21 @@ function runLabel(r){
   const d=String(r.started_at||r.run_id||"?").slice(0,16).replace("T"," ");
   const n=(r.selected_ids||[]).length;
   const c=r.counts||{};
-  const ok=(c.ok||0)+(c.no_html||0)+(c.deja_genere||0);
-  return d+" · "+shortModel(r.model_slug)+" · ctx"+(r.n_ctx==null?"?":r.n_ctx)
-         +" · "+(r.params_label||"")+" · "+ok+"/"+(n||"?")+" ok";
+  // ⚠️ Ne JAMAIS agréger no_html (ou deja_genere) dans « ok » : une page tronquée
+  // (finish_reason=length) n'est pas une page réussie. C'est précisément ce qui
+  // distingue deux modèles — un compteur qui les additionne efface la mesure.
+  const ok=(c.ok||0);
+  const nh=(c.no_html||0);
+  const err=(c.error||0);
+  const deja=(c.deja_genere||0);
+  let s=d+" · "+shortModel(r.model_slug)+" · ctx"+(r.n_ctx==null?"?":r.n_ctx)
+        +" · "+(r.params_label||"")+" · "+ok+"/"+(n||"?")+" ok";
+  const extra=[];
+  if(nh) extra.push(nh+" pas de HTML");
+  if(err) extra.push(err+" erreur"+(err>1?"s":""));
+  if(deja) extra.push(deja+" deja genere");
+  if(extra.length) s+=" · "+extra.join(" · ");
+  return s;
 }
 async function fetchRuns(){          // liste complète (au-delà des 30 du polling)
   try{
@@ -2482,6 +2961,209 @@ async function loadCompare(){
     CMP.data=d;renderCompare();
   }catch(e){summary.textContent="Erreur réseau : "+e;}
 }
+
+/* ---------------- tests vitesse / mémoire / intelligence (v1.5) ----------------
+   Chaque test est un workload du serveur (bench_tests.py) : vitesse prefill/gen,
+   needle 128k/256k, batterie FR, HumanEval. L'UI coche, annonce la DURÉE ESTIMÉE
+   (mesures déjà faites sur ce modèle si elles existent, sinon valeurs par défaut)
+   et affiche les chiffres mesurés + le pic VRAM. */
+const TCAT=new Map();          // id -> entrée du catalogue (fourni par le serveur)
+const tchecked=new Set();
+const TLABEL={pending:"en attente",running:"en cours",ok:"ok",partial:"partiel",
+              error:"erreur",skipped:"arrêté"};
+
+function dur(s){
+  if(s===null||s===undefined||isNaN(s)) return "—";
+  s=Math.round(s);
+  if(s<90) return s+" s";
+  if(s<5400) return Math.round(s/60)+" min";
+  return (s/3600).toFixed(1)+" h";
+}
+
+function tTotals(){
+  let est=0,mes=0,def=0,unavail=0;
+  tchecked.forEach(id=>{
+    const c=TCAT.get(id); if(!c) return;
+    if(!c.available){unavail++;return;}
+    est+=c.est_s;
+    if(c.est_source==="mesuré") mes++; else def++;
+  });
+  return {est:est,mes:mes,def:def,unavail:unavail,n:tchecked.size};
+}
+
+function tUpdateEstimate(){
+  const t=tTotals();
+  document.getElementById("t-count").textContent=t.n+" / "+TCAT.size+" sélectionné(s)";
+  const bits=[];
+  if(t.n) bits.push("sélection : "+t.n+" test"+(t.n>1?"s":""));
+  if(t.est>0) bits.push("≈ "+dur(t.est));
+  if(t.mes&&!t.def) bits.push("d'après des mesures sur ce modèle");
+  else if(t.def) bits.push("estimation par défaut ("+t.def+" test"+(t.def>1?"s":"")+")");
+  if(t.unavail) bits.push("⚠️ "+t.unavail+" indisponible(s), non compté(s)");
+  document.getElementById("t-est").textContent=bits.length?bits.join(" · "):"—";
+  document.querySelectorAll("#tests details.grp").forEach(det=>{
+    const gid=det.dataset.tgroup;
+    const items=Array.from(TCAT.values()).filter(c=>c.group===gid);
+    const sel=items.filter(c=>tchecked.has(c.id));
+    const est=sel.reduce((a,c)=>a+(c.available?c.est_s:0),0);
+    const el=det.querySelector(".tcount");
+    if(el) el.textContent=items.length+" test"+(items.length>1?"s":"")+" · "+sel.length+" coché(s)"
+      +(sel.length?" · ≈ "+dur(est):"");
+  });
+  if(lastState) updateButtons(lastState);
+}
+
+function renderTestRun(s){
+  const T=s.tests||{};
+  const run=T.run;
+  const running=!!T.is_running;
+  document.getElementById("t-launch").disabled = running || tchecked.size===0
+      || !llmUsable(s) || !!(s.run && s.run.is_running);
+  document.getElementById("t-stop").disabled = !running;
+  const bar=document.getElementById("t-barfill");
+  const info=document.getElementById("t-info");
+  const box=document.getElementById("t-results");
+  if(run){
+    (run.results||[]).forEach(r=>{
+      const cell=document.getElementById("tst-"+r.id);
+      if(!cell) return;
+      const st=r.status||"pending";
+      cell.className="st "+st;
+      let txt=TLABEL[st]||st;
+      const bits=[];
+      if(r.duree_s!==null&&r.duree_s!==undefined) bits.push(num(r.duree_s,1)+" s");
+      else if(r.est_s!==null&&r.est_s!==undefined) bits.push("≈ "+dur(r.est_s));
+      if(bits.length) txt+=" · "+bits.join(" · ");
+      cell.textContent=txt;
+    });
+  }
+  if(!run){
+    bar.style.width="0%";
+    info.className="dim";
+    info.textContent="Aucun test lancé pour l'instant — coche des tests puis « Lancer les tests »."
+      +(T.server_note?(" ⚠️ "+T.server_note):"");
+    box.innerHTML='<span class="dim">—</span>';
+    return;
+  }
+  const p=run.progress||{done:0,total:0};
+  bar.style.width=(p.total?(100*p.done/p.total):0)+"%";
+  info.className="";
+  info.innerHTML='<div class="row"><span class="dim">Dossier :</span> <span class="path">'+esc(run.run_dir||"?")+'</span></div>'+
+    '<div class="row"><span class="dim">Modèle :</span> <code>'+esc(run.model_slug||"identification…")+'</code>'+
+    ' <span class="dim">· ctx</span> '+esc(run.n_ctx==null?"?":run.n_ctx)+
+    ' <span class="dim">· étiquette</span> '+esc(run.label||"?")+
+    ' <span class="dim">· début</span> '+esc(run.started_at||"?")+
+    ' <span class="dim">· fin</span> '+esc(run.finished_at||"—")+
+    ' <span class="dim">· <a href="'+esc(run.run_url||"#")+'" target="_blank">parcourir le dossier</a></span></div>'+
+    '<div class="row"><span class="dim">Avancement :</span> '+p.done+" / "+p.total+
+    ' <span class="dim">· déjà écoulé</span> '+dur(p.real_done_s)+
+    ' <span class="dim">· reste estimé</span> '+dur(p.est_left_s)+
+    (run.vram_note?' <span class="dim">· VRAM au lancement</span> '+esc(run.vram_note):"")+'</div>'+
+    (T.server_note?('<div class="row" style="color:var(--warn)">⚠️ '+esc(T.server_note)+'</div>'):'');
+  const rows=(run.results||[]).map(r=>'<tr><td>'+esc(r.title)+'</td>'+
+    '<td class="st '+(r.status||"")+'">'+esc(TLABEL[r.status]||r.status||"")+'</td>'+
+    '<td>'+esc(dur(r.est_s))+'</td><td>'+num(r.duree_s,1)+'</td>'+
+    '<td>'+esc(r.summary||r.erreur||"—")+
+    (r.vram_peak?'<br><span class="dim">VRAM pic '+esc(r.vram_peak)+'</span>':'')+'</td>'+
+    '<td>'+(r.log&&run.run_url?'<a href="'+esc(run.run_url+r.log)+'" target="_blank">log</a>':"—")+'</td></tr>').join("");
+  box.innerHTML='<table><thead><tr><th>Test</th><th>Statut</th><th>Estimé</th><th>Réel (s)</th><th>Chiffres</th><th>Brut</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function renderTestPast(s){
+  const list=(s.tests||{}).benches||[];
+  document.getElementById("t-pastn").textContent=list.length;
+  const box=document.getElementById("t-pastbox");
+  if(!list.length){box.innerHTML='<span class="dim">—</span>';return;}
+  const rows=list.map(b=>'<tr><td><a href="'+esc(b.url)+'" target="_blank">'+esc(b.run_id)+'</a></td>'+
+    '<td>'+esc(b.model_slug||"?")+'</td><td>'+esc(b.n_ctx==null?"?":b.n_ctx)+'</td>'+
+    '<td>'+esc(String(b.started_at||"?").slice(0,16).replace("T"," "))+'</td>'+
+    '<td>'+esc(b.status||"?")+'</td><td class="dim">'+esc((b.resumes||[]).join(" · ")||"—")+'</td></tr>').join("");
+  box.innerHTML='<table><thead><tr><th>Bench</th><th>Modèle</th><th>ctx</th><th>Début</th><th>Statut</th><th>Chiffres</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function renderTests(s){
+  const T=s.tests;
+  if(!T) return;
+  TCAT.clear();
+  (T.catalog||[]).forEach(c=>TCAT.set(c.id,c));
+  (T.catalog||[]).forEach(c=>{
+    const chk=document.querySelector('#tests input[data-test="'+c.id+'"]');
+    if(chk){
+      chk.disabled=!c.available;
+      if(!c.available&&chk.checked){chk.checked=false;tchecked.delete(c.id);}
+    }
+    const est=document.getElementById("test-est-"+c.id);
+    if(est) est.textContent="≈ "+c.est_label+" ("+c.est_source
+      +(c.needs_ctx?" · ctx ≥ "+Math.round(c.needs_ctx/1024)+"k":"")+")";
+    const why=document.getElementById("test-why-"+c.id);
+    if(why) why.textContent=c.available?"":("  ⛔ "+c.reason);
+    const last=document.getElementById("tlast-"+c.id);
+    if(last) last.textContent=c.last?("dernier · "+c.last+" ("+String(c.last_at||"").slice(0,10)+")"):"";
+  });
+  tUpdateEstimate();
+  renderTestRun(s);
+  renderTestPast(s);
+}
+
+function wireTests(){
+  const box=document.getElementById("tests");
+  box.addEventListener("change",e=>{
+    if(e.target&&e.target.type==="checkbox"&&e.target.dataset.test){
+      const id=e.target.dataset.test;
+      if(e.target.checked) tchecked.add(id); else tchecked.delete(id);
+      tUpdateEstimate();
+    }
+  });
+  box.addEventListener("click",e=>{
+    const b=e.target.closest("button[data-tact]");
+    if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const det=b.closest("details.grp");
+    const gid=det?det.dataset.tgroup:null;
+    Array.from(TCAT.values()).filter(c=>c.group===gid).forEach(c=>{
+      const ck=document.querySelector('#tests input[data-test="'+c.id+'"]');
+      if(b.dataset.tact==="all"&&c.available){tchecked.add(c.id);if(ck) ck.checked=true;}
+      else {tchecked.delete(c.id);if(ck) ck.checked=false;}
+    });
+    tUpdateEstimate();
+  });
+  tUpdateEstimate();
+}
+
+async function launchTests(){
+  const ids=Array.from(tchecked);
+  document.getElementById("t-msg").textContent="";
+  if(!ids.length){document.getElementById("t-msg").textContent="Sélection vide.";return;}
+  try{
+    const r=await fetch("/api/tests/run",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({ids:ids})});
+    const d=await r.json();
+    if(!r.ok||d.error) document.getElementById("t-msg").textContent=d.error||("HTTP "+r.status);
+    refresh(true);
+  }catch(e){document.getElementById("t-msg").textContent="Erreur réseau : "+e;}
+}
+
+async function stopTests(){
+  try{
+    await fetch("/api/tests/stop",{method:"POST",headers:{"content-type":"application/json"},body:"{}"});
+    refresh(true);
+  }catch(e){}
+}
+
+document.getElementById("t-all").onclick=()=>{
+  Array.from(TCAT.values()).forEach(c=>{
+    const ck=document.querySelector('#tests input[data-test="'+c.id+'"]');
+    if(c.available){tchecked.add(c.id);if(ck) ck.checked=true;}
+  });
+  tUpdateEstimate();
+};
+document.getElementById("t-none").onclick=()=>{
+  document.querySelectorAll("#tests input[type=checkbox]").forEach(c=>c.checked=false);
+  tchecked.clear();
+  tUpdateEstimate();
+};
+document.getElementById("t-launch").onclick=launchTests;
+document.getElementById("t-stop").onclick=stopTests;
 
 /* ---------------- suivi en direct (v1.2) ----------------
    Le serveur garde le texte du tir courant ; on ne demande que la suite
@@ -2658,6 +3340,7 @@ document.getElementById("livecopy").onclick=async()=>{
 };
 
 wireList();
+wireTests();
 loadSettings();
 refresh(true);
 fetchRuns();
@@ -2751,6 +3434,7 @@ class Handler(BaseHTTPRequestHandler):
                 }
                 page = (INDEX_HTML
                         .replace("__GROUPS_HTML__", render_prompts_html())
+                        .replace("__TESTS_HTML__", render_tests_html())
                         # "</" échappé : un prompt contient littéralement </script> (import map
                         # three.js) et fermerait la balise <script> avant l'heure. "<\/" est
                         # équivalent à "/" une fois le JSON analysé, donc aucune perte.
@@ -2827,7 +3511,7 @@ class Handler(BaseHTTPRequestHandler):
                 ids = sorted(set(ids))
                 with STATE.lock:
                     known_ids = {p["id"] for p in STATE.prompts}
-                    running = STATE.worker is not None and STATE.worker.is_alive()
+                    running = any_worker_running()
                 unknown = [i for i in ids if i not in known_ids]
                 if unknown:
                     return self._json(400, {"ok": False,
@@ -2848,6 +3532,57 @@ class Handler(BaseHTTPRequestHandler):
                                                        "message": msg,
                                                        "params": normalize_params(body)})
 
+            if path == "/api/tests/run" and method == "POST":
+                body = self._read_body()
+                ids = body.get("ids") or []
+                if not isinstance(ids, list) or not ids:
+                    return self._json(400, {"ok": False, "error": "sélection vide"})
+                ids = [str(i) for i in ids]
+                unknown = [i for i in ids if i not in bench_tests.TESTS_BY_ID]
+                if unknown:
+                    return self._json(400, {"ok": False,
+                                            "error": f"tests inconnus : {unknown}"})
+                if any_worker_running():
+                    return self._json(409, {"ok": False,
+                                            "error": "un traitement est déjà en cours "
+                                                     "(duel ou tests)"})
+                probe = probe_llm(force=True)
+                if probe["status"] == "off":
+                    return self._json(503, {
+                        "ok": False,
+                        "error": f"LLM éteint ou injoignable sur {LLM_BASE} — les tests de "
+                                 f"vitesse et de contexte ont besoin du serveur "
+                                 f"({probe.get('error') or 'injoignable'})",
+                    })
+                # disponibilité : le contexte réellement servi doit couvrir le test
+                refused = []
+                for tid in ids:
+                    ok, why = bench_availability(bench_tests.TESTS_BY_ID[tid], probe)
+                    if not ok:
+                        refused.append(f"{tid} : {why}")
+                if refused:
+                    return self._json(409, {"ok": False, "error": "test(s) indisponible(s) — "
+                                                               + " | ".join(refused)})
+                ok, msg = start_bench(ids)
+                return self._json(200 if ok else 409, {"ok": ok, "message": msg,
+                                                       "error": None if ok else msg})
+
+            if path == "/api/tests/stop" and method == "POST":
+                with STATE.lock:
+                    if STATE.bench_worker is None or not STATE.bench_worker.is_alive():
+                        return self._json(409, {"ok": False, "error": "aucun test en cours"})
+                    STATE.bench_stop = True
+                LOG.add("stop demandé — le test en cours est interrompu, le suivant ne part pas")
+                return self._json(200, {"ok": True, "message": "arrêt demandé"})
+
+            if path == "/api/benches" and method in ("GET", "HEAD"):
+                try:
+                    limit = int((query.get("limit") or ["20"])[0])
+                except ValueError:
+                    limit = 20
+                return self._json(200, {"benches": list_past_benches(max(1, min(limit, 200)))},
+                                  head)
+
             if path == "/api/stop" and method == "POST":
                 with STATE.lock:
                     if STATE.worker is None or not STATE.worker.is_alive():
@@ -2855,6 +3590,9 @@ class Handler(BaseHTTPRequestHandler):
                     STATE.stop_requested = True
                 LOG.add("stop demandé — le prompt en cours va au bout, le suivant ne sera pas lancé")
                 return self._json(200, {"ok": True, "message": "arrêt demandé"})
+
+            if path.startswith("/benches/"):
+                return self._serve_static(path, "/benches/", BENCH_DIR, head)
 
             if path.startswith("/runs/"):
                 return self._serve_runs(path, head)
@@ -2867,13 +3605,16 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 pass
 
-    # -- fichiers de run ---------------------------------------------------
+    # -- fichiers de run / de bench ----------------------------------------
     def _serve_runs(self, path, head):
-        rel = path[len("/runs/"):]
-        target = (RUNS_DIR / rel)
+        return self._serve_static(path, "/runs/", RUNS_DIR, head)
+
+    def _serve_static(self, path, prefix, root_dir, head):
+        rel = path[len(prefix):]
+        target = (root_dir / rel)
         try:
             resolved = target.resolve()
-            root = RUNS_DIR.resolve()
+            root = root_dir.resolve()
             if root != resolved and root not in resolved.parents:
                 return self._send(403, "403 interdit\n")
         except Exception:
@@ -2885,7 +3626,7 @@ class Handler(BaseHTTPRequestHandler):
         if resolved.is_dir():
             entries = sorted(resolved.iterdir(), key=lambda p: (p.is_file(), p.name))
             links = []
-            if resolved != RUNS_DIR.resolve():
+            if resolved != root_dir.resolve():
                 links.append('<li><a href="../">../</a></li>')
             for e in entries:
                 if e.name.startswith(".tmp"):
@@ -2908,6 +3649,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    BENCH_DIR.mkdir(parents=True, exist_ok=True)
     STATE.prompts, STATE.groups, STATE.prompts_version = load_catalog()
     LOG.add(f"prompt-duel v{APP_VERSION} (python {sys.version.split()[0]})")
     n_v1 = sum(1 for p in STATE.prompts if p["group"] == "canvas-2d")
@@ -2919,6 +3661,9 @@ def main():
     LOG.add(f"réglages par défaut : {params_label(DEFAULT_PARAMS)} "
             "(modifiables dans l'UI, pour chaque run)")
     LOG.add(f"endpoint LLM : {LLM_BASE}")
+    LOG.add(f"benches : {BENCH_DIR} — {len(bench_tests.TESTS)} tests cochables "
+            f"({len(bench_tests.GROUPS)} familles : "
+            f"{', '.join(g['id'] for g in bench_tests.GROUPS)})")
     if DRY_RUN:
         LOG.add("MODE LLM_DRY_RUN=1 — aucun appel réseau vers llama.cpp")
     LOG.add(f"runs : {RUNS_DIR}")

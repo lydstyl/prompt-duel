@@ -42,6 +42,11 @@ LOCAL_INDEX = os.path.join(APP_DIR, "bench_index.json")
 
 # Libelles -> nom de modele lisible. Le plus specifique d'abord.
 MODEL_PRETTY = [
+    (r"^bonsai2[_-]?ptq1", "Ternary Bonsai 2 27B"),
+    (r"^bonsai2[_-]?pq2", "Ternary Bonsai 2 27B"),
+    (r"^bonsai2b", "Bonsai 2 1-bit"),
+    (r"^bonsai1", "Bonsai 1 (1-bit)"),
+    (r"^k2h37", "K2 Horizon 3.7B"),
     (r"^35b[_-]iq4nl", "Qwen3.6-35B-A3B UD-IQ4_NL"),
     (r"^35b[_-]q4kxl", "Qwen3.6-35B-A3B UD-Q4_K_XL"),
     (r"^swift15", "Swift-1.5-27B IQ4_XS"),
@@ -52,7 +57,67 @@ MODEL_PRETTY = [
     (r"qwen3\.8-27b", "Qwen3.8-27B"),
     (r"flash-?next", "FlashNext 177B"),
 ]
-CTX_SUFFIX = {"128k": 131072, "256k": 262144, "262k": 262144, "32k": 32768, "64k": 65536}
+CTX_SUFFIX = {"128k": 131072, "256k": 262144, "262k": 262144, "32k": 32768, "64k": 65536,
+              "8k": 8192, "16k": 16384, "48k": 49152, "96k": 98304, "192k": 196608,
+              "224k": 229376, "512k": 524288}
+
+# --- conventions de nommage des cas VRAM (bonsai_case.py) ---------------------
+# <famille>-<quant>[-b8][-<ctx>k][-t<n>][-mmproj]   ex. bonsai2-ptq1-32k, bonsai2-pq2-b8-16k-t2
+VRAM_FAMILY = {
+    "bonsai2": "Ternary Bonsai 2 27B",
+    "bonsai2b": "Bonsai 2 (1-bit)",
+    "bonsai1": "Bonsai 1 (1-bit)",
+    "k2h37": "K2 Horizon 3.7B",
+}
+# taille du modele dans le label (le 8B et le 27B de la famille Bonsai 1 ne doivent
+# pas se confondre dans l'index)
+VRAM_SIZE = {"27b": "27B", "8b": "8B", "4b": "4B", "1.7b": "1.7B", "3.7b": "3.7B"}
+VRAM_QUANT = {
+    "ptq1": "PTQ1_0", "pq2": "PQ2_0", "q1": "Q1_0", "q2": "Q2_0", "q2g64": "Q2_0_g64",
+    "q4km": "Q4_K_M", "q4ks": "Q4_K_S", "q4kxl": "Q4_K_XL", "q5km": "Q5_K_M",
+    "q6k": "Q6_K", "q8": "Q8_0", "iq4nl": "IQ4_NL", "iq4xs": "IQ4_XS", "f16": "F16",
+}
+
+
+def vram_label_spec(label):
+    """Decoupe un label de cas VRAM -> (famille, quant, ctx, budget_go, note)."""
+    parts = [p for p in re.split(r"[-_]", label or "") if p]
+    fam = None
+    quant = None
+    ctx = None
+    size = None
+    budget = 16
+    note = []
+    for i, p in enumerate(parts):
+        low = p.lower()
+        if fam is None and low in VRAM_FAMILY:
+            fam = VRAM_FAMILY[low]
+            continue
+        if quant is None and low in VRAM_QUANT:
+            quant = VRAM_QUANT[low]
+            continue
+        if low in VRAM_SIZE:
+            size = VRAM_SIZE[low]
+            continue
+        m = re.fullmatch(r"(\d+)k", low)
+        if m:
+            ctx = int(m.group(1)) * 1024
+            continue
+        if low in ("b8", "8go", "8gb"):
+            budget = 8
+        elif low in ("b16", "16go", "16gb"):
+            budget = 16
+        elif low == "mmproj":
+            note.append("mmproj")
+        elif low.startswith("t") and low[1:].isdigit():
+            note.append(f"essai {low[1:]}")
+        elif low == "nokvoff":
+            note.append("KV en RAM")
+        else:
+            note.append(p)
+    if fam and size:
+        fam = f"{fam} {size}"
+    return fam, quant, ctx, budget, ", ".join(note) or None
 
 
 def pretty_model(label):
@@ -294,11 +359,189 @@ def parse_humaneval(path):
     return out
 
 
+# ---------------------------------------------------------------- VRAM (sampler)
+def _median(vals):
+    vals = sorted(vals)
+    if not vals:
+        return None
+    n = len(vals)
+    return round(vals[n // 2] if n % 2 else (vals[n // 2 - 1] + vals[n // 2]) / 2, 1)
+
+
+def _norm_row(parts, want):
+    """Realigne une ligne CSV quand awk a ecrit la decimale a la francaise
+    (ancien sampler sans LC_ALL=C) : l'epoch « 1790711851,408 » occupe deux
+    champs. La largeur du CSV est une CONTRAINTE : jamais de devinette muette."""
+    if len(parts) == want + 1:
+        parts = [parts[0], parts[1] + "." + parts[2]] + parts[3:]
+    return parts if len(parts) == want else None
+
+
+def parse_vram_csv(path):
+    """Entree de type `vram` depuis un CSV produit par vram-sample.sh.
+
+    Le CSV est la PREUVE : les chiffres (idle, charge, pics gen/duel/prefill) sont
+    recalcules ici a partir des echantillons et des jalons de phase
+    (`vram-<label>.phases`), jamais recopies d'un resume. Le pic retenu est le
+    maximum sur la carte reellement chargee (celle dont l'occupation max est la
+    plus forte), pas la somme des deux cartes.
+    """
+    base = os.path.basename(path)
+    if ".rss." in base or not base.endswith(".csv"):
+        return None
+    label = base[len("vram-"):-len(".csv")]
+    if label.startswith("probe-"):
+        # cas « probe » de la recherche de contexte budget 8 Go : servent de
+        # preuve pour la recherche, mais ne sont PAS publies dans l'index.
+        return None
+    txt = read_text(path)
+    samples = []          # (epoch, gpu, used)
+    for line in txt.splitlines()[1:]:
+        p = _norm_row(line.split(","), 8)
+        if p is None:
+            continue
+        try:
+            samples.append((float(p[1]), int(p[2]), float(p[3]), float(p[4])))
+        except ValueError:
+            continue
+    if not samples:
+        return None
+    gpus = {}
+    for ep, g, used, total in samples:
+        cur = gpus.setdefault(g, {"ep": [], "used": [], "total": total})
+        cur["ep"].append(ep)
+        cur["used"].append(used)
+    # details du cas (commande exacte, extra) ecrits par bonsai_case.py
+    case_path = os.path.join(LOG_SRC, f"case-{label}.json")
+    try:
+        with open(case_path, encoding="utf-8") as fh:
+            case = json.load(fh)
+    except (OSError, ValueError):
+        case = {}
+
+    # quelle carte sert ? le cas le dit (gpu_index) ; sinon, la carte dont
+    # l'occupation AUGMENTE le plus (delta max-min) — jamais celle du bureau.
+    want = case.get("gpu_index")
+    if want in gpus:
+        serving = want
+    else:
+        serving = max(gpus, key=lambda g: max(gpus[g]["used"]) - min(gpus[g]["used"]))
+    d = gpus[serving]
+    total_mib = d["total"]
+    series = sorted(zip(d["ep"], d["used"]))
+
+    phases = {}
+    pm = re.search(r"\.csv$", path)
+    phases_path = path[:pm.start()] + ".phases"
+    for line in read_text(phases_path).splitlines():
+        if "," in line:
+            t, name = line.split(",", 1)
+            try:
+                phases.setdefault(name.strip(), float(t))
+            except ValueError:
+                pass
+
+    def window(a, b):
+        t0 = phases.get(a) if a else (series[0][0] if series else None)
+        t1 = phases.get(b)
+        if t0 is None:
+            return []
+        return [u for ep, u in series if ep >= t0 and (t1 is None or ep < t1)]
+
+    after = [u for ep, u in series if "ready" in phases and ep >= phases["ready"]]
+
+    def peak(seg):
+        return round(max(seg), 1) if seg else None
+
+    idle = window(None, "load")
+    loaded = window("ready", "ready_end")
+    gen = window("speed", "battery_end") or window("speed", "speed_end")
+    duel_w = window("duel", "duel_end")
+    fill_w = window("fill", "fill_end")
+    peak_all = peak(after)
+    idle_med = _median(idle)
+
+    # RSS pic du process llama-server
+    rss = None
+    rss_path = path[:pm.start()] + ".rss.csv"
+    if os.path.exists(rss_path):
+        vals = []
+        for line in read_text(rss_path).splitlines()[1:]:
+            p = _norm_row(line.split(","), 5)
+            if p is None:
+                continue
+            try:
+                vals.append(int(float(p[3])))
+            except ValueError:
+                pass
+        rss = round(max(vals) / 1024, 1) if vals else None
+
+    cmd = case.get("cmd") or ""
+    ngl = None
+    m = re.search(r"-ngl\s+(\d+)", cmd)
+    if m:
+        ngl = int(m.group(1))
+    fam, quant, ctx_label, budget, note_extra = vram_label_spec(label)
+    ctx = case.get("n_ctx") or ctx_label
+    gpu_name = case.get("gpu") or f"nvidia-smi #{serving} ({total_mib/1024:.0f} Go)"
+    if case.get("gpu_index") is not None and serving != case.get("gpu_index"):
+        gpu_name += f" [mesure sur GPU {serving}]"
+    extra = (case.get("extra") or "") + " " + cmd
+    notes = [n for n in [note_extra] if n]
+    if "--no-kv-offload" in extra:
+        notes.append("KV en RAM")
+    if "--mmproj" in extra:
+        notes.append("mmproj")
+    if case.get("error"):
+        notes.append(f"erreur : {case['error']}")
+    duel = case.get("duel") or {}
+    speed = case.get("speed") or {}
+    return {
+        "kind": "vram",
+        "date": case.get("started") or datetime.fromtimestamp(
+            os.path.getmtime(path)).isoformat(timespec="seconds"),
+        "label": label,
+        "model": fam or pretty_model(label),
+        "quant": quant,
+        "ctx": ctx,
+        "gpu": gpu_name,
+        "idle_mib": _median(idle),
+        "loaded_mib": _median(loaded),
+        "peak_gen_mib": peak(gen),
+        "peak_duel_mib": peak(duel_w),
+        "peak_prefill_mib": peak(fill_w or window("fill", "fill_end")),
+        "peak_mib": peak_all,
+        "peak_net_mib": (round(peak_all - (idle_med or 0), 1)
+                         if peak_all is not None else None),
+        "total_gb": round(peak_all / 1024, 2) if peak_all else None,
+        "budget_gb": budget,
+        "fits_8gb": (peak_all is not None and peak_all <= 7800),
+        "fits_16gb": (peak_all is not None and peak_all <= 15800),
+        "fits_8gb_net": (peak_all is not None and (peak_all - (idle_med or 0)) <= 7800),
+        "fits_16gb_net": (peak_all is not None and (peak_all - (idle_med or 0)) <= 15800),
+        "rss_mib": rss,
+        "kv_offload": "--no-kv-offload" not in extra,
+        "ngl": ngl,
+        "loading_s": case.get("load_s"),
+        "tg": speed.get("tg_t_s"),
+        "pp": speed.get("pp_t_s"),
+        "duel_run_id": duel.get("run_id"),
+        "n_samples": len(series),
+        "note": " · ".join(notes) or None,
+        "source": os.path.relpath(path, os.path.dirname(VAULT_DOCS)),
+    }
+
+
 # ---------------------------------------------------------------- mirror
 MIRROR_RULES = [
     ("case-*.log", "vitesse"),
     ("case-*.full.log", "vitesse"),
     ("fill-*.out", "contexte"),
+    ("vram-*.csv", "vram"),
+    ("vram-*.json", "vram"),
+    ("vram-*.phases", "vram"),
+    ("vram-*.meta.txt", "vram"),
+    ("case-*.json", "vitesse"),
     ("smalltasks/results_*.json", "batteries"),
 ]
 
@@ -412,6 +655,32 @@ def build(mirror=True, verbose=True):
             entries.append(entry)
     for path in sorted(glob.glob(os.path.join(VAULT_DOCS, "**/humaneval-summary*.json"), recursive=True)):
         entries += parse_humaneval(path)
+
+    # --- empreinte VRAM (samples 0,5 s + jalons de phase) --------------------
+    vram_entries = []
+    for path in sorted(glob.glob(os.path.join(VAULT_DOCS, "**/vram-*.csv"), recursive=True)):
+        entry = parse_vram_csv(path)
+        if entry:
+            vram_entries.append(entry)
+    entries += vram_entries
+
+    # croisement duel <-> VRAM : le pic du duel alimente la ligne du duel
+    by_run = {e["duel_run_id"]: e for e in vram_entries if e.get("duel_run_id")}
+    for e in entries:
+        if e.get("kind") == "duel" and e.get("run_id") in by_run:
+            v = by_run[e["run_id"]]
+            e["vram_peak_duel_mib"] = v.get("peak_duel_mib")
+            e["vram_total_gb"] = (round(v["peak_duel_mib"] / 1024, 2)
+                                  if v.get("peak_duel_mib") else None)
+            e["vram_source"] = v.get("source")
+
+    # croisement vitesse <-> VRAM : TG/PP du meme label quand le cas ne les a pas
+    speed_by_label = {e.get("label"): e for e in entries if e.get("kind") == "speed"}
+    for v in vram_entries:
+        s = speed_by_label.get(v.get("label"))
+        if s:
+            v["tg"] = v.get("tg") or s.get("tg")
+            v["pp"] = v.get("pp") or s.get("pp")
 
     index = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),

@@ -1,5 +1,9 @@
 # sorties générées : un dossier par run (HTML par prompt, meta.json, ~1,4 Mo)
 runs/
+# sorties des tests (vitesse, mémoire, intelligence) : chiffres + logs bruts.
+# ⚠️ contient les résultats de la batterie de 13 tâches FR (données de domaine :
+# locataires, banque) → jamais dans le dépôt public, vault uniquement.
+benches/
 # caches Python
 __pycache__/
 *.pyc
