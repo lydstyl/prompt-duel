@@ -952,6 +952,65 @@ def series_for_chart(entries, *, metric_key, kind=None, include_partial=False):
             "include_partial": bool(include_partial)}
 
 
+# --------------------------------------------------------------- catalogue
+def series_catalogue(entries, *, include_empty=False):
+    """Catalogue des series proposees au CHOIX de `/graph` (etape 1).
+
+    Une serie = une **variante** (`variant["key"]`) : un modele ET ses reglages
+    (contexte, MTP, thinking, temperature, KV...). C'est exactement ce que
+    l'utilisateur coche : « un LLM ou plutot un reglage ».
+
+    -> [{"key", "label", "points", "partiels", "kinds", "last_date"}]
+       * `points`    : entrees chiffrees TRACABLES par defaut (hors partiels) ;
+       * `partiels`  : entrees chiffrees mais partielles (duel qui a perdu des
+                       prompts) : non tracees par defaut, mais la serie existe ;
+       * `kinds`     : familles presentes, triees (canoniques) ;
+       * `last_date` : date ISO du dernier resultat chiffre ("" si inconnue).
+
+    Tri **stable** : dernier resultat d'abord, puis nombre de points, puis cle.
+    Une serie sans aucun point chiffre (rien a tracer : entrees en erreur) est
+    ecartee, sauf `include_empty=True`. Une serie dont TOUS les resultats sont
+    partiels est gardee : elle se trace des que « tracer aussi les resultats
+    partiels » est coche.
+    """
+    buckets = {}
+    for entry in normalize_entries(entries or []):
+        variant = entry.get("variant") or entry_variant(entry)
+        key = str(variant.get("key") or "standard")
+        bucket = buckets.get(key)
+        if bucket is None:
+            bucket = buckets[key] = {
+                "key": key, "label": str(variant.get("label") or key),
+                "points": 0, "partiels": 0, "kinds": set(), "last_date": "",
+                "model": variant.get("model"),
+            }
+        values = entry.get("metric_values") or {}
+        if not any(value is not None for value in values.values()):
+            continue                      # entree en erreur : aucun point traçable
+        date = str(entry.get("date") or "")
+        if date > bucket["last_date"]:
+            bucket["last_date"] = date
+        if entry.get("partiel"):
+            bucket["partiels"] += 1
+            continue                      # hors courbes par defaut
+        bucket["points"] += 1
+        kind = canon_kind(entry.get("kind"))
+        if kind:
+            bucket["kinds"].add(kind)
+
+    catalogue = []
+    for bucket in buckets.values():
+        if not bucket["points"] and not bucket["partiels"] and not include_empty:
+            continue                      # une case qui ne tracerait rien
+        bucket["kinds"] = sorted(bucket["kinds"])
+        catalogue.append(bucket)
+    # tris successifs (stables) : cle croissante, puis points, puis date decroissants
+    catalogue.sort(key=lambda item: item["key"])
+    catalogue.sort(key=lambda item: item["points"], reverse=True)
+    catalogue.sort(key=lambda item: item["last_date"], reverse=True)
+    return catalogue
+
+
 # --------------------------------------------------------------- CLI de debug
 def _main(argv):
     import argparse

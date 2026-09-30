@@ -23,7 +23,7 @@ Regles tenues ici :
 Usage en ligne de commande (debug, rendu sur disque) :
     python3 page_graph.py --index /chemin/index.json --out /tmp/graph.html
 """
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote_plus
 
 import html
 import json
@@ -55,6 +55,22 @@ PRIMARY_METRICS = {
 MAX_CHARTS = 10      # garde-fou : au-dela, la page devient un mur de graphiques
 MAX_TABLE_ROWS = 400  # garde-fou des tableaux de valeurs
 MAX_RES_ROWS = 600    # garde-fou du tableau de resultats
+
+# La page se parcourt en DEUX ETAPES (demande de Gabriel, v1.6.3) :
+#   etape 1 : /graph -> on coche des REGLAGES (variantes) dans un catalogue, puis
+#             « Comparer » (formulaire GET, aucun JavaScript) ;
+#   etape 2 : /graph?sel=<cle>&sel=<cle> -> uniquement les graphiques des reglages
+#             coches, un lien « modifier la selection » ramene a l'etape 1.
+# Bornes : moins de 2 reglages => rien a comparer (retour a l'etape 1 avec le
+# pourquoi en clair) ; plus de 6 => on garde les 6 premiers et on dit lesquels
+# sont ignores. Six series est la limite de lisibilite de la legende (une
+# pastille de couleur par serie, cf. `charts.PALETTE`).
+MIN_SELECTION = 2
+MAX_SELECTION = 6
+SELECTION_PARAM = "sel"          # parametre ecrit par le formulaire de l'etape 1
+SELECTION_ALIASES = ("sel", "selection", "series", "serie", "llm",
+                     "reglages", "reglage")
+EDIT_ALIASES = ("edit", "modifier", "choix", "choisir")   # retour volontaire a l'etape 1
 
 # Habillage : memes variables que /benchmarks et l'accueil (theme sombre).
 CSS = """
@@ -97,6 +113,19 @@ legend{color:var(--dim);font-size:12px;padding:0 5px}
 .filtres{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
 .filtre-list{max-height:180px;overflow:auto;display:flex;flex-direction:column;gap:3px;font-size:12.5px;padding-right:4px}
 .filtre-list label{display:flex;gap:6px;align-items:center;cursor:pointer}
+/* Etape 1 : catalogue des reglages a cocher (2 a 6) */
+.selection-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:6px 12px;margin:10px 0;max-height:460px;overflow:auto}
+.selection-list label{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:6px 9px;cursor:pointer;background:#0f131b}
+.selection-list label:hover{background:#171c26}
+.selection-list input[type=checkbox]{margin-top:3px}
+.selection-list .lab{font-weight:600;font-size:12.5px}
+.selection-list .pts{color:var(--dim);font-size:11.5px}
+.banner{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12.5px}
+.banner.warn{border-color:var(--warn);color:var(--warn)}
+.banner.err{border-color:var(--err);color:var(--err)}
+.reglages-coches{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+details>summary{cursor:pointer;padding:2px 0}
+details>summary::marker{color:var(--acc)}
 .actions{display:flex;gap:6px;align-items:center}
 .actions .dim{font-size:11px}
 code{background:#0a0c11;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:12px}
@@ -194,10 +223,17 @@ def _entry_id(entry):
 # ---------------------------------------------------------------------------
 
 def parse_query(query):
-    """Normalise les parametres : ``{"kinds", "variants", "show_hidden", "raw"}``.
+    """Normalise les parametres : ``{"kinds", "variants", "selection", "edit",
+    "show_hidden", "show_partial", "raw"}``.
 
-    Accepte ``None``, une chaine de requete (« ?kind=duel&masques=1 ») ou le dict
+    Accepte ``None``, une chaine de requete (« ?sel=a&sel=b&masques=1 ») ou le dict
     de ``urllib.parse.parse_qs`` (valeurs en listes). Les alias FR sont toleres.
+
+    ``selection`` : les CLES DE REGLAGE cochees a l'etape 1 (parametre ``sel``,
+    alias ``selection``, ``series``, ``serie``, ``llm``, ``reglages`` — « reglages »
+    designe desormais ce qu'on coche ; le filtre de variante garde
+    ``variant``/``variante``). ``edit`` : retour volontaire a l'etape 1 (le lien
+    « modifier la selection »), sans message d'erreur et avec les cases cochees.
     """
     raw = {}
     if isinstance(query, str):
@@ -206,9 +242,10 @@ def parse_query(query):
         for key, value in query.items():
             values = value if isinstance(value, (list, tuple)) else [value]
             raw[str(key)] = ["" if v is None else str(v) for v in values]
-    kinds, variants = [], []
+    kinds, variants, selection = [], [], []
     show_hidden = False
     show_partial = False
+    edit = False
     for key, values in raw.items():
         low = key.strip().lower()
         for value in values:
@@ -216,20 +253,25 @@ def parse_query(query):
             if low in ("kind", "kinds", "test", "tests", "famille", "familles"):
                 if text and text not in kinds:
                     kinds.append(text)
-            elif low in ("variant", "variants", "variante", "variantes", "reglages"):
+            elif low in ("variant", "variants", "variante", "variantes"):
                 if text and text not in variants:
                     variants.append(text)
+            elif low in SELECTION_ALIASES:
+                if text and text not in selection:
+                    selection.append(text)
+            elif low in EDIT_ALIASES:
+                edit = text.lower() not in ("0", "non", "false", "off", "no")
             elif low in ("masques", "masque", "hidden", "masquee"):
                 # case a cocher : « 1 », « on », « true » ou valeur vide = vrai
                 show_hidden = text.lower() not in ("0", "non", "false", "off", "no")
             elif low in ("partiels", "partiel", "partial", "incomplet", "incomplets"):
                 show_partial = text.lower() not in ("0", "non", "false", "off", "no")
-    return {"kinds": kinds, "variants": variants, "show_hidden": show_hidden,
-            "show_partial": show_partial, "raw": raw}
+    return {"kinds": kinds, "variants": variants, "selection": selection, "edit": edit,
+            "show_hidden": show_hidden, "show_partial": show_partial, "raw": raw}
 
 
-def _passe_filtres(entry, kinds, variants):
-    """L'entree passe-t-elle les filtres par test et par variante ?"""
+def _passe_filtres(entry, kinds, variants, selection=None):
+    """L'entree passe-t-elle les filtres par test, par variante et par selection ?"""
     if kinds:
         canon = metrics.canon_kind(entry.get("kind"))
         allowed = {metrics.canon_kind(k) for k in kinds}
@@ -239,7 +281,88 @@ def _passe_filtres(entry, kinds, variants):
         key = str(_variant_of(entry).get("key") or "standard")
         if key not in variants:
             return False
+    if selection:
+        # Selection de l'etape 2 : exactement les cles de reglage cochees.
+        key = str(_variant_of(entry).get("key") or "standard")
+        if key not in selection:
+            return False
     return True
+
+
+# ---------------------------------------------------------------------------
+# Selection de l'etape 1 (catalogue des reglages -> 2 a 6 cles)
+# ---------------------------------------------------------------------------
+
+def _jour(value):
+    """Date courte JJ/MM (valeur brute tronquee si illisible)."""
+    text = str(value or "")
+    if len(text) >= 10 and text[4] == "-" and text[7] == "-":
+        return text[8:10] + "/" + text[5:7]
+    return text[:10]
+
+
+def _url_selection(cles, *, edit=False, kinds=(), variants=(), base="/graph"):
+    """URL de /graph : ``?sel=<cle>&sel=<cle>`` (etape 2), ou ``?edit=1&sel=…``
+    pour revenir a l'etape 1 avec les cases deja cochees."""
+    params = []
+    if edit:
+        params.append("edit=1")
+    for kind in kinds or ():
+        params.append("kind=" + quote_plus(str(kind)))
+    for variant in variants or ():
+        params.append("variant=" + quote_plus(str(variant)))
+    for cle in cles or ():
+        params.append(SELECTION_PARAM + "=" + quote_plus(str(cle)))
+    return base + ("?" + "&".join(params) if params else "")
+
+
+def _catalogue(entries):
+    """Catalogue des reglages proposes (jamais d'exception : la page reste rendue)."""
+    try:
+        return list(metrics.series_catalogue(entries))
+    except Exception:  # index abime : catalogue vide, message explicite a l'ecran
+        return []
+
+
+def _resoudre_selection(filtres, catalogue):
+    """(selection, inconnues, warning) : bornes 2-6 et cles inconnues tranchees.
+
+    Une cle inconnue n'est JAMAIS appliquee (elle ne filtre rien) : elle est
+    seulement signalee, sinon on croirait la selection prise en compte.
+    """
+    connues = {str(item.get("key") or "standard") for item in catalogue}
+    selection, inconnues = [], []
+    for cle in filtres.get("selection") or []:
+        if cle in connues:
+            if cle not in selection:
+                selection.append(cle)
+        elif cle not in inconnues:
+            inconnues.append(cle)
+    warning = ""
+    if len(selection) > MAX_SELECTION:
+        ignorees = selection[MAX_SELECTION:]
+        selection = selection[:MAX_SELECTION]
+        warning = (f"{MAX_SELECTION} réglages au maximum : {len(ignorees)} réglage(s) "
+                   f"ignoré(s) — {', '.join(ignorees)}. Les {MAX_SELECTION} premiers "
+                   "sont tracés : réduis la sélection pour en changer l'ordre.")
+    return selection, inconnues, warning
+
+
+def _bandeaux(view):
+    """Messages de la selection : troncature, cles inconnues, selection trop courte."""
+    out = []
+    if view.get("selection_warning"):
+        out.append(f'<div class="banner warn">{_esc(view["selection_warning"])}</div>')
+    inconnues = view.get("selection_inconnues") or []
+    if inconnues:
+        n, pluriel = len(inconnues), "s" if len(inconnues) > 1 else ""
+        out.append('<div class="banner warn">'
+                   f'{n} réglage{pluriel} inconnu{pluriel} ignoré{pluriel} : '
+                   f'<code>{_esc(", ".join(inconnues))}</code> — cette clé n\'est pas dans '
+                   'l\'index, rien n\'a été appliqué pour elle.</div>')
+    if view.get("selection_error"):
+        out.append(f'<div class="banner err">{_esc(view["selection_error"])}</div>')
+    return "".join(out)
 
 
 # ---------------------------------------------------------------------------
@@ -313,8 +436,16 @@ def _duration_data(entries, familles, charts_list, include_partial=False):
 def build_view(index, state=None, query=None):
     """Vue complete de la page /graph (donnees + SVG), sans une ligne de HTML.
 
-    -> {"entries","visibles","masques","supprimes","familles","variantes",
-        "charts","duree_svg","filtres","counts","source","index_error"}
+    -> {"entries","visibles","familles","familles_filtre","variantes","charts",
+        "duree_svg","duree_legend","masques","supprimes","partiels","filtres",
+        "source","index_error","counts",
+        "etape","catalogue","selection","selection_error","selection_warning",
+        "selection_inconnues"}
+
+    `etape` : 1 = choix des reglages (aucun graphique), 2 = comparaison des 2 a 6
+    reglages coches. `catalogue` : ce qui est cochable ; `selection` : ce qui a ete
+    retenu (2 a 6 cles) ; `selection_inconnues` : cles de l'adresse absentes de
+    l'index (signalees, jamais appliquees).
     """
     filtres = parse_query(query)
     brut = _entries_of(index)
@@ -339,10 +470,36 @@ def build_view(index, state=None, query=None):
         gardees = list(norm)
     else:
         gardees = visibility.apply(etat_visible, norm)
-    visibles = [e for e in gardees if _passe_filtres(e, filtres["kinds"], filtres["variants"])]
+
+    # --- etape 1 : la selection porte sur des CLES DE REGLAGE (variantes) ------
+    catalogue = _catalogue(norm)
+    selection, inconnues, warning = _resoudre_selection(filtres, catalogue)
+    # 0 ou 1 reglage -> rien a comparer : on reste a l'etape 1 (aucun graphique).
+    # `edit=1` (lien « modifier la selection ») y ramene volontairement, cases
+    # cochees, sans message d'erreur.
+    etape = 2 if len(selection) >= MIN_SELECTION else 1
+    erreur = ""
+    if filtres["selection"] and etape == 1 and not filtres["edit"]:
+        if selection:
+            erreur = (f"Il en faut au moins {MIN_SELECTION} pour comparer : avec un seul "
+                      "réglage, il n'y a rien à comparer. Coche un second réglage, "
+                      "puis « Comparer ».")
+        elif inconnues:
+            erreur = ("Sélection non appliquée : aucune des clés de réglage de l'adresse "
+                      f"n'existe dans l'index ({len(inconnues)} inconnue(s)). Coche les "
+                      "réglages dans la liste ci-dessous.")
+        else:
+            erreur = "Sélection non appliquée : aucun réglage reconnu dans l'adresse."
+    if filtres["edit"]:
+        etape, erreur = 1, ""
+
+    visibles = [e for e in gardees
+                if _passe_filtres(e, filtres["kinds"], filtres["variants"],
+                                  selection if etape == 2 else None)]
 
     familles = _familles_presentes(visibles)
-    listes = _charts_for(visibles, familles, include_partial=filtres["show_partial"])
+    listes = (_charts_for(visibles, familles, include_partial=filtres["show_partial"])
+              if etape == 2 else [])
 
     # Variantes presentes (filtre) : tous les libelles, tries par cle.
     variantes = {}
@@ -379,8 +536,9 @@ def build_view(index, state=None, query=None):
     masques = _liste(etat.get("hidden"))
     supprimes = _liste(etat.get("deleted"))
 
-    duree_data = _duration_data(visibles, familles, listes,
-                                include_partial=filtres["show_partial"])
+    duree_data = (_duration_data(visibles, familles, listes,
+                                 include_partial=filtres["show_partial"])
+                  if etape == 2 else None)
     duree_svg = charts.duration_chart(duree_data) if duree_data else ""
     duree_legend = charts.legend(duree_data) if duree_data else ""
 
@@ -401,6 +559,12 @@ def build_view(index, state=None, query=None):
         "supprimes": supprimes,
         "partiels": partiels,
         "filtres": filtres,
+        "etape": etape,
+        "catalogue": catalogue,
+        "selection": selection,
+        "selection_error": erreur,
+        "selection_warning": warning,
+        "selection_inconnues": inconnues,
         "source": _source_of(index),
         "index_error": index_error,
         "counts": {
@@ -409,6 +573,8 @@ def build_view(index, state=None, query=None):
             "masques": len(masques),
             "supprimes": len(supprimes),
             "partiels": len(partiels),
+            "catalogue": len(catalogue),
+            "selection": len(selection),
         },
     }
 
@@ -423,7 +589,16 @@ def _filtre_liste(nom, entrees):
 
 
 def _filtres_form(view):
-    """Formulaire GET : filtres par test et par variante, + resultats masques."""
+    """Panneau « affiner » (etape 2) : filtres par test / variante, visibilite.
+
+    Formulaire GET, sans JavaScript. La SELECTION courante est rappelee en champs
+    caches : « Filtrer » ne doit jamais faire perdre les reglages coches (sinon on
+    retomberait a l'etape 1).
+
+    A l'etape 1, le meme formulaire sert a filtrer le tableau des resultats (il ne
+    filtre alors aucun graphique, il n'y en a pas) : la selection n'y est donc pas
+    reportee, pour ne pas relancer une comparaison a un seul reglage.
+    """
     filtres = view["filtres"]
     coches = set(filtres["kinds"])
     cases_familles = []
@@ -442,10 +617,17 @@ def _filtres_form(view):
         )
     masques_coche = ' checked' if filtres["show_hidden"] else ''
     partiels_coche = ' checked' if filtres["show_partial"] else ''
+    etape = view.get("etape", 1)
+    champs_selection = "".join(
+        f'<input type="hidden" name="{SELECTION_PARAM}" value="{_esc(key)}">'
+        for key in (view.get("selection") or []) if etape == 2)
+    reinit = _url_selection(view.get("selection") or []) if etape == 2 else "/graph"
+    titre = ("Filtres &middot; affiner la comparaison" if etape == 2 else "Filtres")
     return (
-        '<section class="card"><h2>Filtres <span class="dim">'
+        f'<section class="card" id="affiner"><h2>{titre} <span class="dim">'
         'par test et par variante &middot; fonctionnent sans JavaScript (formulaire GET)</span></h2>'
         '<form class="filtres" method="get" action="/graph">'
+        f'{champs_selection}'
         '<fieldset><legend>Test (famille)</legend>'
         f'{_filtre_liste("kind", cases_familles)}</fieldset>'
         '<fieldset><legend>Variante (r&eacute;glages)</legend>'
@@ -458,8 +640,82 @@ def _filtres_form(view):
         '</fieldset>'
         '<div style="display:flex;flex-direction:column;gap:8px">'
         '<button type="submit">Filtrer</button>'
-        '<a class="navlink" href="/graph">r&eacute;initialiser</a>'
+        f'<a class="navlink" href="{_esc(reinit)}">r&eacute;initialiser</a>'
         '</div></form></section>'
+    )
+
+
+def _selection_form(view):
+    """Etape 1 : catalogue des reglages (2 a 6 cases a cocher) puis « Comparer ».
+
+    Rien d'autre n'est mis en tete de page : ni graphiques ni tableau. Le
+    formulaire est en GET (`?sel=<cle>&sel=<cle>`) : aucun JavaScript n'est
+    necessaire et l'adresse de l'etape 2 se partage telle quelle.
+    """
+    items = view.get("catalogue") or []
+    cochees = set(view.get("selection") or [])
+    if items:
+        lignes = []
+        for item in items:
+            key = str(item.get("key") or "standard")
+            label = str(item.get("label") or key)
+            points = int(item.get("points") or 0)
+            partiels = int(item.get("partiels") or 0)
+            familles = ", ".join(_kind_label(k) for k in (item.get("kinds") or []))
+            detail = f"{points} point" + ("s" if points > 1 else "")
+            if partiels:
+                detail += f" · {partiels} partiel" + ("s" if partiels > 1 else "")
+            if item.get("last_date"):
+                detail += " · dernier le " + _jour(item["last_date"])
+            if familles:
+                detail += " · " + familles
+            lignes.append(
+                f'<label><input type="checkbox" name="{SELECTION_PARAM}" '
+                f'value="{_esc(key)}"{" checked" if key in cochees else ""}>'
+                f'<span><span class="lab">{_esc(label)}</span><br>'
+                f'<span class="pts">{_esc(detail)}</span></span></label>')
+        liste = f'<div class="selection-list">{"".join(lignes)}</div>'
+    else:
+        liste = ('<p class="dim">Aucun réglage traçable dans l\'index : il n\'y a rien à '
+                 'comparer pour l\'instant. Lance un test depuis l\'accueil, puis '
+                 'régénère l\'index (<code>python3 bench_index.py</code>).</p>')
+    return (
+        '<section class="card" id="selection"><h2>Comparer des réglages '
+        f'<span class="dim">{len(items)} disponible(s) &middot; coche de {MIN_SELECTION} à '
+        f'{MAX_SELECTION}, puis « Comparer »</span></h2>'
+        '<p class="dim">Chaque case est un <b>réglage</b> : un modèle <i>et</i> ses '
+        'paramètres (contexte, MTP, thinking, température…). '
+        f'<b>{MIN_SELECTION} au minimum</b> — avec un seul réglage, il n\'y a rien à '
+        f'comparer ; <b>{MAX_SELECTION} au maximum</b> — au-delà, la légende et les '
+        'barres groupées deviennent illisibles.</p>'
+        + _bandeaux(view)
+        + f'<form method="get" action="/graph">{liste}'
+        '<div class="actions" style="margin-top:10px;gap:10px">'
+        '<button type="submit">Comparer</button>'
+        '<span class="dim">les graphiques s\'affichent à l\'étape suivante '
+        '(formulaire GET, aucun JavaScript requis)</span></div></form></section>'
+    )
+
+
+def _selection_recap(view):
+    """Etape 2 : rappel des reglages coches + lien de retour vers l'etape 1."""
+    labels = {}
+    for item in view.get("catalogue") or []:
+        key = str(item.get("key") or "standard")
+        labels[key] = str(item.get("label") or key)
+    selection = list(view.get("selection") or [])
+    tags = "".join(f'<span class="tag">{_esc(labels.get(key, key))}</span>' for key in selection)
+    retour = _url_selection(selection, edit=True)
+    n = len(selection)
+    return (
+        f'<section class="card" id="selection"><h2>Comparaison de {n} réglage'
+        f'{"s" if n > 1 else ""} <span class="dim">les graphiques ci-dessous ne tracent '
+        'que ceux-ci</span></h2>'
+        f'<div class="reglages-coches">{tags}</div>'
+        + _bandeaux(view)
+        + f'<p><a class="navlink" href="{_esc(retour)}">&larr; modifier la sélection</a> '
+        '<span class="dim">revient au choix des réglages, cases conservées</span></p>'
+        '</section>'
     )
 
 
@@ -658,8 +914,15 @@ SCRIPT = """
 def _entete(view):
     """Barre d'onglets (meme habillage que /benchmarks et /compare)."""
     counts = view["counts"]
+    etape = view.get("etape", 1)
+    if etape == 2:
+        guide = (f"&eacute;tape 2/2 &middot; graphiques de {counts['selection']} "
+                 "r&eacute;glage(s) coch&eacute;(s)")
+    else:
+        guide = ("&eacute;tape 1/2 &middot; choisir de 2 &agrave; 6 r&eacute;glages "
+                 "&agrave; comparer")
     return f"""<header>
-  <h1>Graphique des tests <span class="dim">&middot; tout ce qui a &eacute;t&eacute; test&eacute;</span></h1>
+  <h1>Graphique des tests <span class="dim">&middot; {guide}</span></h1>
   <div class="tabs">
     <a class="navlink" href="/">Prompt Duel</a>
     <a class="navlink" href="/benchmarks">Benchmarks</a>
@@ -720,39 +983,61 @@ def render_graph_page(index, state=None, query=None):
     """
     view = build_view(index, state, query)
     counts = view["counts"]
+    corps = []
 
-    corps = [_resume(view)]
-    if view["entries"]:
-        corps.append(_filtres_form(view))
-
-    if view["charts"]:
-        corps.extend(_chart_card(chart) for chart in view["charts"])
-    elif counts["total"]:
-        corps.append('<section class="card"><h2>Graphiques</h2>'
-                     '<p class="dim">aucune m&eacute;trique chiffr&eacute;e &agrave; tracer avec '
-                     'ces filtres.</p></section>')
-
-    carte_duree = ['<section class="card"><h2>Temps pass&eacute; '
-                   '<span class="dim">par test et par r&eacute;glages &middot; '
-                   'plus bas = mieux</span></h2>']
-    if view["duree_svg"]:
-        carte_duree.append(f'<div class="chart-wrap">{view["duree_svg"]}</div>')
-        carte_duree.append(view["duree_legend"])
+    if view["etape"] == 1:
+        # --- etape 1 : le CHOIX des reglages, puis l'existant, replie ---------
+        # Aucun graphique ici (c'est le principe) : les courbes arrivent a l'etape
+        # 2, une fois les reglages coches. Le reste de la page ne disparait pas
+        # pour autant : tableau des resultats, filtres et masquage restent dans un
+        # depliant (accessible en un clic, sans JavaScript).
+        corps.append(_selection_form(view))
+        corps.append(_resume(view))
+        liste_masques = _masques_table(view)
+        corps.append(
+            '<section class="card"><details id="tous-resultats"><summary>'
+            f'<b>Tous les r&eacute;sultats</b> <span class="dim">({counts["visibles"]} '
+            'ligne(s) affich&eacute;e(s) &middot; filtres, tableau d&eacute;taill&eacute;, '
+            'masquage r&eacute;versible) &middot; cliquer pour ouvrir</span></summary>'
+            + _filtres_form(view) + _resultats_table(view) + liste_masques
+            + '</details></section>')
     else:
-        carte_duree.append('<p class="dim">aucune dur&eacute;e enregistr&eacute;e.</p>')
-    carte_duree.append("</section>")
-    if counts["total"]:
+        # --- etape 2 : les graphiques des reglages coches, et le reste dessous --
+        corps.append(_resume(view))
+        corps.append(_selection_recap(view))
+
+        if view["charts"]:
+            corps.extend(_chart_card(chart) for chart in view["charts"])
+        else:
+            corps.append('<section class="card"><h2>Graphiques</h2>'
+                         '<p class="dim">aucune m&eacute;trique chiffr&eacute;e &agrave; '
+                         'tracer avec ces r&eacute;glages et ces filtres.</p></section>')
+
+        carte_duree = ['<section class="card"><h2>Temps pass&eacute; '
+                       '<span class="dim">par test et par r&eacute;glages &middot; '
+                       'plus bas = mieux</span></h2>']
+        if view["duree_svg"]:
+            carte_duree.append(f'<div class="chart-wrap">{view["duree_svg"]}</div>')
+            carte_duree.append(view["duree_legend"])
+        else:
+            carte_duree.append('<p class="dim">aucune dur&eacute;e enregistr&eacute;e.</p>')
+        carte_duree.append("</section>")
         corps.append("".join(carte_duree))
 
-    corps.append(_resultats_table(view))
-    liste_masques = _masques_table(view)
-    if liste_masques:
-        corps.append(liste_masques)
+        corps.append(_filtres_form(view))
+        corps.append(_resultats_table(view))
+        liste_masques = _masques_table(view)
+        if liste_masques:
+            corps.append(liste_masques)
 
+    actifs = (list(view["filtres"]["kinds"]) + list(view["filtres"]["variants"])
+              + list(view["selection"] or []))
     filtre_resume = ""
-    if view["filtres"]["kinds"] or view["filtres"]["variants"]:
-        filtre_resume = (" &middot; filtres actifs : "
-                         + _esc(", ".join(view["filtres"]["kinds"] + view["filtres"]["variants"])))
+    if actifs:
+        texte = ", ".join(actifs)
+        if len(texte) > 160:
+            texte = texte[:157] + "\u2026"
+        filtre_resume = " &middot; filtres actifs : " + _esc(texte)
 
     return f"""<!doctype html>
 <html lang="fr"><head>

@@ -40,6 +40,34 @@ test et par variante. **Masquer / supprimer / restaurer** un résultat depuis /g
 `visibility.py`, `settings.py`, `charts.py`, `page_graph.py` ; harnais de tests
 `scripts/run-tests.sh` (unitaires `tests/` + end-to-end `e2e/` sous Playwright).
 
+v1.6.3 : **/graph en deux étapes** — la page s'ouvre sur le CHOIX, plus sur un mur de
+graphiques. Étape 1 : le catalogue des réglages (une case par variante, avec son nombre
+de points et la date du dernier résultat) et la règle écrite en clair « coche de 2 à 6,
+puis Comparer » — aucun graphique. Étape 2 (`/graph?sel=<clé>&sel=<clé>`, formulaire GET,
+aucun JavaScript) : uniquement les courbes des réglages cochés, un lien « ← modifier la
+sélection » qui revient au choix (cases conservées), puis le panneau « affiner »
+(familles, partiels, masqués) et le tableau des résultats. Bornes explicites : moins de
+2 réglages → retour au choix avec la raison (« avec un seul, il n'y a rien à comparer ») ;
+plus de 6 → les 6 premiers sont tracés, les autres nommés dans un bandeau (lisibilité de
+la légende) ; clé inconnue → jamais appliquée, mais signalée. À l'étape 1, le reste de la
+page (résultats, filtres, masquage réversible) descend dans un dépliant natif, donc reste
+accessible sans JavaScript. Nouveau `metrics.series_catalogue`, constantes
+`MIN_SELECTION`/`MAX_SELECTION`, alias d'URL `sel`, `selection`, `series`, `serie`, `llm`,
+`reglages`.
+
+v1.6.2 : **mesures honnêtes dans l'index** — trois chiffres faux disparaissent de
+`/graph` et `/benchmarks`. (1) Vitesse : un log de cas contient plusieurs passes (passe
+brute avortée, repli chat) ; les moyenner divisait le débit par deux (48,9 t/s publiés
+au lieu de 97,7) — seules les répétitions complètes du banc sont appariées désormais.
+(2) VRAM : le sampler nvidia-smi continue d'écrire après l'arrêt du cas ; le pic est
+borné à la fenêtre `start … stop` des jalons de phase (12 118 MiB publiés au lieu de
+8 940), l'écart hors fenêtre reste dans la note. (3) Duels : un duel qui a perdu un
+tiers de ses prompts est marqué `partiel` — il reste dans l'index mais sort des courbes
+(case « tracer aussi les résultats partiels », `?partiels=1` pour `/api/graph`), et les
+duels rangés dans `echecs/` ne sont plus remiroités. Côté serveur, `wait_for_free_slot`
+ne perd plus un prompt quand `/slots` manque (serveur OpenAI-only) et réessaie 3 fois
+quand le moteur est injoignable.
+
 v1.6.1 : **bancs vitesse/mémoire sur un serveur sans routes natives** — Strata et les
 moteurs OpenAI-only ne servent ni `/tokenize` ni `/completion` : les tests de vitesse et
 de mémoire tombaient en erreur 404 en 0,1 s. `bench_tests.py` sonde une fois par serveur,
@@ -95,7 +123,7 @@ try:
 except ImportError:        # module pas encore livré : /graph répondra 503, jamais de crash
     page_graph = None
 
-APP_VERSION = "1.6.1"
+APP_VERSION = "1.6.3"
 
 # Libellé affiché dans l'UI (utile si plusieurs instances)
 APP_TITLE = os.environ.get("APP_TITLE") or "Prompt Duel"

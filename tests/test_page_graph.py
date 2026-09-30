@@ -94,6 +94,29 @@ def index_de(entries, **kwargs):
     return data
 
 
+def index_deux_reglages():
+    """Index a DEUX reglages distincts (contexte 8k / 16k) et leurs cles.
+
+    Deux reglages = le minimum pour que `/graph` passe a l'etape 2.
+    """
+    entries = [entree_duel(0), entree_duel(1, ctx=16384)]
+    cles = [item["key"] for item in metrics.series_catalogue(entries)]
+    assert len(cles) == 2, cles
+    return index_de(entries), cles
+
+
+def index_plusieurs_reglages(n=8):
+    """Index a `n` reglages distincts (contextes croissants) et leurs cles."""
+    entries = [entree_duel(i, ctx=8192 * (2 ** i)) for i in range(n)]
+    cles = [item["key"] for item in metrics.series_catalogue(entries)]
+    return index_de(entries), cles
+
+
+def series_tracees(page):
+    """Cles de reglage presentes dans les graphiques (barres + legendes)."""
+    return set(re.findall(r'data-serie="([^"]+)"', page))
+
+
 # =========================================================================
 # 1) Rendu sans exception : index vide, index d'une entree
 # =========================================================================
@@ -134,18 +157,22 @@ class TestRenduSansDonnees(unittest.TestCase):
                 self.assertIn("</html>", page)
 
     def test_jamais_de_nan_ni_infinity_dans_les_svg(self):
-        index = index_de([entree_duel(tok_s=float("nan")), entree_duel(1, duration_s=None)])
-        page = page_graph.render_graph_page(index, ETAT_VIDE, {})
+        entries = [entree_duel(0, tok_s=float("nan")),
+                   entree_duel(1, ctx=16384, duration_s=None)]
+        cles = [item["key"] for item in metrics.series_catalogue(entries)]
+        page = page_graph.render_graph_page(index_de(entries), ETAT_VIDE, {"sel": cles})
+        self.assertTrue(svgs(page))                    # des graphiques, donc une vraie epreuve
         for fragment in svgs(page):
             self.assertNotIn("nan", fragment.lower())
             self.assertNotIn("infinity", fragment.lower())
 
 
 class TestRenduUneEntree(unittest.TestCase):
-    """Une seule entree : un graphique chiffre + le graphique des durees."""
+    """Deux reglages coches : graphiques chiffres + tableau des resultats."""
 
     def setUp(self):
-        self.page = page_graph.render_graph_page(index_de([entree_duel()]), ETAT_VIDE, {})
+        self.index, self.cles = index_deux_reglages()
+        self.page = page_graph.render_graph_page(self.index, ETAT_VIDE, {"sel": self.cles})
 
     def test_svg_presents_et_valides(self):
         fragments = svgs(self.page)
@@ -159,7 +186,7 @@ class TestRenduUneEntree(unittest.TestCase):
         self.assertIn("Graphique des tests", self.page)
 
     def test_tableau_de_resultats_et_bouton_masquer(self):
-        self.assertEqual(len(lignes_resultats(self.page)), 1)
+        self.assertEqual(len(lignes_resultats(self.page)), 2)   # les 2 reglages coches
         self.assertIn('data-vis="hide"', self.page)
         self.assertIn(">Masquer<", self.page)
 
@@ -168,9 +195,148 @@ class TestRenduUneEntree(unittest.TestCase):
         self.assertIn('class="chart-toggle"', self.page)
 
     def test_legerement_plusieurs_entrees_donnent_plusieurs_lignes(self):
+        """A l'etape 1 (aucune selection), le tableau liste toujours tout."""
         page = page_graph.render_graph_page(
             index_de([entree_duel(0), entree_duel(1), entree_duel(2)]), ETAT_VIDE, {})
         self.assertEqual(len(lignes_resultats(page)), 3)
+
+
+# =========================================================================
+# 1bis) Le parcours en deux etapes : choisir 2 a 6 reglages, puis comparer
+# =========================================================================
+class TestParcoursEnDeuxEtapes(unittest.TestCase):
+    """Etape 1 = le catalogue coche ; etape 2 = seulement les reglages coches."""
+
+    def setUp(self):
+        self.index, self.cles = index_plusieurs_reglages(8)
+
+    def page(self, query):
+        return page_graph.render_graph_page(self.index, ETAT_VIDE, query)
+
+    def vue(self, query):
+        return page_graph.build_view(self.index, ETAT_VIDE, query)
+
+    # -- etape 1 : le choix --------------------------------------------------
+    def test_etape1_liste_les_reglages_cocables(self):
+        page = self.page({})
+        self.assertEqual(page.count('name="sel"'), len(self.cles))
+        for cle in self.cles:
+            self.assertIn(f'value="{cle}"', page)         # une case par reglage
+        self.assertIn("point", page)                      # nombre de points disponibles
+        self.assertIn("dernier le", page)                 # date du dernier resultat
+        self.assertIn('action="/graph"', page)            # GET : aucun JavaScript
+
+    def test_etape1_annonce_la_regle_2_6(self):
+        page = self.page({})
+        self.assertIn("2 au minimum", page)
+        self.assertIn("6 au maximum", page)
+        self.assertIn("Comparer", page)
+
+    def test_etape1_aucun_graphique_mais_resultats_accessibles(self):
+        page = self.page({})
+        self.assertEqual(svgs(page), [])
+        self.assertNotIn("<svg", page)
+        # le reste ne disparait pas : il est replie dans un <details> natif (sans JS)
+        self.assertIn('<details id="tous-resultats">', page)
+        self.assertTrue(lignes_resultats(page))
+
+    def test_etape1_un_seul_reglage_est_dit_en_clair(self):
+        index = index_de([entree_duel(0)])
+        page = page_graph.render_graph_page(index, ETAT_VIDE, {})
+        self.assertEqual(page.count('name="sel"'), 1)
+        self.assertIn("1 disponible(s)", page)
+        self.assertEqual(svgs(page), [])
+
+    # -- etape 2 : la comparaison -------------------------------------------
+    def test_etape2_ne_trace_que_les_reglages_coches(self):
+        cles = self.cles[:3]
+        page = self.page({"sel": cles})
+        self.assertEqual(series_tracees(page), set(cles))
+        for cle in self.cles[3:]:
+            self.assertNotIn(f'data-serie="{cle}"', page)
+        self.assertIn("Comparaison de 3 r", page)
+
+    def test_etape2_lien_modifier_la_selection(self):
+        cles = self.cles[:2]
+        page = self.page({"sel": cles})
+        self.assertIn("modifier la sélection", page)
+        self.assertIn(f'href="/graph?edit=1&amp;sel={cles[0]}&amp;sel={cles[1]}"', page)
+
+    def test_retour_etape1_conserve_les_cases_cochees(self):
+        cles = self.cles[:2]
+        page = self.page({"edit": ["1"], "sel": cles})
+        self.assertEqual(svgs(page), [])                  # retour au choix
+        self.assertNotIn("banner err", page)              # sans message d'erreur
+        for cle in cles:
+            self.assertEqual(page.count(f'value="{cle}" checked'), 1)
+
+    # -- bornes --------------------------------------------------------------
+    def test_une_seule_cle_ramene_a_l_etape1(self):
+        cles = self.cles[:1]
+        page, vue = self.page({"sel": cles}), self.vue({"sel": cles})
+        self.assertEqual(vue["etape"], 1)
+        self.assertEqual(vue["selection"], cles)          # la case reste cochee
+        self.assertEqual(svgs(page), [])
+        self.assertIn("au moins 2", page)
+
+    def test_plus_de_six_reglages_est_tronque(self):
+        cles = self.cles[:7]
+        vue = self.vue({"sel": cles})
+        self.assertEqual(vue["etape"], 2)
+        self.assertEqual(vue["selection"], cles[:6])
+        self.assertIn(cles[6], vue["selection_warning"])
+        page = self.page({"sel": cles})
+        self.assertEqual(series_tracees(page), set(cles[:6]))
+        self.assertIn("6 réglages au maximum", page)
+
+    def test_cle_inconnue_ignoree_et_signalee(self):
+        cles, inconnue = self.cles[:2], "reglage-qui-nexiste-pas"
+        page = self.page({"sel": cles + [inconnue]})
+        vue = self.vue({"sel": cles + [inconnue]})
+        self.assertEqual(vue["etape"], 2)                 # les 2 vraies cles suffisent
+        self.assertEqual(vue["selection_inconnues"], [inconnue])
+        self.assertEqual(series_tracees(page), set(cles))
+        self.assertIn("inconnu", page)
+        self.assertIn(inconnue, page)
+
+    def test_que_des_cles_inconnues_message_clair(self):
+        page = self.page({"sel": ["x", "y"]})
+        self.assertEqual(svgs(page), [])
+        self.assertIn("banner err", page)
+        self.assertIn("inconnu", page)
+
+    # -- URLs tolerantes -----------------------------------------------------
+    def test_aliases_de_selection(self):
+        cles = self.cles[:2]
+        for param in ("sel", "selection", "series", "serie", "llm", "reglages", "reglage"):
+            with self.subTest(param=param):
+                vue = self.vue({param: cles})
+                self.assertEqual(vue["etape"], 2)
+                self.assertEqual(vue["selection"], cles)
+        for chaine in (f"?sel={cles[0]}&series={cles[1]}",
+                       f"?llm={cles[0]}&reglages={cles[1]}"):
+            with self.subTest(chaine=chaine):
+                self.assertEqual(self.vue(chaine)["etape"], 2)
+
+    # -- affiner / lisibilite ------------------------------------------------
+    def test_filtre_de_famille_a_l_etape2_conserve_la_selection(self):
+        cles = self.cles[:2]
+        page = self.page({"sel": cles, "kind": ["duel"]})
+        self.assertEqual(series_tracees(page), set(cles))
+        self.assertIn('<section class="card" id="affiner">', page)
+        self.assertEqual(page.count('<input type="hidden" name="sel"'), 2)
+
+    def test_six_series_ont_des_couleurs_distinctes(self):
+        page = self.page({"sel": self.cles[:6]})
+        bloc = re.search(r'<div class="chart-legend".*?</div>', page, re.S).group(0)
+        couleurs = re.findall(r"border-radius:3px;background:(#[0-9a-f]{6})", bloc)
+        self.assertEqual(len(couleurs), 6)
+        self.assertEqual(len(set(couleurs)), 6)           # aucune couleur reutilisee
+        self.assertNotEqual(couleurs[0], couleurs[1])     # series voisines distinctes
+
+    def test_max_charts_respecte(self):
+        vue = self.vue({"sel": self.cles})
+        self.assertLessEqual(len(vue["charts"]), page_graph.MAX_CHARTS)
 
 
 # =========================================================================
@@ -309,9 +475,15 @@ class TestRobustesse(unittest.TestCase):
             self.assertNotIn('"><script', fragment)
 
     def test_many_entrees_ne_leve_pas(self):
-        page = page_graph.render_graph_page(
-            index_de([entree_duel(i, duration_s=i) for i in range(80)]), ETAT_VIDE, {})
+        entries = [entree_duel(i, ctx=8192 if i % 2 else 16384, duration_s=i)
+                   for i in range(80)]
+        cles = [item["key"] for item in metrics.series_catalogue(entries)]
+        page = page_graph.render_graph_page(index_de(entries), ETAT_VIDE, {"sel": cles})
         self.assertGreaterEqual(len(svgs(page)), 2)
+        # etape 1 avec 80 entrees : le catalogue reste lisible (une case par reglage)
+        page1 = page_graph.render_graph_page(index_de(entries), ETAT_VIDE, {})
+        self.assertEqual(page1.count('name="sel"'), 2)
+        self.assertEqual(svgs(page1), [])
 
 
 # =========================================================================
@@ -329,15 +501,32 @@ class TestIndexReel(unittest.TestCase):
         cls.stat = VAULT_INDEX.stat()
         cls.listings = sorted(os.listdir(ROOT))
         cls.etat = visibility.load()
+        cls.catalogue = metrics.series_catalogue(cls.index.get("entries") or [])
+
+    def requete_etape2(self, n=6):
+        """Requete d'etape 2 : les `n` reglages couvrant le plus de familles."""
+        catalogue = sorted(self.catalogue,
+                           key=lambda item: (-len(item.get("kinds") or []),
+                                             -item["points"], item["key"]))
+        return {"sel": [item["key"] for item in catalogue[:n]]}
 
     def test_rendu_avec_svg_valides(self):
-        page = page_graph.render_graph_page(self.index, self.etat or ETAT_VIDE, {})
+        page = page_graph.render_graph_page(self.index, self.etat or ETAT_VIDE,
+                                            self.requete_etape2())
         self.assertGreater(len(page), 20000)
         fragments = svgs(page)
         self.assertGreaterEqual(len(fragments), 5)
         for fragment in fragments:
             self.assertIn("<title>", fragment)
         self.assertIn('<table id="resultats">', page)
+
+    def test_etape1_sans_aucun_graphique(self):
+        """Vue par defaut de /graph : le choix des reglages, et rien a tracer."""
+        page = page_graph.render_graph_page(self.index, self.etat or ETAT_VIDE, {})
+        self.assertEqual(svgs(page), [])
+        self.assertGreater(page.count('name="sel"'), 1)
+        self.assertIn("Comparer des réglages", page)
+        self.assertNotIn("modifier la sélection", page)   # le lien n'a de sens qu'a l'etape 2
 
     def test_toutes_les_entrees_sont_listees(self):
         page = page_graph.render_graph_page(self.index, ETAT_VIDE, {})

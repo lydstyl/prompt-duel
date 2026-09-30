@@ -476,5 +476,72 @@ class TestSeriesForChart(unittest.TestCase):
         self.assertEqual(metrics.normalize_entries([None, 3, "x"]), [])
 
 
+# --------------------------------------------------------------- catalogue
+class TestCatalogue(unittest.TestCase):
+    """`series_catalogue` : la liste des reglages cochables a l'etape 1 de /graph."""
+
+    def test_contrat_des_cles(self):
+        catalogue = metrics.series_catalogue(vault_entries())
+        self.assertTrue(catalogue)
+        for item in catalogue:
+            self.assertEqual(set(item), {"key", "label", "points", "partiels",
+                                         "kinds", "last_date", "model"})
+            self.assertIsInstance(item["points"], int)
+            self.assertIsInstance(item["partiels"], int)
+            self.assertIsInstance(item["kinds"], list)
+            self.assertEqual(item["kinds"], sorted(item["kinds"]))
+
+    def test_dedoublonne_par_cle_de_variante(self):
+        entries = [ent(kind="duel", ctx=8192, tok_s=100.0, prompts_total=3),
+                   ent(kind="duel", ctx=8192, tok_s=110.0, prompts_total=3),
+                   ent(kind="duel", ctx=16384, tok_s=120.0, prompts_total=3)]
+        catalogue = metrics.series_catalogue(entries)
+        self.assertEqual(len(catalogue), len({e["variant"]["key"]
+                                              for e in metrics.normalize_entries(entries)}))
+        gros = [item for item in catalogue if item["points"] == 2]
+        self.assertEqual(len(gros), 1)
+
+    def test_tri_stable_dernier_resultat_d_abord(self):
+        entries = [ent(kind="duel", ctx=8192, tok_s=1.0, date="2026-09-01T10:00:00"),
+                   ent(kind="duel", ctx=16384, tok_s=1.0, date="2026-09-30T10:00:00")]
+        premier = metrics.series_catalogue(entries)
+        self.assertEqual(metrics.series_catalogue(entries), premier)      # stable
+        self.assertGreater(premier[0]["last_date"], premier[-1]["last_date"])
+
+    def test_points_et_partiels_comptes_a_part(self):
+        entries = [ent(kind="duel", ctx=8192, tok_s=100.0, prompts_total=34),
+                   ent(kind="duel", ctx=8192, tok_s=100.0, prompts_total=34, partiel=True)]
+        item = [i for i in metrics.series_catalogue(entries)
+                if i["points"] == 1][0]
+        self.assertEqual((item["points"], item["partiels"]), (1, 1))
+
+    def test_serie_dont_tous_les_resultats_sont_partiels_est_gardee(self):
+        entries = [ent(kind="duel", ctx=8192, tok_s=100.0, prompts_total=34, partiel=True)]
+        catalogue = metrics.series_catalogue(entries)
+        self.assertEqual(len(catalogue), 1)            # selectionnable des que « partiels »
+        self.assertEqual((catalogue[0]["points"], catalogue[0]["partiels"]), (0, 1))
+
+    def test_serie_sans_aucun_point_chiffre_est_ecartee(self):
+        # un cas en `error` (aucune metrique) n'a rien a tracer : pas de case inutile
+        entries = [ent(kind="duel", ctx=8192, status="error", error="404 route /tokenize"),
+                   ent(kind="duel", ctx=16384, tok_s=120.0, prompts_total=3)]
+        catalogue = metrics.series_catalogue(entries)
+        self.assertEqual(len(catalogue), 1)
+        self.assertEqual(catalogue[0]["points"], 1)
+        # ... sauf si on demande explicitement le catalogue complet
+        self.assertEqual(len(metrics.series_catalogue(entries, include_empty=True)), 2)
+
+    def test_liste_vide_ou_invalide(self):
+        for entries in ([], None, [None, 3, "x"]):
+            self.assertEqual(metrics.series_catalogue(entries), [])
+
+    def test_familles_presentes(self):
+        entries = [ent(kind="duel", ctx=8192, tok_s=100.0, prompts_total=3),
+                   ent(kind="speed", ctx=8192, pp=100.0, source="benches/x/bench.json#a")]
+        catalogue = metrics.series_catalogue(entries)
+        kinds = {k for item in catalogue for k in item["kinds"]}
+        self.assertEqual(kinds, {"duel", "speed"})
+
+
 if __name__ == "__main__":
     unittest.main()

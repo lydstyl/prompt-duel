@@ -218,6 +218,9 @@ Deux prompts récupérés dans l'historique du dépôt public **`lukesdevlab/you
 | GET | `/compare?a=<run>&b=<run>[&ids=26,29]` | page de comparaison visuelle : les deux rendus HTML en `<iframe>` côte à côte, prompt par prompt |
 | GET | `/runs/…` | fichiers générés (+ listing de dossier) |
 | GET | `/benchmarks` | index unifié des tests LLM (duels, vitesse/VRAM, batteries, HumanEval, contexte) — lu dans le vault, copie locale en secours |
+| GET | `/graph` | **étape 1** : catalogue des réglages à comparer (une case par variante, nombre de points, date du dernier résultat) — aucun graphique |
+| GET | `/graph?sel=<clé>&sel=<clé>` | **étape 2** : uniquement les graphiques des 2 à 6 réglages cochés (+ `&kind=`, `&variant=`, `&masques=1`, `&partiels=1` pour affiner) |
+| GET | `/graph?edit=1&sel=…` | revient à l'étape 1 en gardant les cases cochées (lien « ← modifier la sélection ») |
 
 - `groups` = `[{id, title, note, count, prompt_ids}]`, dans l'ordre du fichier.
 - `already_done` = `{"<id>": "<run_id>"}` : prompts déjà générés avec **le même modèle**
@@ -317,6 +320,42 @@ de contexte. Elle lit `index.json` dans le vault et retombe sur la copie locale
 en entrée, 128 en sortie) ; on garde la moyenne des `eval time` du log serveur, seule
 façon d'obtenir des valeurs comparables entre modèles. Un log sans mesure de prefill
 (HumanEval, remplissage de contexte) est ignoré : ce n'est pas un bench de vitesse.
+
+## Page `/graph` — comparer des réglages (v1.6.3)
+
+Une **série** de graphique n'est pas un modèle mais un **réglage** : un modèle *et* ses
+paramètres (contexte, MTP/draft, thinking, température, KV…), identifié par
+`variant.key`. C'est ce qu'on coche.
+
+**Étape 1 — `/graph`** (vue par défaut) : rien qu'un **catalogue**. Une case par réglage
+disponible, avec son nombre de points et la date de son dernier résultat, la règle écrite
+en clair — *coche **de 2 à 6** réglages, puis « Comparer »* — et le bouton. Aucun
+graphique : la page ne redevient un mur de courbes qu'à l'étape suivante. Le tableau des
+résultats, les filtres et le masquage réversible ne disparaissent pas pour autant : ils
+sont repliés dans un dépliant (`Tous les résultats`), ouvrable sans JavaScript.
+
+**Étape 2 — `/graph?sel=<clé>&sel=<clé>`** : le formulaire est un **GET**, l'adresse se
+partage telle quelle. Seuls les graphiques des réglages cochés sont tracés (les autres
+séries sont absentes du SVG *et* de la légende), avec le rappel de la sélection et un lien
+« ← modifier la sélection » qui revient à l'étape 1 **cases conservées**. En dessous, le
+panneau « affiner » (familles de tests, résultats partiels, résultats masqués), le tableau
+des résultats et la liste des masques. Le panneau reporte la sélection en champs cachés :
+« Filtrer » ne fait jamais perdre les réglages cochés.
+
+**Bornes, dites en clair** — jamais d'erreur 500, jamais 12 séries dans une légende :
+
+- **moins de 2 réglages** → retour à l'étape 1 avec la raison : *« il en faut au moins 2
+  pour comparer : avec un seul réglage, il n'y a rien à comparer »* (la case reste cochée) ;
+- **plus de 6** → les **6 premiers** sont tracés, les autres sont nommés dans un bandeau
+  (`6 réglages au maximum`) ; six est la limite de lisibilité de la légende ;
+- **clé inconnue** dans `sel=` → ignorée (elle ne filtre rien) mais **signalée** dans un
+  bandeau, pour ne pas croire la sélection appliquée ;
+- **index vide ou un seul réglage** → message explicite, page vide jamais.
+
+Alias d'URL acceptés pour la sélection : `sel`, `selection`, `series`, `serie`, `llm`,
+`reglages` (paramètres répétés ou en liste). Le rendu reste **stdlib + SVG inline**, sans
+JavaScript applicatif ; `metrics.series_catalogue()` construit le catalogue (dédoublonné
+par clé de variante, trié dernier résultat d'abord).
 
 ## Suivi en direct
 
