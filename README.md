@@ -353,9 +353,9 @@ des résultats et la liste des masques. Le panneau reporte la sélection en cham
 - **index vide ou un seul réglage** → message explicite, page vide jamais.
 
 Alias d'URL acceptés pour la sélection : `sel`, `selection`, `series`, `serie`, `llm`,
-`reglages` (paramètres répétés ou en liste). Le rendu reste **stdlib + SVG inline**, sans
-JavaScript applicatif ; `metrics.series_catalogue()` construit le catalogue (dédoublonné
-par clé de variante, trié dernier résultat d'abord).
+`reglages`/`reglage` (paramètres répétés ou en liste). Le rendu reste **stdlib + SVG
+inline**, sans JavaScript applicatif ; `metrics.series_catalogue()` construit le catalogue
+(dédoublonné par clé de variante, trié dernier résultat d'abord).
 
 ## Suivi en direct
 

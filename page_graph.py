@@ -230,8 +230,8 @@ def parse_query(query):
     de ``urllib.parse.parse_qs`` (valeurs en listes). Les alias FR sont toleres.
 
     ``selection`` : les CLES DE REGLAGE cochees a l'etape 1 (parametre ``sel``,
-    alias ``selection``, ``series``, ``serie``, ``llm``, ``reglages`` — « reglages »
-    designe desormais ce qu'on coche ; le filtre de variante garde
+    alias ``selection``, ``series``, ``serie``, ``llm``, ``reglages``/``reglage`` —
+    « reglages » designe desormais ce qu'on coche ; le filtre de variante garde
     ``variant``/``variante``). ``edit`` : retour volontaire a l'etape 1 (le lien
     « modifier la selection »), sans message d'erreur et avec les cases cochees.
     """
