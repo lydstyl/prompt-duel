@@ -13,7 +13,10 @@ Familles
 --------
 `vitesse`      PP (prefill) et TG (génération) en t/s — prompt court + contexte saturé
                à 128k/256k. Mesure directe : `/completion` de llama.cpp (repli chat si le
-               modèle n'est pas génératif en brut), timings officiels du serveur.
+               modèle n'est pas génératif en brut), timings officiels du serveur. Sur un
+               serveur SANS routes natives (API OpenAI seule, ex. Strata) : tir chat
+               direct, timings identiques, taille de prompt estimée puis lue exactement
+               dans `prompt_n` de la réponse.
 `memoire`      remplissage réel du contexte (92 %) + needle à 85 % de profondeur :
                rappel exact du code caché + PP réel à cette taille de contexte.
 `intelligence` batterie de 13 petites tâches FR (`~/llm/small_tasks.py` sur .224) et
@@ -33,6 +36,7 @@ import shutil
 import subprocess
 import threading
 import time
+import urllib.error
 import urllib.request
 
 # v1.6 : capture des réglages réellement servis (cmdline + /props) au lancement
@@ -75,7 +79,8 @@ SHORT_PROMPT = ("Explique de facon detaillee et technique le fonctionnement suiv
 
 GROUPS = [
     {"id": "vitesse", "title": "Vitesse — prefill et génération (t/s)",
-     "note": "appels directs à /completion, cache vidé : le chiffre comparable entre modèles"},
+     "note": "appels directs à /completion (tir chat si le serveur n'expose que l'API "
+             "OpenAI), cache vidé : le chiffre comparable entre modèles"},
     {"id": "memoire", "title": "Mémoire de contexte — needle 128k / 256k",
      "note": "remplissage réel du contexte, fait caché à 85 % de profondeur"},
     {"id": "intelligence", "title": "Intelligence — rapide et complet",
@@ -426,7 +431,55 @@ def _post(url, payload, timeout):
     return d, time.time() - t0
 
 
+# Le serveur visé n'est pas toujours llama.cpp : Strata (et d'autres moteurs) ne servent
+# QUE l'API OpenAI. `/tokenize` et `/completion` renvoient alors 404 et tout le banc
+# tombait en erreur en 0,1 s. On sonde UNE fois par serveur ; si les routes natives
+# manquent, on mesure via le bloc `timings` de /v1/chat/completions (mêmes champs
+# prompt_per_second / predicted_per_second) et on estime le remplissage par un ratio
+# caractères/token mesuré côté serveur — jamais une table de conversion inventée.
+_SERVER_CAPS = {}
+
+
+def server_is_llamacpp(base, timeout=20):
+    """Le serveur expose-t-il les routes natives `/tokenize` et `/completion` ?"""
+    key = ("native", base)
+    if key not in _SERVER_CAPS:
+        native = True
+        try:
+            _post(f"{base}/tokenize", {"content": "ping"}, timeout)
+        except urllib.error.HTTPError as exc:
+            native = exc.code != 404
+        except Exception:
+            pass            # réseau/JSON : on ne conclut rien, on garde la route normale
+        _SERVER_CAPS[key] = native
+    return _SERVER_CAPS[key]
+
+
+def _chars_per_token(base, timeout=180):
+    """Ratio caractères/token du serveur, mesuré une seule fois par serveur (2 tirs
+    minuscules, ~2 s). L'échantillon est le texte de REMPLISSAGE lui-même (`BLOCK`) :
+    un échantillon d'une autre famille de texte donne un ratio faux — mesuré sur le .224,
+    4,34 car/token sur une phrase isolée contre 4,58 sur le bloc réel, soit un test
+    « 128k » publié à 113k. Le compte exact arrive ensuite avec `prompt_n` du tir."""
+    key = ("ratio", base)
+    if key not in _SERVER_CAPS:
+        def prompt_n(content):
+            body = {"messages": [{"role": "user", "content": content}],
+                    "max_tokens": 1, "temperature": 0.0}
+            d, _ = _post(f"{base}/v1/chat/completions", body, timeout)
+            t = d.get("timings") or {}
+            u = d.get("usage") or {}
+            return t.get("prompt_n") or u.get("prompt_tokens") or 0
+        overhead = max(0, prompt_n("a") - 1)         # gabarit du template de chat
+        sample = BLOCK * 3                           # même famille que le remplissage
+        n = prompt_n(sample) - overhead
+        _SERVER_CAPS[key] = (len(sample) / n) if n > 0 else 4.0
+    return _SERVER_CAPS[key]
+
+
 def _tokenize(base, text, timeout=900):
+    if not server_is_llamacpp(base):
+        return max(1, round(len(text) / _chars_per_token(base)))
     d, _ = _post(f"{base}/tokenize", {"content": text}, timeout)
     return len(d.get("tokens") or [])
 
@@ -439,10 +492,21 @@ def _timings(d):
                 return round(float(v), 1)
             except (TypeError, ValueError):
                 return v
+        # `cache_n` = tokens servis par le cache du serveur : sans lui, un run « 120k »
+        # peut n'avoir évalué que 7 tokens et sortir un PP flatteur (ou absurde).
+        cache_n = t.get("cache_n")
+        prompt_n = t.get("prompt_n")
+        try:
+            eval_n = (int(prompt_n or 0) + int(cache_n or 0)) or None
+        except (TypeError, ValueError):
+            eval_n = prompt_n
         return {"pp_tps": r(t.get("prompt_per_second")), "tg_tps": r(t.get("predicted_per_second")),
-                "prompt_n": t.get("prompt_n"), "predicted_n": t.get("predicted_n")}
+                "prompt_n": prompt_n, "cache_n": cache_n, "eval_n": eval_n,
+                "predicted_n": t.get("predicted_n")}
     u = d.get("usage") or {}
+    ptd = u.get("prompt_tokens_details") or {}
     return {"pp_tps": None, "tg_tps": None, "prompt_n": u.get("prompt_tokens"),
+            "cache_n": ptd.get("cached_tokens"), "eval_n": u.get("prompt_tokens"),
             "predicted_n": u.get("completion_tokens")}
 
 
@@ -455,50 +519,66 @@ def _completion(base, prompt, n_predict, timeout, emit=None, prefer_chat=False):
     on va droit au endpoint chat, qui est celui qui génère réellement.
     Un `predicted_n` < 8 en brut n'est PAS « le modèle est lent », c'est le harnais
     qui a fini (modèle chat-tuné sans marqueurs de template dans le prompt brut).
+    Serveur sans `/completion` (API OpenAI seule, ex. Strata) : on va droit au chat,
+    sans tenter une route qui rend 404 — les timings sont les mêmes.
     """
+    mode = None
+    t = None
     if prefer_chat:
-        body = {"messages": [{"role": "user", "content": prompt}], "max_tokens": n_predict,
-                "temperature": 0.0, "top_k": 1, "seed": 1, "cache_prompt": False,
-                "reasoning_effort": "none", "chat_template_kwargs": {"enable_thinking": False}}
-        d, wall = _post(f"{base}/v1/chat/completions", body, timeout)
-        t = _timings(d)
-        t["wall_s"] = round(wall, 2)
-        t["mode"] = "chat"
-        return t
-    d, wall = _post(f"{base}/completion", {"prompt": prompt, "n_predict": n_predict,
-                                          "temperature": 0.0, "top_k": 1, "seed": 1,
-                                          "cache_prompt": False}, timeout)
-    t = _timings(d)
-    mode = "brut"
-    if (t.get("predicted_n") or 0) < 8:
+        pass
+    elif server_is_llamacpp(base):
+        try:
+            d, wall = _post(f"{base}/completion", {"prompt": prompt, "n_predict": n_predict,
+                                                   "temperature": 0.0, "top_k": 1, "seed": 1,
+                                                   "cache_prompt": False}, timeout)
+            t = _timings(d)
+            mode = "brut"
+            if (t.get("predicted_n") or 0) < 8:
+                if emit:
+                    emit("  tir brut non génératif → repli chat (le prefill est payé deux fois)")
+                t = None
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                raise
+            _SERVER_CAPS[("native", base)] = False
+            if emit:
+                emit("  /completion absent (404) → tir chat")
+    elif emit:
+        emit("  serveur sans routes natives → tir chat (/v1/chat/completions)")
+    if t is None:
         body = {"messages": [{"role": "user", "content": prompt}], "max_tokens": n_predict,
                 "temperature": 0.0, "top_k": 1, "seed": 1, "cache_prompt": False,
                 "reasoning_effort": "none", "chat_template_kwargs": {"enable_thinking": False}}
         d, wall = _post(f"{base}/v1/chat/completions", body, timeout)
         t = _timings(d)
         mode = "chat"
-        if emit:
-            emit(f"  tir brut non génératif → repli chat (le prefill est payé deux fois)")
     t["wall_s"] = round(wall, 2)
     t["mode"] = mode
     return t
 
 
 def _fill_prompt(base, target_tokens, emit=None):
-    """Construit un texte d'environ `target_tokens` tokens (comptés par /tokenize)."""
+    """Construit un texte d'environ `target_tokens` tokens (comptés par /tokenize).
+
+    Correction dans les DEUX sens : un estimateur (serveur sans /tokenize) qui sous-estime
+    restait sous la cible sans être rattrapé — un test « 128k » mesuré à 113k n'est pas
+    le même chiffre. On ajuste tant qu'on est à plus de 2 % de la cible.
+    """
     nblock = max(1, _tokenize(base, BLOCK))
     reps = max(1, target_tokens // nblock)
     text = BLOCK * reps
     got = _tokenize(base, text)
     guard = 0
-    while got > target_tokens and guard < 40:
-        reps -= max(1, (got - target_tokens) // nblock)
-        reps = max(1, reps)
-        text = BLOCK * reps
-        new = _tokenize(base, text)
-        if new == got:            # plus rien à couper proprement
+    while abs(got - target_tokens) > max(1, target_tokens * 0.02) and guard < 12:
+        ecart = target_tokens - got
+        delta = int(ecart / nblock) or (1 if ecart > 0 else -1)
+        reps = max(1, reps + delta)
+        new_text = BLOCK * reps
+        new = _tokenize(base, new_text)
+        if new == got:            # plus rien à ajuster proprement
+            text, got = new_text, new
             break
-        got = new
+        text, got = new_text, new
         guard += 1
     if emit:
         emit(f"  remplissage : {got} tokens (cible {target_tokens})")
@@ -515,17 +595,29 @@ def _run_vitesse(test, env, emit, stop_check):
         t = _completion(env.base, SHORT_PROMPT, test["n_predict"], PREFILL_TIMEOUT_S, emit)
         results.append(t)
         emit(f"  tir {i + 1}/{test['runs']} : PP {t.get('pp_tps') or 0:.1f} t/s "
-             f"({t.get('prompt_n')} tok) | TG {t.get('tg_tps') or 0:.1f} t/s "
+             f"({t.get('prompt_n')} tok évalués, {t.get('cache_n')} du cache) | "
+             f"TG {t.get('tg_tps') or 0:.1f} t/s "
              f"({t.get('predicted_n')} tok) | {t['wall_s']}s")
-    pp = [t["pp_tps"] for t in results if t.get("pp_tps")]
+    # Un tir servi par le cache du serveur n'a PAS mesuré le prefill (constaté : 7 tokens
+    # au lieu de 504 → PP de 43 t/s qui polluait la moyenne). Seuls les tirs ayant
+    # réellement évalué le prompt comptent ; les autres restent dans `runs` (audit).
+    plein = max([t.get("prompt_n") or 0 for t in results] or [0])
+    retenus = [t for t in results if (t.get("prompt_n") or 0) >= max(1, int(plein * 0.8))]
+    ecartes = len(results) - len(retenus)
+    if ecartes and emit:
+        emit(f"  {ecartes} tir(s) servi(s) par le cache → écarté(s) de la moyenne de prefill")
+    pp = [t["pp_tps"] for t in retenus if t.get("pp_tps")]
     tg = [t["tg_tps"] for t in results if t.get("tg_tps") and (t.get("predicted_n") or 0) >= 8]
     m_pp = round(sum(pp) / len(pp), 1) if pp else None
     m_tg = round(sum(tg) / len(tg), 1) if tg else None
     return {
-        "metrics": {"pp_tps": m_pp, "tg_tps": m_tg, "runs": results},
+        "metrics": {"pp_tps": m_pp, "tg_tps": m_tg, "prompt_n": plein,
+                    "runs_exclus_cache": ecartes, "runs": results},
         "calib": {"pp_tps": m_pp, "tg_tps": m_tg},
         "ok": bool(m_pp and m_tg),
-        "summary": f"PP {m_pp or '—'} t/s · TG {m_tg or '—'} t/s ({len(tg)} tir(s) valide(s))",
+        "summary": (f"PP {m_pp or '—'} t/s · TG {m_tg or '—'} t/s "
+                    f"({len(pp)} tir(s) de prefill valide(s)"
+                    + (f", {ecartes} écarté(s) du cache" if ecartes else "") + ")"),
     }
 
 
@@ -544,7 +636,7 @@ def _run_vitesse_long(test, env, emit, stop_check):
         "calib": {"pp_tps": t.get("pp_tps"), "tg_tps": t.get("tg_tps"),
                   "pp_by_ctx": {str(test["ctx"]): t.get("pp_tps")}},
         "ok": bool(t.get("pp_tps")),
-        "summary": (f"PP {t.get('pp_tps') or '—'} t/s sur {got} tok · "
+        "summary": (f"PP {t.get('pp_tps') or '—'} t/s sur {t.get('prompt_n') or got} tok · "
                     f"TG {t.get('tg_tps') or '—'} t/s"),
     }
 
@@ -560,24 +652,46 @@ def _run_needle(test, env, emit, stop_check):
     got = _tokenize(env.base, text)
     if stop_check():
         raise RuntimeError("arrêt demandé")
-    emit(f"  needle à {int(depth * 100)} % — prompt final {got} tokens")
+    emit(f"  needle à {int(depth * 100)} % — prompt final {got} tokens"
+         + ("" if server_is_llamacpp(env.base) else " (estimation : serveur sans /tokenize)"))
+    # 128 tokens de marge : un modèle qui raisonne brûle son budget en `reasoning_content`
+    # avant d'écrire sa réponse, et un rappel juste serait compté comme un échec.
+    budget = max(int(test.get("n_predict") or 32), 128)
     body = {"messages": [{"role": "user", "content": text + "\n\n" + QUESTION}],
-            "max_tokens": test.get("n_predict", 32), "temperature": 0.0,
+            "max_tokens": budget, "temperature": 0.0, "cache_prompt": False,
             "reasoning_effort": "none", "chat_template_kwargs": {"enable_thinking": False}}
     d, wall = _post(f"{env.base}/v1/chat/completions", body, PREFILL_TIMEOUT_S)
-    msg = ((((d.get("choices") or [{}])[0]).get("message") or {}).get("content") or "")
+    msg = (((d.get("choices") or [{}])[0]).get("message") or {})
+    content = (msg.get("content") or "").strip()
+    think = (msg.get("reasoning_content") or "").strip()
     t = _timings(d)
-    needle_ok = NEEDLE_TOKEN in msg.upper().replace(" ", "-")
-    emit(f"  rappel : {'OK' if needle_ok else 'ÉCHEC'} — réponse {msg.strip()[:60]!r}")
+    needle_ok = NEEDLE_TOKEN in (content + "\n" + think).upper().replace(" ", "-")
+    where = ("content" if NEEDLE_TOKEN in content.upper().replace(" ", "-")
+             else "reasoning" if needle_ok else None)
+    answer = (content or think)[-200:]
+    # le contexte RÉELLEMENT servi = ce qui a été évalué + ce qui venait du cache du
+    # serveur : un « needle 128k » servi à 89 % par le cache ne vaut pas 31k de contexte.
+    contexte = t.get("eval_n") or t.get("prompt_n") or got
+    emit(f"  rappel : {'OK' if needle_ok else 'ÉCHEC'}"
+         + (f" (lu dans {where})" if where else "")
+         + f" — contexte réel {contexte} tok "
+           f"({t.get('prompt_n')} évalués + {t.get('cache_n') or 0} du cache)"
+         + f" — réponse {answer[:60]!r}")
     return {
-        "metrics": {"needle_ok": needle_ok, "answer": msg.strip()[:200],
-                    "prompt_n": t.get("prompt_n") or got, "pp_tps": t.get("pp_tps"),
-                    "tg_tps": t.get("tg_tps"), "wall_s": round(wall, 1)},
+        "metrics": {"needle_ok": needle_ok, "answer": answer, "reponse_dans": where,
+                    "prompt_n": contexte, "prefill_n": t.get("prompt_n"),
+                    "cache_n": t.get("cache_n"), "pp_tps": t.get("pp_tps"),
+                    "tg_tps": t.get("tg_tps"), "wall_s": round(wall, 1),
+                    "mode": "chat" if not server_is_llamacpp(env.base) else "native"},
         "calib": {"pp_tps": t.get("pp_tps"),
                   "pp_by_ctx": {str(test["ctx"]): t.get("pp_tps")}},
         "ok": bool(needle_ok),
-        "summary": (f"rappel {'OK' if needle_ok else 'ÉCHEC'} · "
-                    f"PP {t.get('pp_tps') or '—'} t/s · {round(wall)} s"),
+        "summary": (f"rappel {'OK' if needle_ok else 'ÉCHEC'} "
+                    f"({'dans ' + where if where else 'réponse absente'}) · "
+                    f"{contexte} tok"
+                    + (f" ({t.get('prompt_n')} évalués + {t.get('cache_n')} du cache)"
+                       if t.get("cache_n") else "")
+                    + f" · PP {t.get('pp_tps') or '—'} t/s · {round(wall)} s"),
     }
 
 

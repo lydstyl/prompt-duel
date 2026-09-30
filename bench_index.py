@@ -175,6 +175,15 @@ def num(v, dec=1, suffix=""):
 
 
 # ---------------------------------------------------------------- duels
+# Part de prompts qu'un duel doit avoir menee a bien pour etre un resultat
+# comparable. Deux regimes : perdre un ou deux prompts sur 34, c'est du bruit de
+# mesure (on garde) ; en perdre un tiers ou plus, c'est un duel a relancer — son
+# tok/s est calcule sur les seuls survivants, donc biaise. En dessous du seuil,
+# l'entree reste dans l'index (l'information compte) mais est marquee `partiel`
+# et ecartee des courbes.
+DUEL_OK_RATIO = 0.75
+
+
 def scan_duels():
     out = []
     seen = {}
@@ -198,6 +207,11 @@ def scan_duels():
         duree = sum((r.get("duree_s") or 0) for r in res)
         toks = sum((r.get("completion_tokens") or 0) for r in res)
         slug = d.get("model_slug") or ""
+        ok = sum(1 for r in res if r.get("status") == "ok")
+        # Un duel qui a perdu un tiers de ses prompts n'est pas un resultat
+        # comparable (un 9/34 etait liste comme un duel ordinaire). Il reste dans
+        # l'index — l'information compte — mais marque `partiel` et hors courbes.
+        partiel = ok < len(res) * DUEL_OK_RATIO
         out.append({
             "kind": "duel",
             "date": d.get("started_at"),
@@ -210,7 +224,10 @@ def scan_duels():
             "max_tokens": params.get("max_tokens"),
             "thinking": bool(params.get("enable_thinking")),
             "prompts_total": len(res),
-            "prompts_ok": sum(1 for r in res if r.get("status") == "ok"),
+            "prompts_ok": ok,
+            "prompts_failed": len(res) - ok,
+            "status": "partiel" if partiel else "ok",
+            "partiel": partiel,
             "duration_s": round(duree, 1),
             "tokens_out": toks,
             "tok_s": round(toks / duree, 1) if duree else None,
@@ -221,21 +238,60 @@ def scan_duels():
 
 
 # ---------------------------------------------------------------- vitesse
+# Le bench de vitesse envoie UN prompt de 489 tokens et genere 128 tokens, 3 fois.
+# Un log de cas peut contenir d'autres passes : la passe brute avortee (EOS immediat)
+# et le repli chat du meme harnais. Moyennees avec les vraies, elles publiaient
+# 48,9 t/s la ou la mesure est 97,7 — le chiffre comparable etait divise par deux.
+# On n'apparie donc que les repetitions COMPLETES du bench (prefill 489 + generation 128),
+# appariage par proximite dans le log (llama.cpp imprime prefill puis generation, d'autres
+# harnais l'inverse), et on compte celles qu'on ecarte au lieu de les moyenner.
+BENCH_PROMPT_TOKENS = 489
+BENCH_GEN_TOKENS = 128
+MAX_PAIR_DISTANCE = 3          # en evenements : au-dela, ce n'est pas la meme repetition
+
+_TIMING_RE = re.compile(
+    r"(prompt eval time|eval time)\s*=[^\n]*?/\s*(\d+) (?:tokens|runs)"
+    r"[^\n]*?([0-9.]+) tokens per second")
+
+
+def passes_de_vitesse(txt):
+    """(tg, pp, methode, nb_ecartees) — seules les passes completes du bench comptent."""
+    evts = [(m.group(1), int(m.group(2)), float(m.group(3)))
+            for m in _TIMING_RE.finditer(txt)]
+    prefills = [i for i, e in enumerate(evts) if e[0] == "prompt eval time"]
+    tg, pp, ecartees, pris = [], [], 0, set()
+    for i, (kind, n, val) in enumerate(evts):
+        if kind != "eval time":
+            continue
+        proche = None
+        for k in prefills:
+            if k in pris:
+                continue
+            if proche is None or abs(k - i) < abs(proche - i):
+                proche = k
+        ok = (n == BENCH_GEN_TOKENS and proche is not None
+              and abs(proche - i) <= MAX_PAIR_DISTANCE
+              and evts[proche][1] == BENCH_PROMPT_TOKENS)
+        if not ok:
+            ecartees += 1
+            continue
+        pris.add(proche)
+        tg.append(val)
+        pp.append(evts[proche][2])
+    if tg:
+        return tg, pp, "bench 128 tok (passes completes, prefill 489 tok)", ecartees
+    # harnais case-full.sh : lignes synthetiques « run N … PP … TG … »
+    tg = [float(x) for x in re.findall(r"TG ([0-9.]+) t/s", txt)]
+    pp = [float(x) for x in re.findall(r"PP ([0-9.]+) t/s", txt)]
+    return tg, pp, "bench 128 tok (lignes run N)", ecartees
+
+
 def parse_case_log(path):
     txt = read_text(path)
     label = os.path.basename(path)
     label = re.sub(r"^case-", "", label)
     label = re.sub(r"\.(full\.)?log$", "", label)
-    # bench = 128 tokens de sortie, 489 tokens de prompt (bench-llama-server.py)
-    tg = [float(x) for x in re.findall(
-        r"eval time *=.*?/ *128 tokens.*?([0-9.]+) tokens per second", txt)]
-    pp = [float(x) for x in re.findall(
-        r"prompt eval time *=.*?/ *489 tokens.*?([0-9.]+) tokens per second", txt)]
-    method = "bench 128 tok (mediane eval time)"
-    if not tg:  # logs de case-full.sh : lignes synthetiques
-        tg = [float(x) for x in re.findall(r"TG ([0-9.]+) t/s", txt)]
-        pp = pp or [float(x) for x in re.findall(r"PP ([0-9.]+) t/s", txt)]
-        method = "bench 128 tok (lignes run N)"
+    tg, pp, method, ecartes = passes_de_vitesse(txt)
     if not tg:
         return None
     # Un vrai bench de vitesse envoie le meme prompt (489 tokens) 3 fois : sans
@@ -269,6 +325,10 @@ def parse_case_log(path):
         "method": method,
         "source": os.path.relpath(path, os.path.dirname(VAULT_DOCS)),
     }
+    if ecartes:
+        # tracabilite : des passes du log n'ont pas ete retenues (passe brute avortee,
+        # repli chat d'un autre prompt). Le detail reste lisible dans le log source.
+        entry["passes_ecartees"] = ecartes
     return entry
 
 
@@ -539,17 +599,7 @@ def parse_vram_csv(path):
     except (OSError, ValueError):
         case = {}
 
-    # quelle carte sert ? le cas le dit (gpu_index) ; sinon, la carte dont
-    # l'occupation AUGMENTE le plus (delta max-min) — jamais celle du bureau.
-    want = case.get("gpu_index")
-    if want in gpus:
-        serving = want
-    else:
-        serving = max(gpus, key=lambda g: max(gpus[g]["used"]) - min(gpus[g]["used"]))
-    d = gpus[serving]
-    total_mib = d["total"]
-    series = sorted(zip(d["ep"], d["used"]))
-
+    # --- jalons de phase du cas (ecrits par vram-mark.sh) --------------------
     phases = {}
     pm = re.search(r"\.csv$", path)
     phases_path = path[:pm.start()] + ".phases"
@@ -561,14 +611,40 @@ def parse_vram_csv(path):
             except ValueError:
                 pass
 
+    # Bornes du cas : du debut declare a son marqueur de FIN. Apres la fin, le
+    # sampler peut continuer a ecrire (cas suivant, montage disque, sampler
+    # orphelin) : publier ce maximum surestimait le pic (12 118 MiB publies la ou
+    # la mesure du cas est 8 940). Le pic hors fenetre est conserve pour l'audit.
+    FIN_PHASES = ("stop", "end", "done", "he_end", "fill_end", "battery_end",
+                  "speed_end", "ready_end", "duel_end")
+    t_debut = phases.get("start")
+    t_fin = next((phases[k] for k in FIN_PHASES if k in phases), None)
+    if t_fin is None and phases:
+        t_fin = max(phases.values())
+
+    def _dans_le_cas(seg):
+        return [u for ep, u in seg
+                if (t_debut is None or ep >= t_debut) and (t_fin is None or ep <= t_fin)]
+
+    # quelle carte sert ? le cas le dit (gpu_index) ; sinon, la carte dont
+    # l'occupation AUGMENTE le plus (delta max-min) — jamais celle du bureau, et
+    # le delta se lit DANS la fenetre du cas (hors fenetre, une donnee parasite
+    # peut la designer a tort).
+    def _amplitude(g):
+        vals = _dans_le_cas(list(zip(gpus[g]["ep"], gpus[g]["used"])))
+        return (max(vals) - min(vals)) if vals else (max(gpus[g]["used"]) - min(gpus[g]["used"]))
+    want = case.get("gpu_index")
+    serving = want if want in gpus else max(gpus, key=_amplitude)
+    d = gpus[serving]
+    total_mib = d["total"]
+    series = sorted(zip(d["ep"], d["used"]))
+
     def window(a, b):
         t0 = phases.get(a) if a else (series[0][0] if series else None)
         t1 = phases.get(b)
         if t0 is None:
             return []
         return [u for ep, u in series if ep >= t0 and (t1 is None or ep < t1)]
-
-    after = [u for ep, u in series if "ready" in phases and ep >= phases["ready"]]
 
     def peak(seg):
         return round(max(seg), 1) if seg else None
@@ -578,7 +654,8 @@ def parse_vram_csv(path):
     gen = window("speed", "battery_end") or window("speed", "speed_end")
     duel_w = window("duel", "duel_end")
     fill_w = window("fill", "fill_end")
-    peak_all = peak(after)
+    peak_all = peak(_dans_le_cas(series))
+    peak_hors_cas = peak([u for ep, u in series if t_fin is not None and ep > t_fin])
     idle_med = _median(idle)
 
     # RSS pic du process llama-server
@@ -616,6 +693,9 @@ def parse_vram_csv(path):
         notes.append(f"erreur : {case['error']}")
     duel = case.get("duel") or {}
     speed = case.get("speed") or {}
+    if peak_hors_cas is not None and peak_all is not None and peak_hors_cas > peak_all * 1.05:
+        notes.append(f"pic hors cas {peak_hors_cas:.0f} MiB ecarte "
+                     f"(sampler encore actif apres l'arret du cas)")
     return {
         "kind": "vram",
         "date": case.get("started") or datetime.fromtimestamp(
@@ -631,6 +711,7 @@ def parse_vram_csv(path):
         "peak_duel_mib": peak(duel_w),
         "peak_prefill_mib": peak(fill_w or window("fill", "fill_end")),
         "peak_mib": peak_all,
+        "peak_hors_cas_mib": peak_hors_cas,
         "peak_net_mib": (round(peak_all - (idle_med or 0), 1)
                          if peak_all is not None else None),
         "total_gb": round(peak_all / 1024, 2) if peak_all else None,
@@ -702,11 +783,25 @@ def mirror_logs(dest_root, log_src=LOG_SRC, verbose=True):
     return copied
 
 
+def run_ids_ecartes():
+    """run_id des duels ranges dans un dossier `echecs/` du vault.
+
+    Ils ont ete ecartes volontairement (campagne close) et ne sont pas un resultat :
+    le miroir ne doit pas les remettre dans `duels/` a chaque regeneration.
+    """
+    out = set()
+    for path in glob.glob(os.path.join(VAULT_DOCS, "**", "echecs", "*"), recursive=True):
+        if os.path.isdir(path):
+            out.add(os.path.basename(path))
+    return out
+
+
 def mirror_duels(dest_root, verbose=True):
     copied = 0
+    ecartes = run_ids_ecartes()
     for run_json in sorted(glob.glob(os.path.join(RUNS_DIR, "*", "run.json"))):
         run_id = os.path.basename(os.path.dirname(run_json))
-        if run_id == "latest":
+        if run_id == "latest" or run_id in ecartes:
             continue
         dest_dir = os.path.join(dest_root, "duels", run_id)
         dest = os.path.join(dest_dir, "run.json")

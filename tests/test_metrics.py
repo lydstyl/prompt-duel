@@ -374,8 +374,13 @@ class TestSeriesForChart(unittest.TestCase):
 
     def test_structure_du_contrat(self):
         data = metrics.series_for_chart(vault_entries(), metric_key="pp")
+        # `partiels_exclus` / `include_partial` : combien de résultats partiels ont été
+        # écartés et si la vue demandait à les tracer (cf. tests/test_mesures_honnetes.py).
         self.assertEqual(set(data),
-                         {"metric", "groups", "series", "duplicates"})
+                         {"metric", "groups", "series", "duplicates",
+                          "partiels_exclus", "include_partial"})
+        self.assertEqual(data["partiels_exclus"], 0)
+        self.assertFalse(data["include_partial"])
         self.assertEqual(set(data["metric"]), {"key", "label", "unit", "better"})
         for groupe in data["groups"]:
             self.assertEqual(set(groupe), {"key", "label"})

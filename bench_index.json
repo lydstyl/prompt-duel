@@ -1,15 +1,19 @@
 {
- "generated_at": "2026-09-29T21:51:16",
+ "generated_at": "2026-09-30T18:14:02",
  "generator": "bench_index.py (224)",
- "campaign": "224-2026-09-29",
+ "campaign": "224-2026-09-30",
  "vault_root": "/home/gab/NAS/AgentsMirror/vaults/personnel",
  "docs": "documents/llm-benchmarks",
  "counts": {
-  "duel": 18,
-  "speed": 7,
-  "context": 2,
-  "battery": 10,
-  "humaneval": 31
+  "duel": 24,
+  "vitesse": 14,
+  "intelligence": 5,
+  "memoire": 9,
+  "speed": 19,
+  "context": 4,
+  "battery": 29,
+  "humaneval": 32,
+  "vram": 9
  },
  "entries": [
   {
@@ -25,11 +29,35 @@
    "thinking": false,
    "prompts_total": 3,
    "prompts_ok": 1,
+   "prompts_failed": 2,
+   "status": "partiel",
+   "partiel": true,
    "duration_s": 3.0,
    "tokens_out": 460,
    "tok_s": 153.3,
    "run_url": "/runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink-2/",
-   "source": "runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink-2/run.json"
+   "source": "runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink-2/run.json",
+   "entry_id": "duel:runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink-2/run.json",
+   "variant": {
+    "key": "dry-run_ctx8k_nothink_t02_max8k",
+    "label": "dry-run · 8k · nothink · T 0.2 · max 8k",
+    "ctx": 8192,
+    "flags": [],
+    "thinking": false,
+    "model": "dry-run",
+    "model_slug": "dry-run",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 8192,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 153.3,
+    "prompts_ok": 1.0,
+    "prompts_total": 3.0,
+    "tokens_out": 460.0
+   }
   },
   {
    "kind": "duel",
@@ -44,11 +72,35 @@
    "thinking": false,
    "prompts_total": 3,
    "prompts_ok": 0,
+   "prompts_failed": 3,
+   "status": "partiel",
+   "partiel": true,
    "duration_s": 9.0,
    "tokens_out": 1374,
    "tok_s": 152.7,
    "run_url": "/runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink/",
-   "source": "runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink/run.json"
+   "source": "runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink/run.json",
+   "variant": {
+    "key": "dry-run_ctx8k_nothink_t02_max8k",
+    "label": "dry-run · 8k · nothink · T 0.2 · max 8k",
+    "ctx": 8192,
+    "flags": [],
+    "thinking": false,
+    "model": "dry-run",
+    "model_slug": "dry-run",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 8192,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 152.7,
+    "prompts_ok": 0.0,
+    "prompts_total": 3.0,
+    "tokens_out": 1374.0
+   }
   },
   {
    "kind": "duel",
@@ -63,11 +115,35 @@
    "thinking": false,
    "prompts_total": 1,
    "prompts_ok": 0,
+   "prompts_failed": 1,
+   "status": "partiel",
+   "partiel": true,
    "duration_s": 24.0,
    "tokens_out": 3095,
    "tok_s": 128.8,
    "run_url": "/runs/2026-09-25_2315__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/",
-   "source": "runs/2026-09-25_2315__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json"
+   "source": "runs/2026-09-25_2315__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-25_2315__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q2-k-xl_ctx128k_nothink_t02_max8k",
+    "label": "Qwen3.8-27B · 128k · nothink · T 0.2 · max 8k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q2-k-xl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 8192,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 128.8,
+    "prompts_ok": 0.0,
+    "prompts_total": 1.0,
+    "tokens_out": 3095.0
+   }
   },
   {
    "kind": "duel",
@@ -82,11 +158,35 @@
    "thinking": false,
    "prompts_total": 2,
    "prompts_ok": 2,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 48.3,
    "tokens_out": 6425,
    "tok_s": 132.9,
    "run_url": "/runs/2026-09-26_0018__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/",
-   "source": "runs/2026-09-26_0018__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_0018__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_0018__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q2-k-xl_ctx128k_nothink_t02_max8k",
+    "label": "Qwen3.8-27B · 128k · nothink · T 0.2 · max 8k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q2-k-xl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 8192,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 132.9,
+    "prompts_ok": 2.0,
+    "prompts_total": 2.0,
+    "tokens_out": 6425.0
+   }
   },
   {
    "kind": "duel",
@@ -101,11 +201,35 @@
    "thinking": false,
    "prompts_total": 8,
    "prompts_ok": 8,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 266.8,
    "tokens_out": 34513,
    "tok_s": 129.3,
    "run_url": "/runs/2026-09-26_0022__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/",
-   "source": "runs/2026-09-26_0022__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_0022__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_0022__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q2-k-xl_ctx128k_nothink_t02_max8k",
+    "label": "Qwen3.8-27B · 128k · nothink · T 0.2 · max 8k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q2-k-xl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 8192,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 129.3,
+    "prompts_ok": 8.0,
+    "prompts_total": 8.0,
+    "tokens_out": 34513.0
+   }
   },
   {
    "kind": "duel",
@@ -120,11 +244,35 @@
    "thinking": false,
    "prompts_total": 3,
    "prompts_ok": 0,
+   "prompts_failed": 3,
+   "status": "partiel",
+   "partiel": true,
    "duration_s": 149.3,
    "tokens_out": 18203,
    "tok_s": 121.9,
    "run_url": "/runs/2026-09-26_0045__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/",
-   "source": "runs/2026-09-26_0045__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_0045__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_0045__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q2-k-xl_ctx128k_nothink_t02_max16k",
+    "label": "Qwen3.8-27B · 128k · nothink · T 0.2 · max 16k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q2-k-xl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 121.9,
+    "prompts_ok": 0.0,
+    "prompts_total": 3.0,
+    "tokens_out": 18203.0
+   }
   },
   {
    "kind": "duel",
@@ -139,11 +287,35 @@
    "thinking": false,
    "prompts_total": 32,
    "prompts_ok": 32,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 96.0,
    "tokens_out": 15120,
    "tok_s": 157.5,
    "run_url": "/runs/2026-09-26_0050__dry-run__ctx8192__t0.2__nothink/",
-   "source": "runs/2026-09-26_0050__dry-run__ctx8192__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_0050__dry-run__ctx8192__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_0050__dry-run__ctx8192__t0.2__nothink/run.json",
+   "variant": {
+    "key": "dry-run_ctx8k_nothink_t02_max16k",
+    "label": "dry-run · 8k · nothink · T 0.2 · max 16k",
+    "ctx": 8192,
+    "flags": [],
+    "thinking": false,
+    "model": "dry-run",
+    "model_slug": "dry-run",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 157.5,
+    "prompts_ok": 32.0,
+    "prompts_total": 32.0,
+    "tokens_out": 15120.0
+   }
   },
   {
    "kind": "duel",
@@ -158,11 +330,35 @@
    "thinking": false,
    "prompts_total": 2,
    "prompts_ok": 2,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 102.7,
    "tokens_out": 12335,
    "tok_s": 120.2,
    "run_url": "/runs/2026-09-26_0055__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/",
-   "source": "runs/2026-09-26_0055__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_0055__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_0055__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q2-k-xl_ctx128k_nothink_t02_max16k",
+    "label": "Qwen3.8-27B · 128k · nothink · T 0.2 · max 16k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q2-k-xl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 120.2,
+    "prompts_ok": 2.0,
+    "prompts_total": 2.0,
+    "tokens_out": 12335.0
+   }
   },
   {
    "kind": "duel",
@@ -177,11 +373,35 @@
    "thinking": false,
    "prompts_total": 1,
    "prompts_ok": 1,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 53.4,
    "tokens_out": 6626,
    "tok_s": 124.0,
    "run_url": "/runs/2026-09-26_0103__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/",
-   "source": "runs/2026-09-26_0103__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_0103__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_0103__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q2-k-xl_ctx128k_nothink_t02_max16k",
+    "label": "Qwen3.8-27B · 128k · nothink · T 0.2 · max 16k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q2-k-xl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 124.0,
+    "prompts_ok": 1.0,
+    "prompts_total": 1.0,
+    "tokens_out": 6626.0
+   }
   },
   {
    "kind": "duel",
@@ -196,11 +416,35 @@
    "thinking": false,
    "prompts_total": 1,
    "prompts_ok": 1,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 50.2,
    "tokens_out": 6282,
    "tok_s": 125.1,
    "run_url": "/runs/2026-09-26_0128__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/",
-   "source": "runs/2026-09-26_0128__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_0128__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_0128__qwen3.8-27b-ud-q2_k_xl__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q2-k-xl_ctx128k_nothink_t02_max16k",
+    "label": "Qwen3.8-27B · 128k · nothink · T 0.2 · max 16k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q2-k-xl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 125.1,
+    "prompts_ok": 1.0,
+    "prompts_total": 1.0,
+    "tokens_out": 6282.0
+   }
   },
   {
    "kind": "duel",
@@ -215,11 +459,35 @@
    "thinking": false,
    "prompts_total": 6,
    "prompts_ok": 3,
+   "prompts_failed": 3,
+   "status": "partiel",
+   "partiel": true,
    "duration_s": 1389.7,
    "tokens_out": 33656,
    "tok_s": 24.2,
    "run_url": "/runs/2026-09-26_0136__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/",
-   "source": "runs/2026-09-26_0136__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_0136__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_0136__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-flash-next-ad-4-e10d_ctx256k_nothink_t02_max16k",
+    "label": "FlashNext 177B · 256k · nothink · T 0.2 · max 16k",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": false,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-ad-4-e10d",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 24.2,
+    "prompts_ok": 3.0,
+    "prompts_total": 6.0,
+    "tokens_out": 33656.0
+   }
   },
   {
    "kind": "duel",
@@ -234,11 +502,35 @@
    "thinking": false,
    "prompts_total": 4,
    "prompts_ok": 4,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 779.0,
    "tokens_out": 39538,
    "tok_s": 50.8,
    "run_url": "/runs/2026-09-26_0206__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink/",
-   "source": "runs/2026-09-26_0206__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_0206__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_0206__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q4-k-xl_ctx256k_nothink_t02_max16k",
+    "label": "Qwen3.8-27B · 256k · nothink · T 0.2 · max 16k",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 50.8,
+    "prompts_ok": 4.0,
+    "prompts_total": 4.0,
+    "tokens_out": 39538.0
+   }
   },
   {
    "kind": "duel",
@@ -253,11 +545,35 @@
    "thinking": false,
    "prompts_total": 34,
    "prompts_ok": 33,
+   "prompts_failed": 1,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 6111.8,
    "tokens_out": 315254,
    "tok_s": 51.6,
    "run_url": "/runs/2026-09-26_1638__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink/",
-   "source": "runs/2026-09-26_1638__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_1638__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_1638__qwen3.8-27b-ud-q4_k_xl__ctx262144__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q4-k-xl_ctx256k_nothink_t02_max16k",
+    "label": "Qwen3.8-27B · 256k · nothink · T 0.2 · max 16k",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 51.6,
+    "prompts_ok": 33.0,
+    "prompts_total": 34.0,
+    "tokens_out": 315254.0
+   }
   },
   {
    "kind": "duel",
@@ -272,11 +588,35 @@
    "thinking": false,
    "prompts_total": 1,
    "prompts_ok": 0,
-   "duration_s": 0,
+   "prompts_failed": 1,
+   "status": "partiel",
+   "partiel": true,
+   "duration_s": 0.0,
    "tokens_out": 0,
    "tok_s": null,
    "run_url": "/runs/2026-09-26_1946__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/",
-   "source": "runs/2026-09-26_1946__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_1946__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_1946__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-flash-next-ad-4-e10d_ctx256k_nothink_t02_max16k",
+    "label": "FlashNext 177B · 256k · nothink · T 0.2 · max 16k",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": false,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-ad-4-e10d",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": null,
+    "prompts_ok": 0.0,
+    "prompts_total": 1.0,
+    "tokens_out": 0.0
+   }
   },
   {
    "kind": "duel",
@@ -291,11 +631,35 @@
    "thinking": false,
    "prompts_total": 34,
    "prompts_ok": 34,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 11951.5,
    "tokens_out": 300609,
    "tok_s": 25.2,
    "run_url": "/runs/2026-09-26_1949__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/",
-   "source": "runs/2026-09-26_1949__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/run.json"
+   "source": "runs/2026-09-26_1949__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-26_1949__qwen3.8-flash-next-ad-4.27bpw-q4_k_m-m64-00001-of-00033__ctx262144__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-flash-next-ad-4-e10d_ctx256k_nothink_t02_max16k",
+    "label": "FlashNext 177B · 256k · nothink · T 0.2 · max 16k",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": false,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-ad-4-e10d",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 25.2,
+    "prompts_ok": 34.0,
+    "prompts_total": 34.0,
+    "tokens_out": 300609.0
+   }
   },
   {
    "kind": "duel",
@@ -310,11 +674,35 @@
    "thinking": false,
    "prompts_total": 16,
    "prompts_ok": 15,
+   "prompts_failed": 1,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 3070.9,
    "tokens_out": 164740,
    "tok_s": 53.6,
    "run_url": "/runs/2026-09-27_0203__qwen3.8-27b-ud-q6_k__ctx131072__t0.2__nothink/",
-   "source": "runs/2026-09-27_0203__qwen3.8-27b-ud-q6_k__ctx131072__t0.2__nothink/run.json"
+   "source": "runs/2026-09-27_0203__qwen3.8-27b-ud-q6_k__ctx131072__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-27_0203__qwen3.8-27b-ud-q6_k__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q6-k_ctx128k_nothink_t02_max16k",
+    "label": "Qwen3.8-27B · 128k · nothink · T 0.2 · max 16k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.8-27B",
+    "model_slug": "qwen3-8-27b-ud-q6-k",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 53.6,
+    "prompts_ok": 15.0,
+    "prompts_total": 16.0,
+    "tokens_out": 164740.0
+   }
   },
   {
    "kind": "duel",
@@ -329,11 +717,35 @@
    "thinking": false,
    "prompts_total": 31,
    "prompts_ok": 31,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 3387.5,
    "tokens_out": 254745,
    "tok_s": 75.2,
    "run_url": "/runs/2026-09-27_1828__swift-1.5-qwen3.8-27b-iq4_xs__ctx262144__t0.2__nothink/",
-   "source": "runs/2026-09-27_1828__swift-1.5-qwen3.8-27b-iq4_xs__ctx262144__t0.2__nothink/run.json"
+   "source": "runs/2026-09-27_1828__swift-1.5-qwen3.8-27b-iq4_xs__ctx262144__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-27_1828__swift-1.5-qwen3.8-27b-iq4_xs__ctx262144__t0.2__nothink/run.json",
+   "variant": {
+    "key": "swift-1-5-qwen3-8-27b-iq4-xs_ctx256k_nothink_t02_max16k",
+    "label": "Swift-1.5-27B IQ4_XS · 256k · nothink · T 0.2 · max 16k",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": false,
+    "model": "Swift-1.5-27B IQ4_XS",
+    "model_slug": "swift-1-5-qwen3-8-27b-iq4-xs",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 75.2,
+    "prompts_ok": 31.0,
+    "prompts_total": 31.0,
+    "tokens_out": 254745.0
+   }
   },
   {
    "kind": "duel",
@@ -348,11 +760,2020 @@
    "thinking": false,
    "prompts_total": 34,
    "prompts_ok": 34,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
    "duration_s": 751.3,
    "tokens_out": 133187,
    "tok_s": 177.3,
    "run_url": "/runs/2026-09-29_2046__qwen3.6-35b-a3b-ud-iq4_nl__ctx262144__t0.2__nothink/",
-   "source": "runs/2026-09-29_2046__qwen3.6-35b-a3b-ud-iq4_nl__ctx262144__t0.2__nothink/run.json"
+   "source": "runs/2026-09-29_2046__qwen3.6-35b-a3b-ud-iq4_nl__ctx262144__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-29_2046__qwen3.6-35b-a3b-ud-iq4_nl__ctx262144__t0.2__nothink/run.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_ctx256k_nothink_t02_max16k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · nothink · T 0.2 · max 16k",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": false,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 177.3,
+    "prompts_ok": 34.0,
+    "prompts_total": 34.0,
+    "tokens_out": 133187.0
+   }
+  },
+  {
+   "kind": "duel",
+   "date": "2026-09-29T21:58:55",
+   "run_id": "2026-09-29_2158__ternary-bonsai-2-27b-ptq1_0__ctx32768__t0.2__nothink",
+   "model": "ternary-bonsai-2-27b-ptq1 0",
+   "model_slug": "ternary-bonsai-2-27b-ptq1_0",
+   "model_path": "/home/gab/models/Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+   "ctx": 32768,
+   "temperature": 0.2,
+   "max_tokens": 16384,
+   "thinking": false,
+   "prompts_total": 34,
+   "prompts_ok": 24,
+   "prompts_failed": 10,
+   "status": "partiel",
+   "partiel": true,
+   "duration_s": 2861.3,
+   "tokens_out": 276019,
+   "tok_s": 96.5,
+   "run_url": "/runs/2026-09-29_2158__ternary-bonsai-2-27b-ptq1_0__ctx32768__t0.2__nothink/",
+   "source": "runs/2026-09-29_2158__ternary-bonsai-2-27b-ptq1_0__ctx32768__t0.2__nothink/run.json",
+   "vram_peak_duel_mib": 8940.0,
+   "vram_total_gb": 8.73,
+   "vram_source": "llm-benchmarks/224-2026-09-30/vram/vram-bonsai2-ptq1-32k.csv",
+   "entry_id": "duel:runs/2026-09-29_2158__ternary-bonsai-2-27b-ptq1_0__ctx32768__t0.2__nothink/run.json",
+   "variant": {
+    "key": "ternary-bonsai-2-27b-ptq1-0_ctx32k_nothink_t02_max16k",
+    "label": "ternary-bonsai-2-27b-ptq1 0 · 32k · nothink · T 0.2 · max…",
+    "ctx": 32768,
+    "flags": [],
+    "thinking": false,
+    "model": "ternary-bonsai-2-27b-ptq1 0",
+    "model_slug": "ternary-bonsai-2-27b-ptq1-0",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 96.5,
+    "prompts_ok": 24.0,
+    "prompts_total": 34.0,
+    "tokens_out": 276019.0
+   }
+  },
+  {
+   "kind": "duel",
+   "date": "2026-09-29T22:51:17",
+   "run_id": "2026-09-29_2251__ternary-bonsai-2-27b-ptq1_0__ctx131072__t0.2__nothink",
+   "model": "ternary-bonsai-2-27b-ptq1 0",
+   "model_slug": "ternary-bonsai-2-27b-ptq1_0",
+   "model_path": "/home/gab/models/Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+   "ctx": 131072,
+   "temperature": 0.2,
+   "max_tokens": 16384,
+   "thinking": false,
+   "prompts_total": 34,
+   "prompts_ok": 29,
+   "prompts_failed": 5,
+   "status": "ok",
+   "partiel": false,
+   "duration_s": 2469.8,
+   "tokens_out": 237756,
+   "tok_s": 96.3,
+   "run_url": "/runs/2026-09-29_2251__ternary-bonsai-2-27b-ptq1_0__ctx131072__t0.2__nothink/",
+   "source": "runs/2026-09-29_2251__ternary-bonsai-2-27b-ptq1_0__ctx131072__t0.2__nothink/run.json",
+   "vram_peak_duel_mib": 12120.0,
+   "vram_total_gb": 11.84,
+   "vram_source": "llm-benchmarks/224-2026-09-30/vram/vram-bonsai2-ptq1-128k.csv",
+   "entry_id": "duel:runs/2026-09-29_2251__ternary-bonsai-2-27b-ptq1_0__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "ternary-bonsai-2-27b-ptq1-0_ctx128k_nothink_t02_max16k",
+    "label": "ternary-bonsai-2-27b-ptq1 0 · 128k · nothink · T 0.2 · ma…",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "ternary-bonsai-2-27b-ptq1 0",
+    "model_slug": "ternary-bonsai-2-27b-ptq1-0",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 96.3,
+    "prompts_ok": 29.0,
+    "prompts_total": 34.0,
+    "tokens_out": 237756.0
+   }
+  },
+  {
+   "kind": "duel",
+   "date": "2026-09-29T23:42:48",
+   "run_id": "2026-09-29_2342__k2-horizon-4b-q4_k_m__ctx32768__t0.2__nothink",
+   "model": "k2-horizon-4b-q4 k m",
+   "model_slug": "k2-horizon-4b-q4_k_m",
+   "model_path": "/home/gab/models/K2-Horizon-4B-Q4_K_M.gguf",
+   "ctx": 32768,
+   "temperature": 0.2,
+   "max_tokens": 16384,
+   "thinking": false,
+   "prompts_total": 34,
+   "prompts_ok": 4,
+   "prompts_failed": 30,
+   "status": "partiel",
+   "partiel": true,
+   "duration_s": 546.3,
+   "tokens_out": 87372,
+   "tok_s": 159.9,
+   "run_url": "/runs/2026-09-29_2342__k2-horizon-4b-q4_k_m__ctx32768__t0.2__nothink/",
+   "source": "runs/2026-09-29_2342__k2-horizon-4b-q4_k_m__ctx32768__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-29_2342__k2-horizon-4b-q4_k_m__ctx32768__t0.2__nothink/run.json",
+   "variant": {
+    "key": "k2-horizon-4b-q4-k-m_ctx32k_nothink_t02_max16k",
+    "label": "k2-horizon-4b-q4 k m · 32k · nothink · T 0.2 · max 16k",
+    "ctx": 32768,
+    "flags": [],
+    "thinking": false,
+    "model": "k2-horizon-4b-q4 k m",
+    "model_slug": "k2-horizon-4b-q4-k-m",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 159.9,
+    "prompts_ok": 4.0,
+    "prompts_total": 34.0,
+    "tokens_out": 87372.0
+   }
+  },
+  {
+   "kind": "duel",
+   "date": "2026-09-29T23:54:33",
+   "run_id": "2026-09-29_2354__k2-horizon-4b-q4_k_m__ctx131072__t0.2__nothink",
+   "model": "k2-horizon-4b-q4 k m",
+   "model_slug": "k2-horizon-4b-q4_k_m",
+   "model_path": "/home/gab/models/K2-Horizon-4B-Q4_K_M.gguf",
+   "ctx": 131072,
+   "temperature": 0.2,
+   "max_tokens": 16384,
+   "thinking": false,
+   "prompts_total": 34,
+   "prompts_ok": 2,
+   "prompts_failed": 32,
+   "status": "partiel",
+   "partiel": true,
+   "duration_s": 16.4,
+   "tokens_out": 3258,
+   "tok_s": 199.3,
+   "run_url": "/runs/2026-09-29_2354__k2-horizon-4b-q4_k_m__ctx131072__t0.2__nothink/",
+   "source": "runs/2026-09-29_2354__k2-horizon-4b-q4_k_m__ctx131072__t0.2__nothink/run.json",
+   "entry_id": "duel:runs/2026-09-29_2354__k2-horizon-4b-q4_k_m__ctx131072__t0.2__nothink/run.json",
+   "variant": {
+    "key": "k2-horizon-4b-q4-k-m_ctx128k_nothink_t02_max16k",
+    "label": "k2-horizon-4b-q4 k m · 128k · nothink · T 0.2 · max 16k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": false,
+    "model": "k2-horizon-4b-q4 k m",
+    "model_slug": "k2-horizon-4b-q4-k-m",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 199.3,
+    "prompts_ok": 2.0,
+    "prompts_total": 34.0,
+    "tokens_out": 3258.0
+   }
+  },
+  {
+   "kind": "duel",
+   "date": "2026-09-30T14:23:53",
+   "run_id": "2026-09-30_1423__qwen3.8-flash-next-iq3_xxs__ctx131072__t0.2__nothink__mtp-na_ctx128k_qwen3-8-flash-next",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "temperature": 0.2,
+   "max_tokens": 16384,
+   "thinking": false,
+   "prompts_total": 34,
+   "prompts_ok": 4,
+   "prompts_failed": 30,
+   "status": "partiel",
+   "partiel": true,
+   "duration_s": 381.3,
+   "tokens_out": 23085,
+   "tok_s": 60.5,
+   "run_url": "/runs/2026-09-30_1423__qwen3.8-flash-next-iq3_xxs__ctx131072__t0.2__nothink__mtp-na_ctx128k_qwen3-8-flash-next/",
+   "source": "runs/2026-09-30_1423__qwen3.8-flash-next-iq3_xxs__ctx131072__t0.2__nothink__mtp-na_ctx128k_qwen3-8-flash-next/run.json",
+   "entry_id": "duel:runs/2026-09-30_1423__qwen3.8-flash-next-iq3_xxs__ctx131072__t0.2__nothink__mtp-na_ctx128k_qwen3-8-flash-next/run.json",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_mtp-on_ctx128k_nothink_t02_max16k",
+    "label": "FlashNext 177B · 128k · nothink · T 0.2 · max 16k · mtp",
+    "ctx": 131072,
+    "flags": [
+     "mtp"
+    ],
+    "thinking": false,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 60.5,
+    "prompts_ok": 4.0,
+    "prompts_total": 34.0,
+    "tokens_out": 23085.0
+   }
+  },
+  {
+   "kind": "duel",
+   "date": "2026-09-30T15:59:36",
+   "run_id": "2026-09-30_1559__qwen3.8-flash-next-iq3_xxs__ctx131072__t0.2__nothink__mtp-na_ctx128k_qwen3-8-flash-next",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "temperature": 0.2,
+   "max_tokens": 16384,
+   "thinking": false,
+   "prompts_total": 7,
+   "prompts_ok": 7,
+   "prompts_failed": 0,
+   "status": "ok",
+   "partiel": false,
+   "duration_s": 940.3,
+   "tokens_out": 62246,
+   "tok_s": 66.2,
+   "run_url": "/runs/2026-09-30_1559__qwen3.8-flash-next-iq3_xxs__ctx131072__t0.2__nothink__mtp-na_ctx128k_qwen3-8-flash-next/",
+   "source": "runs/2026-09-30_1559__qwen3.8-flash-next-iq3_xxs__ctx131072__t0.2__nothink__mtp-na_ctx128k_qwen3-8-flash-next/run.json",
+   "entry_id": "duel:runs/2026-09-30_1559__qwen3.8-flash-next-iq3_xxs__ctx131072__t0.2__nothink__mtp-na_ctx128k_qwen3-8-flash-next/run.json",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_mtp-on_ctx128k_nothink_t02_max16k",
+    "label": "FlashNext 177B · 128k · nothink · T 0.2 · max 16k · mtp",
+    "ctx": 131072,
+    "flags": [
+     "mtp"
+    ],
+    "thinking": false,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": 0.2,
+    "max_tokens": 16384,
+    "kv": null,
+    "kind": "duel"
+   },
+   "metric_values": {
+    "tok_s": 66.2,
+    "prompts_ok": 7.0,
+    "prompts_total": 7.0,
+    "tokens_out": 62246.0
+   }
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T11:46:13",
+   "test_id": "vitesse-court",
+   "title": "Vitesse courte — PP + TG",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "ok",
+   "duree_s": 4.5,
+   "summary": "PP 1158.2 t/s · TG 148.5 t/s (3 tir(s) valide(s))",
+   "erreur": null,
+   "log": "vitesse-court.log",
+   "vram_peak": "0: 10.2 Go · 1: 13.3 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T11:46:08",
+   "finished_at": "2026-09-30T11:46:13",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#vitesse-court",
+   "pp_tps": 1158.2,
+   "tg_tps": 148.5,
+   "prompt_n": null,
+   "prefill_tps": 1158.2,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.2/15.9 Go · 1: 13.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#vitesse-court",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 1158.2,
+    "tg_tps": 148.5,
+    "prompt_n": null,
+    "vram_peak": 13.3
+   },
+   "duration_s": 4.5
+  },
+  {
+   "kind": "intelligence",
+   "date": "2026-09-30T11:46:23",
+   "test_id": "batterie-13",
+   "title": "Batterie rapide — 13 petites tâches FR",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "ok",
+   "duree_s": 9.8,
+   "summary": "score 11.0/13 · complets 11/13 · latence méd 0.3 s",
+   "erreur": null,
+   "log": "batterie-13.log",
+   "vram_peak": "0: 10.2 Go · 1: 13.3 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T11:46:13",
+   "finished_at": "2026-09-30T11:46:23",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#batterie-13",
+   "score_sum": 11.0,
+   "score_full": 11,
+   "tasks": 13,
+   "score_avg": 0.846,
+   "lat_median": 0.3,
+   "lat_max": 4.66,
+   "battery_s": 9.4,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.2/15.9 Go · 1: 13.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "intelligence:benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#batterie-13",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "intelligence"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.3
+   },
+   "duration_s": 9.8
+  },
+  {
+   "kind": "memoire",
+   "date": "2026-09-30T11:48:05",
+   "test_id": "memoire-128k",
+   "title": "Mémoire 128k — rappel à 85 %",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "ok",
+   "duree_s": 102.3,
+   "summary": "rappel OK · PP 1174.559213335399 t/s · 102 s",
+   "erreur": null,
+   "log": "memoire-128k.log",
+   "vram_peak": "0: 10.4 Go · 1: 13.5 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T11:46:23",
+   "finished_at": "2026-09-30T11:48:05",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#memoire-128k",
+   "needle_ok": true,
+   "prompt_n": 119087,
+   "pp_tps": 1174.559213335399,
+   "tg_tps": 85.00750899662805,
+   "wall_s": 101.9,
+   "needle": true,
+   "prefill_tps": 1174.559213335399,
+   "tokens": 119087,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.2/15.9 Go · 1: 13.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "memoire:benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#memoire-128k",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "memoire"
+   },
+   "metric_values": {
+    "needle": 1.0,
+    "prefill_tps": 1174.559213335399,
+    "tokens": 119087.0,
+    "tg_tps": 85.00750899662805
+   },
+   "duration_s": 102.3
+  },
+  {
+   "kind": "intelligence",
+   "date": "2026-09-30T11:48:46",
+   "test_id": "humaneval-50",
+   "title": "HumanEval rapide — problèmes 0-49",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "ok",
+   "duree_s": 40.9,
+   "summary": "pass@1 48/50 (96.0 %)",
+   "erreur": null,
+   "log": "humaneval-50.log",
+   "vram_peak": "0: 10.4 Go · 1: 13.5 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T11:48:05",
+   "finished_at": "2026-09-30T11:48:46",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#humaneval-50",
+   "rc": 0,
+   "passed": 48,
+   "total": 50,
+   "score_pct": 96.0,
+   "avg_latency_s": 0.76,
+   "wall_s": 40.1,
+   "avg_tokens_per_sec": 75.4,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.2/15.9 Go · 1: 13.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "intelligence:benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#humaneval-50",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "intelligence"
+   },
+   "metric_values": {
+    "score_pct": 96.0,
+    "passed": 48.0,
+    "total": 50.0,
+    "avg_latency_s": 0.76,
+    "avg_tokens_per_sec": 75.4
+   },
+   "duration_s": 40.9
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T11:50:54",
+   "test_id": "vitesse-128k",
+   "title": "Vitesse à 128k — prefill long + TG",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "ok",
+   "duree_s": 100.7,
+   "summary": "PP 1203.5 t/s sur 119029 tok · TG 104.0 t/s",
+   "erreur": null,
+   "log": "vitesse-128k.log",
+   "vram_peak": "0: 10.4 Go · 1: 13.5 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T11:49:14",
+   "finished_at": "2026-09-30T11:50:54",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#vitesse-128k",
+   "pp_tps": 1203.5,
+   "tg_tps": 104.0,
+   "prompt_n": 119029,
+   "completion_n": 128,
+   "wall_s": 100.46,
+   "prefill_tps": 1203.5,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.4/15.9 Go · 1: 13.4/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#vitesse-128k",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 1203.5,
+    "tg_tps": 104.0,
+    "prompt_n": 119029.0,
+    "completion_n": 128.0,
+    "vram_peak": 13.5
+   },
+   "duration_s": 100.7
+  },
+  {
+   "kind": "memoire",
+   "date": "2026-09-30T11:52:38",
+   "test_id": "memoire-128k",
+   "title": "Mémoire 128k — rappel à 85 %",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "ok",
+   "duree_s": 104.0,
+   "summary": "rappel OK · PP 1171.0 t/s · 104 s",
+   "erreur": null,
+   "log": "memoire-128k.log",
+   "vram_peak": "0: 10.4 Go · 1: 13.5 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T11:50:54",
+   "finished_at": "2026-09-30T11:52:38",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#memoire-128k",
+   "needle_ok": true,
+   "prompt_n": 119087,
+   "pp_tps": 1171.0,
+   "tg_tps": 102.1,
+   "wall_s": 103.6,
+   "needle": true,
+   "prefill_tps": 1171.0,
+   "tokens": 119087,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.4/15.9 Go · 1: 13.4/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "memoire:benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#memoire-128k",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "memoire"
+   },
+   "metric_values": {
+    "needle": 1.0,
+    "prefill_tps": 1171.0,
+    "tokens": 119087.0,
+    "tg_tps": 102.1
+   },
+   "duration_s": 104.0
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T12:01:50",
+   "test_id": "vitesse-256k",
+   "title": "Vitesse à 256k — prefill long + TG",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "ok",
+   "duree_s": 552.1,
+   "summary": "PP 899.0 t/s sur 245857 tok · TG 67.1 t/s",
+   "erreur": null,
+   "log": "vitesse-256k.log",
+   "vram_peak": "0: 10.7 Go · 1: 13.7 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T11:52:38",
+   "finished_at": "2026-09-30T12:01:50",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#vitesse-256k",
+   "pp_tps": 899.0,
+   "tg_tps": 67.1,
+   "prompt_n": 245868,
+   "completion_n": 79,
+   "wall_s": 278.88,
+   "prefill_tps": 899.0,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.4/15.9 Go · 1: 13.4/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#vitesse-256k",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 899.0,
+    "tg_tps": 67.1,
+    "prompt_n": 245868.0,
+    "completion_n": 79.0,
+    "vram_peak": 13.7
+   },
+   "duration_s": 552.1
+  },
+  {
+   "kind": "memoire",
+   "date": "2026-09-30T12:06:13",
+   "test_id": "memoire-256k",
+   "title": "Mémoire 256k — rappel à 85 %",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "ok",
+   "duree_s": 262.9,
+   "summary": "rappel OK · PP 909.8 t/s · 262 s",
+   "erreur": null,
+   "log": "memoire-256k.log",
+   "vram_peak": "0: 10.7 Go · 1: 13.7 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T12:01:50",
+   "finished_at": "2026-09-30T12:06:13",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#memoire-256k",
+   "needle_ok": true,
+   "prompt_n": 238115,
+   "pp_tps": 909.8,
+   "tg_tps": 68.8,
+   "wall_s": 262.2,
+   "needle": true,
+   "prefill_tps": 909.8,
+   "tokens": 238115,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.4/15.9 Go · 1: 13.4/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "memoire:benches/2026-09-30_1149__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#memoire-256k",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "memoire"
+   },
+   "metric_values": {
+    "needle": 1.0,
+    "prefill_tps": 909.8,
+    "tokens": 238115.0,
+    "tg_tps": 68.8
+   },
+   "duration_s": 262.9
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T12:12:04",
+   "test_id": "vitesse-256k",
+   "title": "Vitesse à 256k — prefill long + TG",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1207__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1207__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "ok",
+   "duree_s": 275.2,
+   "summary": "PP 899.2 t/s sur 245857 tok · TG 69.9 t/s",
+   "erreur": null,
+   "log": "vitesse-256k.log",
+   "vram_peak": "0: 10.7 Go · 1: 13.7 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T12:07:29",
+   "finished_at": "2026-09-30T12:12:04",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1207__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#vitesse-256k",
+   "pp_tps": 899.2,
+   "tg_tps": 69.9,
+   "prompt_n": 245868,
+   "completion_n": 79,
+   "wall_s": 274.85,
+   "prefill_tps": 899.2,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.7/15.9 Go · 1: 13.7/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1207__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#vitesse-256k",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 899.2,
+    "tg_tps": 69.9,
+    "prompt_n": 245868.0,
+    "completion_n": 79.0,
+    "vram_peak": 13.7
+   },
+   "duration_s": 275.2
+  },
+  {
+   "kind": "memoire",
+   "date": "2026-09-30T12:19:43",
+   "test_id": "memoire-256k",
+   "title": "Mémoire 256k — rappel à 85 %",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+   "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+   "ctx": 262144,
+   "n_ctx": 262144,
+   "run_id": "2026-09-30_1207__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+   "run_url": "/benches/2026-09-30_1207__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+   "status": "error",
+   "duree_s": 459.1,
+   "summary": null,
+   "erreur": "RemoteDisconnected: Remote end closed connection without response",
+   "log": "memoire-256k.log",
+   "vram_peak": "0: 10.7 Go · 1: 13.7 Go",
+   "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+   "started_at": "2026-09-30T12:12:04",
+   "finished_at": "2026-09-30T12:19:43",
+   "dry_run": false,
+   "app_version": "1.5.0",
+   "source": "benches/2026-09-30_1207__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#memoire-256k",
+   "prompt_n": null,
+   "prefill_tps": null,
+   "tokens": null,
+   "settings": {
+    "n_ctx": 262144,
+    "mtp": true,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.5.0",
+    "vram_note": "0: 10.7/15.9 Go · 1: 13.7/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "memoire:benches/2026-09-30_1207__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/bench.json#memoire-256k",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_mtp-on_ctx256k",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · MTP on",
+    "ctx": 262144,
+    "flags": [],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "memoire"
+   },
+   "metric_values": {
+    "prefill_tps": null,
+    "tokens": null
+   },
+   "duration_s": 459.1
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T15:47:01",
+   "test_id": "vitesse-court",
+   "title": "Vitesse courte — PP + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "error",
+   "duree_s": 0.1,
+   "summary": null,
+   "erreur": "HTTPError: HTTP Error 404: Not Found",
+   "log": "vitesse-court.log",
+   "vram_peak": "0: 8.7 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T15:47:01",
+   "finished_at": "2026-09-30T15:47:01",
+   "dry_run": false,
+   "app_version": "1.6.0",
+   "source": "benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "prompt_n": null,
+   "prefill_tps": null,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.0",
+    "vram_note": "0: 8.7/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "prompt_n": null,
+    "vram_peak": 14.2
+   },
+   "duration_s": 0.1
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T15:47:01",
+   "test_id": "vitesse-128k",
+   "title": "Vitesse à 128k — prefill long + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "error",
+   "duree_s": 0.1,
+   "summary": null,
+   "erreur": "HTTPError: HTTP Error 404: Not Found",
+   "log": "vitesse-128k.log",
+   "vram_peak": "0: 8.7 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T15:47:01",
+   "finished_at": "2026-09-30T15:47:01",
+   "dry_run": false,
+   "app_version": "1.6.0",
+   "source": "benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "prompt_n": null,
+   "prefill_tps": null,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.0",
+    "vram_note": "0: 8.7/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "prompt_n": null,
+    "vram_peak": 14.2
+   },
+   "duration_s": 0.1
+  },
+  {
+   "kind": "memoire",
+   "date": "2026-09-30T15:47:01",
+   "test_id": "memoire-128k",
+   "title": "Mémoire 128k — rappel à 85 %",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "error",
+   "duree_s": 0.1,
+   "summary": null,
+   "erreur": "HTTPError: HTTP Error 404: Not Found",
+   "log": "memoire-128k.log",
+   "vram_peak": "0: 8.7 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T15:47:01",
+   "finished_at": "2026-09-30T15:47:01",
+   "dry_run": false,
+   "app_version": "1.6.0",
+   "source": "benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "prompt_n": null,
+   "prefill_tps": null,
+   "tokens": null,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.0",
+    "vram_note": "0: 8.7/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "memoire:benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "memoire"
+   },
+   "metric_values": {
+    "prefill_tps": null,
+    "tokens": null
+   },
+   "duration_s": 0.1
+  },
+  {
+   "kind": "intelligence",
+   "date": "2026-09-30T15:47:33",
+   "test_id": "batterie-13",
+   "title": "Batterie rapide — 13 petites tâches FR",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 31.9,
+   "summary": "score 12.0/13 · complets 12/13 · latence méd 1.42 s",
+   "erreur": null,
+   "log": "batterie-13.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T15:47:01",
+   "finished_at": "2026-09-30T15:47:33",
+   "dry_run": false,
+   "app_version": "1.6.0",
+   "source": "benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#batterie-13",
+   "score_sum": 12.0,
+   "score_full": 12,
+   "tasks": 13,
+   "score_avg": 0.923,
+   "lat_median": 1.42,
+   "lat_max": 10.87,
+   "battery_s": 31.2,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.0",
+    "vram_note": "0: 8.7/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "intelligence:benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#batterie-13",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "intelligence"
+   },
+   "metric_values": {
+    "score_avg": 0.923,
+    "lat_median": 1.42
+   },
+   "duration_s": 31.9
+  },
+  {
+   "kind": "intelligence",
+   "date": "2026-09-30T15:49:25",
+   "test_id": "humaneval-50",
+   "title": "HumanEval rapide — problèmes 0-49",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 112.4,
+   "summary": "pass@1 49/50 (98.0 %)",
+   "erreur": null,
+   "log": "humaneval-50.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T15:47:33",
+   "finished_at": "2026-09-30T15:49:25",
+   "dry_run": false,
+   "app_version": "1.6.0",
+   "source": "benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#humaneval-50",
+   "rc": 0,
+   "passed": 49,
+   "total": 50,
+   "score_pct": 98.0,
+   "avg_latency_s": 2.2,
+   "wall_s": 111.7,
+   "avg_tokens_per_sec": 26.0,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.0",
+    "vram_note": "0: 8.7/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "intelligence:benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#humaneval-50",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "intelligence"
+   },
+   "metric_values": {
+    "score_pct": 98.0,
+    "passed": 49.0,
+    "total": 50.0,
+    "avg_latency_s": 2.2,
+    "avg_tokens_per_sec": 26.0
+   },
+   "duration_s": 112.4
+  },
+  {
+   "kind": "intelligence",
+   "date": "2026-09-30T15:56:42",
+   "test_id": "humaneval-164",
+   "title": "HumanEval complet — 164 problèmes",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 437.1,
+   "summary": "pass@1 152/164 (92.7 %)",
+   "erreur": null,
+   "log": "humaneval-164.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T15:49:25",
+   "finished_at": "2026-09-30T15:56:42",
+   "dry_run": false,
+   "app_version": "1.6.0",
+   "source": "benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#humaneval-164",
+   "rc": 0,
+   "passed": 152,
+   "total": 164,
+   "score_pct": 92.7,
+   "avg_latency_s": 2.63,
+   "wall_s": 436.6,
+   "avg_tokens_per_sec": 30.4,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.0",
+    "vram_note": "0: 8.7/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "intelligence:benches/2026-09-30_1547__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#humaneval-164",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "intelligence"
+   },
+   "metric_values": {
+    "score_pct": 92.7,
+    "passed": 152.0,
+    "total": 164.0,
+    "avg_latency_s": 2.63,
+    "avg_tokens_per_sec": 30.4
+   },
+   "duration_s": 437.1
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T16:38:16",
+   "test_id": "vitesse-court",
+   "title": "Vitesse courte — PP + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "error",
+   "duree_s": 0.1,
+   "summary": null,
+   "erreur": "HTTPError: HTTP Error 404: Not Found",
+   "log": "vitesse-court.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T16:38:16",
+   "finished_at": "2026-09-30T16:38:16",
+   "dry_run": false,
+   "app_version": "1.6.0",
+   "source": "benches/2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "prompt_n": null,
+   "prefill_tps": null,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.0",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "prompt_n": null,
+    "vram_peak": 14.2
+   },
+   "duration_s": 0.1
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T16:38:16",
+   "test_id": "vitesse-128k",
+   "title": "Vitesse à 128k — prefill long + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "error",
+   "duree_s": 0.1,
+   "summary": null,
+   "erreur": "HTTPError: HTTP Error 404: Not Found",
+   "log": "vitesse-128k.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T16:38:16",
+   "finished_at": "2026-09-30T16:38:16",
+   "dry_run": false,
+   "app_version": "1.6.0",
+   "source": "benches/2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "prompt_n": null,
+   "prefill_tps": null,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.0",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "prompt_n": null,
+    "vram_peak": 14.2
+   },
+   "duration_s": 0.1
+  },
+  {
+   "kind": "memoire",
+   "date": "2026-09-30T16:38:16",
+   "test_id": "memoire-128k",
+   "title": "Mémoire 128k — rappel à 85 %",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "error",
+   "duree_s": 0.1,
+   "summary": null,
+   "erreur": "HTTPError: HTTP Error 404: Not Found",
+   "log": "memoire-128k.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T16:38:16",
+   "finished_at": "2026-09-30T16:38:16",
+   "dry_run": false,
+   "app_version": "1.6.0",
+   "source": "benches/2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "prompt_n": null,
+   "prefill_tps": null,
+   "tokens": null,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.0",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "memoire:benches/2026-09-30_1638__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "memoire"
+   },
+   "metric_values": {
+    "prefill_tps": null,
+    "tokens": null
+   },
+   "duration_s": 0.1
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T17:09:59",
+   "test_id": "vitesse-court",
+   "title": "Vitesse courte — PP + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 9.2,
+   "summary": "PP 109.6 t/s · TG 57.5 t/s (3 tir(s) valide(s))",
+   "erreur": null,
+   "log": "vitesse-court.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T17:09:50",
+   "finished_at": "2026-09-30T17:09:59",
+   "dry_run": false,
+   "app_version": "1.6.1",
+   "source": "benches/2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "pp_tps": 109.6,
+   "tg_tps": 57.5,
+   "prompt_n": null,
+   "prefill_tps": 109.6,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.1",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 109.6,
+    "tg_tps": 57.5,
+    "prompt_n": null,
+    "vram_peak": 14.2
+   },
+   "duration_s": 9.2
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T17:12:43",
+   "test_id": "vitesse-128k",
+   "title": "Vitesse à 128k — prefill long + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 163.6,
+   "summary": "PP 718.1 t/s sur 113268 tok · TG 46.9 t/s",
+   "erreur": null,
+   "log": "vitesse-128k.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T17:09:59",
+   "finished_at": "2026-09-30T17:12:43",
+   "dry_run": false,
+   "app_version": "1.6.1",
+   "source": "benches/2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "pp_tps": 718.1,
+   "tg_tps": 46.9,
+   "prompt_n": 113268,
+   "completion_n": 128,
+   "wall_s": 160.88,
+   "prefill_tps": 718.1,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.1",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 718.1,
+    "tg_tps": 46.9,
+    "prompt_n": 113268.0,
+    "completion_n": 128.0,
+    "vram_peak": 14.2
+   },
+   "duration_s": 163.6
+  },
+  {
+   "kind": "memoire",
+   "date": "2026-09-30T17:13:29",
+   "test_id": "memoire-128k",
+   "title": "Mémoire 128k — rappel à 85 %",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 45.9,
+   "summary": "rappel OK (dans content) · PP 693.8 t/s · 46 s",
+   "erreur": null,
+   "log": "memoire-128k.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T17:12:43",
+   "finished_at": "2026-09-30T17:13:29",
+   "dry_run": false,
+   "app_version": "1.6.1",
+   "source": "benches/2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "needle_ok": true,
+   "prompt_n": 31395,
+   "pp_tps": 693.8,
+   "tg_tps": 48.3,
+   "wall_s": 45.9,
+   "needle": true,
+   "prefill_tps": 693.8,
+   "tokens": 31395,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.1",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "memoire:benches/2026-09-30_1709__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "memoire"
+   },
+   "metric_values": {
+    "needle": 1.0,
+    "prefill_tps": 693.8,
+    "tokens": 31395.0,
+    "tg_tps": 48.3
+   },
+   "duration_s": 45.9
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T17:15:35",
+   "test_id": "vitesse-court",
+   "title": "Vitesse courte — PP + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 8.6,
+   "summary": "PP 274.5 t/s · TG 59.7 t/s (1 tir(s) de prefill valide(s), 2 écarté(s) du cache)",
+   "erreur": null,
+   "log": "vitesse-court.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T17:15:26",
+   "finished_at": "2026-09-30T17:15:35",
+   "dry_run": false,
+   "app_version": "1.6.1",
+   "source": "benches/2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "pp_tps": 274.5,
+   "tg_tps": 59.7,
+   "prompt_n": 504,
+   "runs_exclus_cache": 2,
+   "prefill_tps": 274.5,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.1",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 274.5,
+    "tg_tps": 59.7,
+    "prompt_n": 504.0,
+    "vram_peak": 14.2
+   },
+   "duration_s": 8.6
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T17:18:17",
+   "test_id": "vitesse-128k",
+   "title": "Vitesse à 128k — prefill long + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 162.1,
+   "summary": "PP 722.5 t/s sur 113268 tok · TG 49.5 t/s",
+   "erreur": null,
+   "log": "vitesse-128k.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T17:15:35",
+   "finished_at": "2026-09-30T17:18:17",
+   "dry_run": false,
+   "app_version": "1.6.1",
+   "source": "benches/2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "pp_tps": 722.5,
+   "tg_tps": 49.5,
+   "prompt_n": 113268,
+   "completion_n": 110,
+   "wall_s": 159.41,
+   "prefill_tps": 722.5,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.1",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 722.5,
+    "tg_tps": 49.5,
+    "prompt_n": 113268.0,
+    "completion_n": 110.0,
+    "vram_peak": 14.2
+   },
+   "duration_s": 162.1
+  },
+  {
+   "kind": "memoire",
+   "date": "2026-09-30T17:19:03",
+   "test_id": "memoire-128k",
+   "title": "Mémoire 128k — rappel à 85 %",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 46.0,
+   "summary": "rappel OK (dans content) · PP 693.4 t/s · 46 s",
+   "erreur": null,
+   "log": "memoire-128k.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.2 Go",
+   "notes": null,
+   "started_at": "2026-09-30T17:18:17",
+   "finished_at": "2026-09-30T17:19:03",
+   "dry_run": false,
+   "app_version": "1.6.1",
+   "source": "benches/2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "needle_ok": true,
+   "prompt_n": 113315,
+   "prefill_n": 31395,
+   "cache_n": 81920,
+   "pp_tps": 693.4,
+   "tg_tps": 41.0,
+   "wall_s": 46.0,
+   "needle": true,
+   "prefill_tps": 693.4,
+   "tokens": 113315,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.1",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "memoire:benches/2026-09-30_1715__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "memoire"
+   },
+   "metric_values": {
+    "needle": 1.0,
+    "prefill_tps": 693.4,
+    "tokens": 113315.0,
+    "tg_tps": 41.0
+   },
+   "duration_s": 46.0
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T17:20:33",
+   "test_id": "vitesse-court",
+   "title": "Vitesse courte — PP + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 8.7,
+   "summary": "PP 279.9 t/s · TG 58.4 t/s (1 tir(s) de prefill valide(s), 2 écarté(s) du cache)",
+   "erreur": null,
+   "log": "vitesse-court.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.3 Go",
+   "notes": null,
+   "started_at": "2026-09-30T17:20:24",
+   "finished_at": "2026-09-30T17:20:33",
+   "dry_run": false,
+   "app_version": "1.6.1",
+   "source": "benches/2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "pp_tps": 279.9,
+   "tg_tps": 58.4,
+   "prompt_n": 504,
+   "runs_exclus_cache": 2,
+   "prefill_tps": 279.9,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.1",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-court",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 279.9,
+    "tg_tps": 58.4,
+    "prompt_n": 504.0,
+    "vram_peak": 14.3
+   },
+   "duration_s": 8.7
+  },
+  {
+   "kind": "vitesse",
+   "date": "2026-09-30T17:23:32",
+   "test_id": "vitesse-128k",
+   "title": "Vitesse à 128k — prefill long + TG",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 178.7,
+   "summary": "PP 698.5 t/s sur 120522 tok · TG 44.9 t/s",
+   "erreur": null,
+   "log": "vitesse-128k.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.3 Go",
+   "notes": null,
+   "started_at": "2026-09-30T17:20:33",
+   "finished_at": "2026-09-30T17:23:32",
+   "dry_run": false,
+   "app_version": "1.6.1",
+   "source": "benches/2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "pp_tps": 698.5,
+   "tg_tps": 44.9,
+   "prompt_n": 120522,
+   "completion_n": 128,
+   "wall_s": 175.86,
+   "prefill_tps": 698.5,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.1",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "vitesse:benches/2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#vitesse-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vitesse"
+   },
+   "metric_values": {
+    "pp_tps": 698.5,
+    "tg_tps": 44.9,
+    "prompt_n": 120522.0,
+    "completion_n": 128.0,
+    "vram_peak": 14.3
+   },
+   "duration_s": 178.7
+  },
+  {
+   "kind": "memoire",
+   "date": "2026-09-30T17:24:05",
+   "test_id": "memoire-128k",
+   "title": "Mémoire 128k — rappel à 85 %",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k",
+   "model": "FlashNext 177B",
+   "model_slug": "qwen3.8-flash-next-iq3_xxs",
+   "model_path": "qwen3.8-flash-next-iq3_xxs",
+   "ctx": 131072,
+   "n_ctx": 131072,
+   "run_id": "2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests",
+   "run_url": "/benches/2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests/",
+   "status": "ok",
+   "duree_s": 33.1,
+   "summary": "rappel OK (dans content) · 120569 tok (22265 évalués + 98304 du cache) · PP 687.4 t/s · 33 s",
+   "erreur": null,
+   "log": "memoire-128k.log",
+   "vram_peak": "0: 8.8 Go · 1: 14.3 Go",
+   "notes": null,
+   "started_at": "2026-09-30T17:23:32",
+   "finished_at": "2026-09-30T17:24:05",
+   "dry_run": false,
+   "app_version": "1.6.1",
+   "source": "benches/2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "needle_ok": true,
+   "prompt_n": 120569,
+   "prefill_n": 22265,
+   "cache_n": 98304,
+   "pp_tps": 687.4,
+   "tg_tps": 50.2,
+   "wall_s": 33.1,
+   "needle": true,
+   "prefill_tps": 687.4,
+   "tokens": 120569,
+   "settings": {
+    "n_ctx": 131072,
+    "mtp": null,
+    "endpoint": "http://127.0.0.1:8080",
+    "app_version": "1.6.1",
+    "vram_note": "0: 8.8/15.9 Go · 1: 14.2/15.9 Go",
+    "source": "bench.json"
+   },
+   "entry_id": "memoire:benches/2026-09-30_1720__qwen3-8-flash-next-iq3-xxs-128k__tests/bench.json#memoire-128k",
+   "variant": {
+    "key": "qwen3-8-flash-next-iq3-xxs_ctx128k",
+    "label": "FlashNext 177B · 128k",
+    "ctx": 131072,
+    "flags": [],
+    "thinking": null,
+    "model": "FlashNext 177B",
+    "model_slug": "qwen3-8-flash-next-iq3-xxs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "memoire"
+   },
+   "metric_values": {
+    "needle": 1.0,
+    "prefill_tps": 687.4,
+    "tokens": 120569.0,
+    "tg_tps": 50.2
+   },
+   "duration_s": 33.1
   },
   {
    "kind": "speed",
@@ -369,7 +2790,32 @@
    "vram": "12.4 / 12.8 Go",
    "load_s": 70,
    "method": "bench 128 tok (lignes run N)",
-   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-27b_q4kxl_128k.full.log"
+   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-27b_q4kxl_128k.full.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-29/vitesse/case-27b_q4kxl_128k.full.log",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q4-k-xl_ctx128k_bench128-lignes_q4kxl",
+    "label": "Qwen3.8-27B UD-Q4_K_XL · 128k · bench128-lignes · q4kxl",
+    "ctx": 131072,
+    "flags": [
+     "bench128-lignes",
+     "q4kxl"
+    ],
+    "thinking": null,
+    "model": "Qwen3.8-27B UD-Q4_K_XL",
+    "model_slug": "qwen3-8-27b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 657.0,
+    "tg": 46.0,
+    "vram": 12.8,
+    "load_s": 70.0
+   },
+   "duration_s": 70.0
   },
   {
    "kind": "speed",
@@ -379,14 +2825,40 @@
    "mode": null,
    "note": null,
    "ctx": 131072,
-   "tg": 143.4,
-   "tg_samples": 8,
+   "tg": 143.2,
+   "tg_samples": 6,
    "pp": 1520.0,
    "pp_samples": 6,
    "vram": null,
    "load_s": null,
-   "method": "bench 128 tok (mediane eval time)",
-   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_iq4nl_128k.log"
+   "method": "bench 128 tok (passes completes, prefill 489 tok)",
+   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_iq4nl_128k.log",
+   "passes_ecartees": 44,
+   "entry_id": "speed:llm-benchmarks/224-2026-09-29/vitesse/case-35b_iq4nl_128k.log",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_ctx128k_bench128-passes_iq4nl",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 128k · bench128-passes · iq4nl",
+    "ctx": 131072,
+    "flags": [
+     "bench128-passes",
+     "iq4nl"
+    ],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 1520.0,
+    "tg": 143.2,
+    "vram": null,
+    "load_s": null
+   },
+   "duration_s": null
   },
   {
    "kind": "speed",
@@ -396,14 +2868,41 @@
    "mode": null,
    "note": null,
    "ctx": 131072,
-   "tg": 156.6,
-   "tg_samples": 4,
+   "tg": 157.6,
+   "tg_samples": 3,
    "pp": 1429.0,
    "pp_samples": 3,
    "vram": null,
    "load_s": null,
-   "method": "bench 128 tok (mediane eval time)",
-   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_iq4nl_128k_n2.log"
+   "method": "bench 128 tok (passes completes, prefill 489 tok)",
+   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_iq4nl_128k_n2.log",
+   "passes_ecartees": 1,
+   "entry_id": "speed:llm-benchmarks/224-2026-09-29/vitesse/case-35b_iq4nl_128k_n2.log",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_ctx128k_bench128-passes_iq4nl_n2",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 128k · bench128-passes · iq4n…",
+    "ctx": 131072,
+    "flags": [
+     "bench128-passes",
+     "iq4nl",
+     "n2"
+    ],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 1429.0,
+    "tg": 157.6,
+    "vram": null,
+    "load_s": null
+   },
+   "duration_s": null
   },
   {
    "kind": "speed",
@@ -413,14 +2912,40 @@
    "mode": null,
    "note": "n_max 4",
    "ctx": 131072,
-   "tg": 136.5,
-   "tg_samples": 4,
+   "tg": 136.0,
+   "tg_samples": 3,
    "pp": 1461.0,
    "pp_samples": 3,
    "vram": null,
    "load_s": null,
-   "method": "bench 128 tok (mediane eval time)",
-   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_n4.log"
+   "method": "bench 128 tok (passes completes, prefill 489 tok)",
+   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_n4.log",
+   "passes_ecartees": 1,
+   "entry_id": "speed:llm-benchmarks/224-2026-09-29/vitesse/case-35b_n4.log",
+   "variant": {
+    "key": "35b-n4_ctx128k_bench128-passes_n-max-4",
+    "label": "35b n4 · 128k · bench128-passes · n-max-4",
+    "ctx": 131072,
+    "flags": [
+     "bench128-passes",
+     "n-max-4"
+    ],
+    "thinking": null,
+    "model": "35b n4",
+    "model_slug": "35b-n4",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 1461.0,
+    "tg": 136.0,
+    "vram": null,
+    "load_s": null
+   },
+   "duration_s": null
   },
   {
    "kind": "speed",
@@ -437,7 +2962,32 @@
    "vram": "9.9 / 15.4 Go",
    "load_s": 70,
    "method": "bench 128 tok (lignes run N)",
-   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_q4kxl_128k.full.log"
+   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_q4kxl_128k.full.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-29/vitesse/case-35b_q4kxl_128k.full.log",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-q4-k-xl_ctx128k_bench128-lignes_q4kxl",
+    "label": "Qwen3.6-35B-A3B UD-Q4_K_XL · 128k · bench128-lignes · q4kxl",
+    "ctx": 131072,
+    "flags": [
+     "bench128-lignes",
+     "q4kxl"
+    ],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+    "model_slug": "qwen3-6-35b-a3b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 1388.0,
+    "tg": 142.8,
+    "vram": 15.4,
+    "load_s": 70.0
+   },
+   "duration_s": 70.0
   },
   {
    "kind": "speed",
@@ -447,14 +2997,40 @@
    "mode": null,
    "note": "split 0,65/0,35",
    "ctx": 131072,
-   "tg": 157.3,
-   "tg_samples": 4,
+   "tg": 156.8,
+   "tg_samples": 3,
    "pp": 1491.0,
    "pp_samples": 3,
    "vram": null,
    "load_s": null,
-   "method": "bench 128 tok (mediane eval time)",
-   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_split65.log"
+   "method": "bench 128 tok (passes completes, prefill 489 tok)",
+   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-35b_split65.log",
+   "passes_ecartees": 1,
+   "entry_id": "speed:llm-benchmarks/224-2026-09-29/vitesse/case-35b_split65.log",
+   "variant": {
+    "key": "35b-split65_ctx128k_bench128-passes_split-0-65-0-35",
+    "label": "35b split65 · 128k · bench128-passes · split-0-65-0-35",
+    "ctx": 131072,
+    "flags": [
+     "bench128-passes",
+     "split-0-65-0-35"
+    ],
+    "thinking": null,
+    "model": "35b split65",
+    "model_slug": "35b-split65",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 1491.0,
+    "tg": 156.8,
+    "vram": null,
+    "load_s": null
+   },
+   "duration_s": null
   },
   {
    "kind": "speed",
@@ -471,7 +3047,545 @@
    "vram": "11.7 / 11.9 Go",
    "load_s": 30,
    "method": "bench 128 tok (lignes run N)",
-   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-swift15_iq4xs_128k.full.log"
+   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-swift15_iq4xs_128k.full.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-29/vitesse/case-swift15_iq4xs_128k.full.log",
+   "variant": {
+    "key": "swift-1-5-27b-iq4-xs_ctx128k_bench128-lignes_iq4xs_swift15",
+    "label": "Swift-1.5-27B IQ4_XS · 128k · bench128-lignes · iq4xs · s…",
+    "ctx": 131072,
+    "flags": [
+     "bench128-lignes",
+     "iq4xs",
+     "swift15"
+    ],
+    "thinking": null,
+    "model": "Swift-1.5-27B IQ4_XS",
+    "model_slug": "swift-1-5-27b-iq4-xs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 678.0,
+    "tg": 64.7,
+    "vram": 11.9,
+    "load_s": 30.0
+   },
+   "duration_s": 30.0
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "bonsai2-ptq1-128k.speed",
+   "model": "Ternary Bonsai 2 27B",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 48.9,
+   "tg_samples": 6,
+   "pp": 831.0,
+   "pp_samples": 6,
+   "vram": "0.0 / 11.4 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-bonsai2-ptq1-128k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-bonsai2-ptq1-128k.speed.log",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_ctx128k_bench128-lignes_bonsai2_ptq1_speed",
+    "label": "Ternary Bonsai 2 27B · 128k · bench128-lignes · bonsai2…",
+    "ctx": 131072,
+    "flags": [
+     "bench128-lignes",
+     "bonsai2",
+     "ptq1",
+     "speed"
+    ],
+    "thinking": null,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 831.0,
+    "tg": 48.9,
+    "vram": 11.4,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "bonsai2-ptq1-32k",
+   "model": "Ternary Bonsai 2 27B",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 51.0,
+   "tg_samples": 2,
+   "pp": 845.0,
+   "pp_samples": 2,
+   "vram": null,
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-bonsai2-ptq1-32k.full.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-bonsai2-ptq1-32k.full.log",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_ctx32k_bench128-lignes_bonsai2_ptq1",
+    "label": "Ternary Bonsai 2 27B · 32k · bench128-lignes · bonsai2…",
+    "ctx": 32768,
+    "flags": [
+     "bench128-lignes",
+     "bonsai2",
+     "ptq1"
+    ],
+    "thinking": null,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 845.0,
+    "tg": 51.0,
+    "vram": null,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "bonsai2-ptq1-32k.run",
+   "model": "Ternary Bonsai 2 27B",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 58.2,
+   "tg_samples": 7,
+   "pp": 793.0,
+   "pp_samples": 7,
+   "vram": "0.0 / 7.7 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-bonsai2-ptq1-32k.run.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-bonsai2-ptq1-32k.run.log",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_ctx32k_bench128-lignes_bonsai2_ptq1_run",
+    "label": "Ternary Bonsai 2 27B · 32k · bench128-lignes · bonsai2…",
+    "ctx": 32768,
+    "flags": [
+     "bench128-lignes",
+     "bonsai2",
+     "ptq1",
+     "run"
+    ],
+    "thinking": null,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 793.0,
+    "tg": 58.2,
+    "vram": 7.7,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "bonsai2-ptq1-32k.speed",
+   "model": "Ternary Bonsai 2 27B",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 51.0,
+   "tg_samples": 6,
+   "pp": 863.0,
+   "pp_samples": 6,
+   "vram": "0.0 / 7.7 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-bonsai2-ptq1-32k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-bonsai2-ptq1-32k.speed.log",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_ctx32k_bench128-lignes_bonsai2_ptq1_speed",
+    "label": "Ternary Bonsai 2 27B · 32k · bench128-lignes · bonsai2…",
+    "ctx": 32768,
+    "flags": [
+     "bench128-lignes",
+     "bonsai2",
+     "ptq1",
+     "speed"
+    ],
+    "thinking": null,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 863.0,
+    "tg": 51.0,
+    "vram": 7.7,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "k2h37-q4km-128k.speed",
+   "model": "K2 Horizon 3.7B",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 204.4,
+   "tg_samples": 3,
+   "pp": 9450.0,
+   "pp_samples": 3,
+   "vram": "0.0 / 14.2 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-k2h37-q4km-128k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-k2h37-q4km-128k.speed.log",
+   "variant": {
+    "key": "k2-horizon-3-7b_ctx128k_bench128-lignes_k2h37_q4km_speed",
+    "label": "K2 Horizon 3.7B · 128k · bench128-lignes · k2h37 · q4km…",
+    "ctx": 131072,
+    "flags": [
+     "bench128-lignes",
+     "k2h37",
+     "q4km",
+     "speed"
+    ],
+    "thinking": null,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 9450.0,
+    "tg": 204.4,
+    "vram": 14.2,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "k2h37-q4km-32k.speed",
+   "model": "K2 Horizon 3.7B",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 200.9,
+   "tg_samples": 3,
+   "pp": 9308.0,
+   "pp_samples": 3,
+   "vram": "0.0 / 6.7 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-k2h37-q4km-32k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-k2h37-q4km-32k.speed.log",
+   "variant": {
+    "key": "k2-horizon-3-7b_ctx32k_bench128-lignes_k2h37_q4km_speed",
+    "label": "K2 Horizon 3.7B · 32k · bench128-lignes · k2h37 · q4km…",
+    "ctx": 32768,
+    "flags": [
+     "bench128-lignes",
+     "k2h37",
+     "q4km",
+     "speed"
+    ],
+    "thinking": null,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 9308.0,
+    "tg": 200.9,
+    "vram": 6.7,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "k2h37-q8-32k.speed",
+   "model": "K2 Horizon 3.7B",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 144.0,
+   "tg_samples": 3,
+   "pp": 9864.0,
+   "pp_samples": 3,
+   "vram": "0.0 / 8.2 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-k2h37-q8-32k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-k2h37-q8-32k.speed.log",
+   "variant": {
+    "key": "k2-horizon-3-7b_ctx32k_bench128-lignes_k2h37_q8_speed",
+    "label": "K2 Horizon 3.7B · 32k · bench128-lignes · k2h37 · q8 · speed",
+    "ctx": 32768,
+    "flags": [
+     "bench128-lignes",
+     "k2h37",
+     "q8",
+     "speed"
+    ],
+    "thinking": null,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 9864.0,
+    "tg": 144.0,
+    "vram": 8.2,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "probe-k2q4-48k.speed",
+   "model": "probe-k2q4-48k.speed",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 106.8,
+   "tg_samples": 3,
+   "pp": 4765.0,
+   "pp_samples": 3,
+   "vram": "6.6 / 1.2 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-probe-k2q4-48k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-probe-k2q4-48k.speed.log",
+   "variant": {
+    "key": "probe-k2q4-48k-speed_ctx48k_bench128-lignes",
+    "label": "probe-k2q4-48k.speed · 48k · bench128-lignes",
+    "ctx": 49152,
+    "flags": [
+     "bench128-lignes"
+    ],
+    "thinking": null,
+    "model": "probe-k2q4-48k.speed",
+    "model_slug": "probe-k2q4-48k-speed",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 4765.0,
+    "tg": 106.8,
+    "vram": 6.6,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "probe-k2q4-64k.speed",
+   "model": "probe-k2q4-64k.speed",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 107.0,
+   "tg_samples": 3,
+   "pp": 4767.0,
+   "pp_samples": 3,
+   "vram": "7.8 / 1.1 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-probe-k2q4-64k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-probe-k2q4-64k.speed.log",
+   "variant": {
+    "key": "probe-k2q4-64k-speed_ctx64k_bench128-lignes",
+    "label": "probe-k2q4-64k.speed · 64k · bench128-lignes",
+    "ctx": 65536,
+    "flags": [
+     "bench128-lignes"
+    ],
+    "thinking": null,
+    "model": "probe-k2q4-64k.speed",
+    "model_slug": "probe-k2q4-64k-speed",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 4767.0,
+    "tg": 107.0,
+    "vram": 7.8,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "probe-k2q4-80k.speed",
+   "model": "probe-k2q4-80k.speed",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 106.4,
+   "tg_samples": 3,
+   "pp": 4796.0,
+   "pp_samples": 3,
+   "vram": "9.1 / 1.2 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-probe-k2q4-80k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-probe-k2q4-80k.speed.log",
+   "variant": {
+    "key": "probe-k2q4-80k-speed_bench128-lignes",
+    "label": "probe-k2q4-80k.speed · bench128-lignes",
+    "ctx": null,
+    "flags": [
+     "bench128-lignes"
+    ],
+    "thinking": null,
+    "model": "probe-k2q4-80k.speed",
+    "model_slug": "probe-k2q4-80k-speed",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 4796.0,
+    "tg": 106.4,
+    "vram": 9.1,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:20",
+   "label": "probe-k2q4-96k.speed",
+   "model": "probe-k2q4-96k.speed",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 107.1,
+   "tg_samples": 3,
+   "pp": 4793.0,
+   "pp_samples": 3,
+   "vram": "10.4 / 1.3 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-probe-k2q4-96k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-probe-k2q4-96k.speed.log",
+   "variant": {
+    "key": "probe-k2q4-96k-speed_ctx96k_bench128-lignes",
+    "label": "probe-k2q4-96k.speed · 96k · bench128-lignes",
+    "ctx": 98304,
+    "flags": [
+     "bench128-lignes"
+    ],
+    "thinking": null,
+    "model": "probe-k2q4-96k.speed",
+    "model_slug": "probe-k2q4-96k-speed",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 4793.0,
+    "tg": 107.1,
+    "vram": 10.4,
+    "load_s": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "speed",
+   "date": "2026-09-30T18:13:21",
+   "label": "probe-ptq1-32k.speed",
+   "model": "probe-ptq1-32k.speed",
+   "mode": null,
+   "note": null,
+   "ctx": null,
+   "tg": 27.8,
+   "tg_samples": 6,
+   "pp": 452.0,
+   "pp_samples": 6,
+   "vram": "6.7 / 1.2 Go",
+   "load_s": null,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-30/vitesse/case-probe-ptq1-32k.speed.log",
+   "entry_id": "speed:llm-benchmarks/224-2026-09-30/vitesse/case-probe-ptq1-32k.speed.log",
+   "variant": {
+    "key": "probe-ptq1-32k-speed_ctx32k_bench128-lignes",
+    "label": "probe-ptq1-32k.speed · 32k · bench128-lignes",
+    "ctx": 32768,
+    "flags": [
+     "bench128-lignes"
+    ],
+    "thinking": null,
+    "model": "probe-ptq1-32k.speed",
+    "model_slug": "probe-ptq1-32k-speed",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "speed"
+   },
+   "metric_values": {
+    "pp": 452.0,
+    "tg": 27.8,
+    "vram": 6.7,
+    "load_s": null
+   },
+   "duration_s": null
   },
   {
    "kind": "context",
@@ -487,7 +3601,32 @@
    "peak_vram": "10.6 Go",
    "note": null,
    "source": "llm-benchmarks/224-2026-09-29/contexte/fill-35b_iq4nl_256k.out",
-   "elapsed_s": 263.3
+   "elapsed_s": 263.3,
+   "entry_id": "context:llm-benchmarks/224-2026-09-29/contexte/fill-35b_iq4nl_256k.out",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_ctx256k_kv-q8-0_iq4nl",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · KV q8_0 · iq4nl",
+    "ctx": 262144,
+    "flags": [
+     "iq4nl",
+     "kv-q8-0"
+    ],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": "q8_0",
+    "kind": "context"
+   },
+   "metric_values": {
+    "prefill_tps": 904.2,
+    "tokens": 238115.0,
+    "needle": 1.0,
+    "peak_vram": 10.6
+   },
+   "duration_s": 263.3
   },
   {
    "kind": "context",
@@ -502,7 +3641,115 @@
    "prefill_tps": null,
    "peak_vram": "11.8 Go",
    "note": "coupure a 2.6s : RemoteDisconnected",
-   "source": "llm-benchmarks/224-2026-09-29/contexte/fill-35b_q4kxl_256k.out"
+   "source": "llm-benchmarks/224-2026-09-29/contexte/fill-35b_q4kxl_256k.out",
+   "entry_id": "context:llm-benchmarks/224-2026-09-29/contexte/fill-35b_q4kxl_256k.out",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-q4-k-xl_ctx256k_kv-q8-0_coupure-a-2-6s-remotedis_q4kxl",
+    "label": "Qwen3.6-35B-A3B UD-Q4_K_XL · 256k · KV q8_0 · coupure-a-2…",
+    "ctx": 262144,
+    "flags": [
+     "coupure-a-2-6s-remotedis",
+     "kv-q8-0",
+     "q4kxl"
+    ],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+    "model_slug": "qwen3-6-35b-a3b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": "q8_0",
+    "kind": "context"
+   },
+   "metric_values": {
+    "prefill_tps": null,
+    "tokens": null,
+    "needle": 0.0,
+    "peak_vram": 11.8
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "context",
+   "date": "2026-09-30T18:13:21",
+   "label": "35b_iq4nl_256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "ctx": 262144,
+   "kv": "q8_0",
+   "status": "ok",
+   "tokens": 238115,
+   "needle": true,
+   "prefill_tps": 904.2,
+   "peak_vram": "10.6 Go",
+   "note": null,
+   "source": "llm-benchmarks/224-2026-09-30/contexte/fill-35b_iq4nl_256k.out",
+   "elapsed_s": 263.3,
+   "entry_id": "context:llm-benchmarks/224-2026-09-30/contexte/fill-35b_iq4nl_256k.out",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_ctx256k_kv-q8-0_iq4nl",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · KV q8_0 · iq4nl",
+    "ctx": 262144,
+    "flags": [
+     "iq4nl",
+     "kv-q8-0"
+    ],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": "q8_0",
+    "kind": "context"
+   },
+   "metric_values": {
+    "prefill_tps": 904.2,
+    "tokens": 238115.0,
+    "needle": 1.0,
+    "peak_vram": 10.6
+   },
+   "duration_s": 263.3
+  },
+  {
+   "kind": "context",
+   "date": "2026-09-30T18:13:21",
+   "label": "35b_q4kxl_256k",
+   "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+   "ctx": 262144,
+   "kv": "q8_0",
+   "status": "error",
+   "tokens": null,
+   "needle": false,
+   "prefill_tps": null,
+   "peak_vram": "11.8 Go",
+   "note": "coupure a 2.6s : RemoteDisconnected",
+   "source": "llm-benchmarks/224-2026-09-30/contexte/fill-35b_q4kxl_256k.out",
+   "entry_id": "context:llm-benchmarks/224-2026-09-30/contexte/fill-35b_q4kxl_256k.out",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-q4-k-xl_ctx256k_kv-q8-0_coupure-a-2-6s-remotedis_q4kxl",
+    "label": "Qwen3.6-35B-A3B UD-Q4_K_XL · 256k · KV q8_0 · coupure-a-2…",
+    "ctx": 262144,
+    "flags": [
+     "coupure-a-2-6s-remotedis",
+     "kv-q8-0",
+     "q4kxl"
+    ],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+    "model_slug": "qwen3-6-35b-a3b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": "q8_0",
+    "kind": "context"
+   },
+   "metric_values": {
+    "prefill_tps": null,
+    "tokens": null,
+    "needle": 0.0,
+    "peak_vram": 11.8
+   },
+   "duration_s": null
   },
   {
    "kind": "battery",
@@ -520,7 +3767,31 @@
     "T3_arithmetique",
     "T4_date_jour_semaine"
    ],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_27b_q4kxl_128k_nothink.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_27b_q4kxl_128k_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_27b_q4kxl_128k_nothink.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q4-k-xl_nothink_q4kxl",
+    "label": "Qwen3.8-27B UD-Q4_K_XL · nothink · q4kxl",
+    "ctx": null,
+    "flags": [
+     "q4kxl"
+    ],
+    "thinking": false,
+    "model": "Qwen3.8-27B UD-Q4_K_XL",
+    "model_slug": "qwen3-8-27b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.71,
+    "lat_max": 5.38,
+    "fails": 2.0
+   },
+   "duration_s": 20.1
   },
   {
    "kind": "battery",
@@ -537,7 +3808,31 @@
    "fails": [
     "T11_categorisation"
    ],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_27b_q4kxl_128k_think.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_27b_q4kxl_128k_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_27b_q4kxl_128k_think.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q4-k-xl_think_q4kxl",
+    "label": "Qwen3.8-27B UD-Q4_K_XL · think · q4kxl",
+    "ctx": null,
+    "flags": [
+     "q4kxl"
+    ],
+    "thinking": true,
+    "model": "Qwen3.8-27B UD-Q4_K_XL",
+    "model_slug": "qwen3-8-27b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.923,
+    "lat_median": 5.25,
+    "lat_max": 27.23,
+    "fails": 1.0
+   },
+   "duration_s": 98.6
   },
   {
    "kind": "battery",
@@ -555,7 +3850,31 @@
     "T3_arithmetique",
     "T4_date_jour_semaine"
    ],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_128k.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_128k.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_128k.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_ctx128k_nothink_iq4nl",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 128k · nothink · iq4nl",
+    "ctx": 131072,
+    "flags": [
+     "iq4nl"
+    ],
+    "thinking": false,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.27,
+    "lat_max": 2.5,
+    "fails": 2.0
+   },
+   "duration_s": 7.1
   },
   {
    "kind": "battery",
@@ -570,7 +3889,31 @@
    "lat_max": 10.48,
    "total_wall_s": 75.1,
    "fails": [],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_128k_think.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_128k_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_128k_think.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_think_iq4nl",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · think · iq4nl",
+    "ctx": null,
+    "flags": [
+     "iq4nl"
+    ],
+    "thinking": true,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 1.0,
+    "lat_median": 7.03,
+    "lat_max": 10.48,
+    "fails": 0.0
+   },
+   "duration_s": 75.1
   },
   {
    "kind": "battery",
@@ -588,7 +3931,32 @@
     "T3_arithmetique",
     "T4_date_jour_semaine"
    ],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_262k_prod_nothink.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_262k_prod_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_262k_prod_nothink.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_nothink_iq4nl_prod",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · nothink · iq4nl · prod",
+    "ctx": null,
+    "flags": [
+     "iq4nl",
+     "prod"
+    ],
+    "thinking": false,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.3,
+    "lat_max": 4.66,
+    "fails": 2.0
+   },
+   "duration_s": 9.4
   },
   {
    "kind": "battery",
@@ -603,7 +3971,32 @@
    "lat_max": 13.62,
    "total_wall_s": 81.9,
    "fails": [],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_262k_prod_think.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_262k_prod_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_35b_iq4nl_262k_prod_think.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_think_iq4nl_prod",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · think · iq4nl · prod",
+    "ctx": null,
+    "flags": [
+     "iq4nl",
+     "prod"
+    ],
+    "thinking": true,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 1.0,
+    "lat_median": 7.75,
+    "lat_max": 13.62,
+    "fails": 0.0
+   },
+   "duration_s": 81.9
   },
   {
    "kind": "battery",
@@ -621,7 +4014,31 @@
     "T3_arithmetique",
     "T4_date_jour_semaine"
    ],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_q4kxl_128k_nothink.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_q4kxl_128k_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_35b_q4kxl_128k_nothink.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-q4-k-xl_nothink_q4kxl",
+    "label": "Qwen3.6-35B-A3B UD-Q4_K_XL · nothink · q4kxl",
+    "ctx": null,
+    "flags": [
+     "q4kxl"
+    ],
+    "thinking": false,
+    "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+    "model_slug": "qwen3-6-35b-a3b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.26,
+    "lat_max": 3.09,
+    "fails": 2.0
+   },
+   "duration_s": 7.9
   },
   {
    "kind": "battery",
@@ -638,7 +4055,31 @@
    "fails": [
     "T4_date_jour_semaine"
    ],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_q4kxl_128k_think.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_35b_q4kxl_128k_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_35b_q4kxl_128k_think.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-q4-k-xl_think_q4kxl",
+    "label": "Qwen3.6-35B-A3B UD-Q4_K_XL · think · q4kxl",
+    "ctx": null,
+    "flags": [
+     "q4kxl"
+    ],
+    "thinking": true,
+    "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+    "model_slug": "qwen3-6-35b-a3b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.923,
+    "lat_median": 6.46,
+    "lat_max": 18.23,
+    "fails": 1.0
+   },
+   "duration_s": 96.2
   },
   {
    "kind": "battery",
@@ -656,7 +4097,32 @@
     "T3_arithmetique",
     "T4_date_jour_semaine"
    ],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_swift15_iq4xs_128k_nothink.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_swift15_iq4xs_128k_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_swift15_iq4xs_128k_nothink.json",
+   "variant": {
+    "key": "swift-1-5-27b-iq4-xs_nothink_iq4xs_swift15",
+    "label": "Swift-1.5-27B IQ4_XS · nothink · iq4xs · swift15",
+    "ctx": null,
+    "flags": [
+     "iq4xs",
+     "swift15"
+    ],
+    "thinking": false,
+    "model": "Swift-1.5-27B IQ4_XS",
+    "model_slug": "swift-1-5-27b-iq4-xs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.62,
+    "lat_max": 5.25,
+    "fails": 2.0
+   },
+   "duration_s": 17.0
   },
   {
    "kind": "battery",
@@ -671,7 +4137,834 @@
    "lat_max": 14.6,
    "total_wall_s": 71.2,
    "fails": [],
-   "source": "llm-benchmarks/224-2026-09-29/batteries/results_swift15_iq4xs_128k_think.json"
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_swift15_iq4xs_128k_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-29/batteries/results_swift15_iq4xs_128k_think.json",
+   "variant": {
+    "key": "swift-1-5-27b-iq4-xs_think_iq4xs_swift15",
+    "label": "Swift-1.5-27B IQ4_XS · think · iq4xs · swift15",
+    "ctx": null,
+    "flags": [
+     "iq4xs",
+     "swift15"
+    ],
+    "thinking": true,
+    "model": "Swift-1.5-27B IQ4_XS",
+    "model_slug": "swift-1-5-27b-iq4-xs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 1.0,
+    "lat_median": 3.07,
+    "lat_max": 14.6,
+    "fails": 0.0
+   },
+   "duration_s": 71.2
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "27b_q4kxl_128k_nothink",
+   "model": "Qwen3.8-27B UD-Q4_K_XL",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 11,
+   "score_avg": 0.846,
+   "lat_median": 0.71,
+   "lat_max": 5.38,
+   "total_wall_s": 20.1,
+   "fails": [
+    "T3_arithmetique",
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_27b_q4kxl_128k_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_27b_q4kxl_128k_nothink.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q4-k-xl_nothink_q4kxl",
+    "label": "Qwen3.8-27B UD-Q4_K_XL · nothink · q4kxl",
+    "ctx": null,
+    "flags": [
+     "q4kxl"
+    ],
+    "thinking": false,
+    "model": "Qwen3.8-27B UD-Q4_K_XL",
+    "model_slug": "qwen3-8-27b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.71,
+    "lat_max": 5.38,
+    "fails": 2.0
+   },
+   "duration_s": 20.1
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "27b_q4kxl_128k_think",
+   "model": "Qwen3.8-27B UD-Q4_K_XL",
+   "mode": "think",
+   "tasks": 13,
+   "score": 12,
+   "score_avg": 0.923,
+   "lat_median": 5.25,
+   "lat_max": 27.23,
+   "total_wall_s": 98.6,
+   "fails": [
+    "T11_categorisation"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_27b_q4kxl_128k_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_27b_q4kxl_128k_think.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q4-k-xl_think_q4kxl",
+    "label": "Qwen3.8-27B UD-Q4_K_XL · think · q4kxl",
+    "ctx": null,
+    "flags": [
+     "q4kxl"
+    ],
+    "thinking": true,
+    "model": "Qwen3.8-27B UD-Q4_K_XL",
+    "model_slug": "qwen3-8-27b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.923,
+    "lat_median": 5.25,
+    "lat_max": 27.23,
+    "fails": 1.0
+   },
+   "duration_s": 98.6
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "35b_iq4nl_128k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 11,
+   "score_avg": 0.846,
+   "lat_median": 0.27,
+   "lat_max": 2.5,
+   "total_wall_s": 7.1,
+   "fails": [
+    "T3_arithmetique",
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_35b_iq4nl_128k.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_35b_iq4nl_128k.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_ctx128k_nothink_iq4nl",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 128k · nothink · iq4nl",
+    "ctx": 131072,
+    "flags": [
+     "iq4nl"
+    ],
+    "thinking": false,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.27,
+    "lat_max": 2.5,
+    "fails": 2.0
+   },
+   "duration_s": 7.1
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "35b_iq4nl_128k_think",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "mode": "think",
+   "tasks": 13,
+   "score": 13,
+   "score_avg": 1.0,
+   "lat_median": 7.03,
+   "lat_max": 10.48,
+   "total_wall_s": 75.1,
+   "fails": [],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_35b_iq4nl_128k_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_35b_iq4nl_128k_think.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_think_iq4nl",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · think · iq4nl",
+    "ctx": null,
+    "flags": [
+     "iq4nl"
+    ],
+    "thinking": true,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 1.0,
+    "lat_median": 7.03,
+    "lat_max": 10.48,
+    "fails": 0.0
+   },
+   "duration_s": 75.1
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "35b_iq4nl_262k_prod_nothink",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 11,
+   "score_avg": 0.846,
+   "lat_median": 0.3,
+   "lat_max": 4.66,
+   "total_wall_s": 9.4,
+   "fails": [
+    "T3_arithmetique",
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_35b_iq4nl_262k_prod_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_35b_iq4nl_262k_prod_nothink.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_nothink_iq4nl_prod",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · nothink · iq4nl · prod",
+    "ctx": null,
+    "flags": [
+     "iq4nl",
+     "prod"
+    ],
+    "thinking": false,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.3,
+    "lat_max": 4.66,
+    "fails": 2.0
+   },
+   "duration_s": 9.4
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "35b_iq4nl_262k_prod_think",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "mode": "think",
+   "tasks": 13,
+   "score": 13,
+   "score_avg": 1.0,
+   "lat_median": 7.75,
+   "lat_max": 13.62,
+   "total_wall_s": 81.9,
+   "fails": [],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_35b_iq4nl_262k_prod_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_35b_iq4nl_262k_prod_think.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_think_iq4nl_prod",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · think · iq4nl · prod",
+    "ctx": null,
+    "flags": [
+     "iq4nl",
+     "prod"
+    ],
+    "thinking": true,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 1.0,
+    "lat_median": 7.75,
+    "lat_max": 13.62,
+    "fails": 0.0
+   },
+   "duration_s": 81.9
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "35b_q4kxl_128k_nothink",
+   "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 11,
+   "score_avg": 0.846,
+   "lat_median": 0.26,
+   "lat_max": 3.09,
+   "total_wall_s": 7.9,
+   "fails": [
+    "T3_arithmetique",
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_35b_q4kxl_128k_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_35b_q4kxl_128k_nothink.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-q4-k-xl_nothink_q4kxl",
+    "label": "Qwen3.6-35B-A3B UD-Q4_K_XL · nothink · q4kxl",
+    "ctx": null,
+    "flags": [
+     "q4kxl"
+    ],
+    "thinking": false,
+    "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+    "model_slug": "qwen3-6-35b-a3b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.26,
+    "lat_max": 3.09,
+    "fails": 2.0
+   },
+   "duration_s": 7.9
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "35b_q4kxl_128k_think",
+   "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+   "mode": "think",
+   "tasks": 13,
+   "score": 12,
+   "score_avg": 0.923,
+   "lat_median": 6.46,
+   "lat_max": 18.23,
+   "total_wall_s": 96.2,
+   "fails": [
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_35b_q4kxl_128k_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_35b_q4kxl_128k_think.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-q4-k-xl_think_q4kxl",
+    "label": "Qwen3.6-35B-A3B UD-Q4_K_XL · think · q4kxl",
+    "ctx": null,
+    "flags": [
+     "q4kxl"
+    ],
+    "thinking": true,
+    "model": "Qwen3.6-35B-A3B UD-Q4_K_XL",
+    "model_slug": "qwen3-6-35b-a3b-ud-q4-k-xl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.923,
+    "lat_median": 6.46,
+    "lat_max": 18.23,
+    "fails": 1.0
+   },
+   "duration_s": 96.2
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "bonsai2-ptq1-32k_nothink_nothink",
+   "model": "Ternary Bonsai 2 27B",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 11,
+   "score_avg": 0.846,
+   "lat_median": 0.46,
+   "lat_max": 3.43,
+   "total_wall_s": 10.6,
+   "fails": [
+    "T3_arithmetique",
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_bonsai2-ptq1-32k_nothink_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_bonsai2-ptq1-32k_nothink_nothink.json",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_nothink_bonsai2_ptq1",
+    "label": "Ternary Bonsai 2 27B · nothink · bonsai2 · ptq1",
+    "ctx": null,
+    "flags": [
+     "bonsai2",
+     "ptq1"
+    ],
+    "thinking": false,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.46,
+    "lat_max": 3.43,
+    "fails": 2.0
+   },
+   "duration_s": 10.6
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "bonsai2-ptq1-32k_think_think",
+   "model": "Ternary Bonsai 2 27B",
+   "mode": "think",
+   "tasks": 13,
+   "score": 13,
+   "score_avg": 1.0,
+   "lat_median": 2.48,
+   "lat_max": 12.86,
+   "total_wall_s": 50.1,
+   "fails": [],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_bonsai2-ptq1-32k_think_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_bonsai2-ptq1-32k_think_think.json",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_think_bonsai2_ptq1",
+    "label": "Ternary Bonsai 2 27B · think · bonsai2 · ptq1",
+    "ctx": null,
+    "flags": [
+     "bonsai2",
+     "ptq1"
+    ],
+    "thinking": true,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 1.0,
+    "lat_median": 2.48,
+    "lat_max": 12.86,
+    "fails": 0.0
+   },
+   "duration_s": 50.1
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "k2h37-q4km-32k_nothink_nothink",
+   "model": "K2 Horizon 3.7B",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 8,
+   "score_avg": 0.615,
+   "lat_median": 0.23,
+   "lat_max": 0.78,
+   "total_wall_s": 4.0,
+   "fails": [
+    "T1_classification",
+    "T3_arithmetique",
+    "T4_date_jour_semaine",
+    "T8_resume_2_phrases",
+    "T12_hallucination"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_k2h37-q4km-32k_nothink_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_k2h37-q4km-32k_nothink_nothink.json",
+   "variant": {
+    "key": "k2-horizon-3-7b_nothink_k2h37_q4km",
+    "label": "K2 Horizon 3.7B · nothink · k2h37 · q4km",
+    "ctx": null,
+    "flags": [
+     "k2h37",
+     "q4km"
+    ],
+    "thinking": false,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.615,
+    "lat_median": 0.23,
+    "lat_max": 0.78,
+    "fails": 5.0
+   },
+   "duration_s": 4.0
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "k2h37-q4km-32k_think_think",
+   "model": "K2 Horizon 3.7B",
+   "mode": "think",
+   "tasks": 13,
+   "score": 5,
+   "score_avg": 0.481,
+   "lat_median": 0.82,
+   "lat_max": 2.36,
+   "total_wall_s": 12.2,
+   "fails": [
+    "T2_extraction_json",
+    "T4_date_jour_semaine",
+    "T5_instruction_format",
+    "T8_resume_2_phrases",
+    "T10_routage_outil",
+    "T11_categorisation"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_k2h37-q4km-32k_think_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_k2h37-q4km-32k_think_think.json",
+   "variant": {
+    "key": "k2-horizon-3-7b_think_k2h37_q4km",
+    "label": "K2 Horizon 3.7B · think · k2h37 · q4km",
+    "ctx": null,
+    "flags": [
+     "k2h37",
+     "q4km"
+    ],
+    "thinking": true,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.481,
+    "lat_median": 0.82,
+    "lat_max": 2.36,
+    "fails": 6.0
+   },
+   "duration_s": 12.2
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "k2h37-q8-32k_nothink_nothink",
+   "model": "K2 Horizon 3.7B",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 12,
+   "score_avg": 0.923,
+   "lat_median": 0.26,
+   "lat_max": 0.82,
+   "total_wall_s": 4.3,
+   "fails": [
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_k2h37-q8-32k_nothink_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_k2h37-q8-32k_nothink_nothink.json",
+   "variant": {
+    "key": "k2-horizon-3-7b_nothink_k2h37_q8",
+    "label": "K2 Horizon 3.7B · nothink · k2h37 · q8",
+    "ctx": null,
+    "flags": [
+     "k2h37",
+     "q8"
+    ],
+    "thinking": false,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.923,
+    "lat_median": 0.26,
+    "lat_max": 0.82,
+    "fails": 1.0
+   },
+   "duration_s": 4.3
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k_nothink",
+   "model": "qwen3-6-35b-a3b-ud-iq4-nl-256k nothink",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 11,
+   "score_avg": 0.846,
+   "lat_median": 0.3,
+   "lat_max": 4.66,
+   "total_wall_s": 9.4,
+   "fails": [
+    "T3_arithmetique",
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_qwen3-6-35b-a3b-ud-iq4-nl-256k_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_qwen3-6-35b-a3b-ud-iq4-nl-256k_nothink.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-fcb5_nothink_nl",
+    "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k not · nothink · nl",
+    "ctx": null,
+    "flags": [
+     "nl"
+    ],
+    "thinking": false,
+    "model": "qwen3-6-35b-a3b-ud-iq4-nl-256k nothink",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-fcb5",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.3,
+    "lat_max": 4.66,
+    "fails": 2.0
+   },
+   "duration_s": 9.4
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "qwen3-8-flash-next-iq3-xxs-128k_nothink",
+   "model": "FlashNext 177B",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 12,
+   "score_avg": 0.923,
+   "lat_median": 1.42,
+   "lat_max": 10.87,
+   "total_wall_s": 31.2,
+   "fails": [
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_qwen3-8-flash-next-iq3-xxs-128k_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_qwen3-8-flash-next-iq3-xxs-128k_nothink.json",
+   "variant": {
+    "key": "flashnext-177b_nothink_flash_iq3_next_qwen3_xxs",
+    "label": "FlashNext 177B · nothink · flash · iq3 · next · qwen3 · xxs",
+    "ctx": null,
+    "flags": [
+     "flash",
+     "iq3",
+     "next",
+     "qwen3",
+     "xxs"
+    ],
+    "thinking": false,
+    "model": "FlashNext 177B",
+    "model_slug": "flashnext-177b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.923,
+    "lat_median": 1.42,
+    "lat_max": 10.87,
+    "fails": 1.0
+   },
+   "duration_s": 31.2
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:23",
+   "label": "strata-flashnext-iq3xxs-131k_nothink",
+   "model": "FlashNext 177B",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 12,
+   "score_avg": 0.923,
+   "lat_median": 1.16,
+   "lat_max": 10.42,
+   "total_wall_s": 31.8,
+   "fails": [
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_strata-flashnext-iq3xxs-131k_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_strata-flashnext-iq3xxs-131k_nothink.json",
+   "variant": {
+    "key": "flashnext-177b_nothink_iq3xxs_strata",
+    "label": "FlashNext 177B · nothink · iq3xxs · strata",
+    "ctx": null,
+    "flags": [
+     "iq3xxs",
+     "strata"
+    ],
+    "thinking": false,
+    "model": "FlashNext 177B",
+    "model_slug": "flashnext-177b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.923,
+    "lat_median": 1.16,
+    "lat_max": 10.42,
+    "fails": 1.0
+   },
+   "duration_s": 31.8
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:24",
+   "label": "strata-flashnext-iq3xxs-131k_think",
+   "model": "FlashNext 177B",
+   "mode": "think",
+   "tasks": 13,
+   "score": 12,
+   "score_avg": 0.923,
+   "lat_median": 5.96,
+   "lat_max": 15.86,
+   "total_wall_s": 86.1,
+   "fails": [
+    "T11_categorisation"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_strata-flashnext-iq3xxs-131k_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_strata-flashnext-iq3xxs-131k_think.json",
+   "variant": {
+    "key": "flashnext-177b_think_iq3xxs_strata",
+    "label": "FlashNext 177B · think · iq3xxs · strata",
+    "ctx": null,
+    "flags": [
+     "iq3xxs",
+     "strata"
+    ],
+    "thinking": true,
+    "model": "FlashNext 177B",
+    "model_slug": "flashnext-177b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.923,
+    "lat_median": 5.96,
+    "lat_max": 15.86,
+    "fails": 1.0
+   },
+   "duration_s": 86.1
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:24",
+   "label": "swift15_iq4xs_128k_nothink",
+   "model": "Swift-1.5-27B IQ4_XS",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 11,
+   "score_avg": 0.846,
+   "lat_median": 0.62,
+   "lat_max": 5.25,
+   "total_wall_s": 17.0,
+   "fails": [
+    "T3_arithmetique",
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_swift15_iq4xs_128k_nothink.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_swift15_iq4xs_128k_nothink.json",
+   "variant": {
+    "key": "swift-1-5-27b-iq4-xs_nothink_iq4xs_swift15",
+    "label": "Swift-1.5-27B IQ4_XS · nothink · iq4xs · swift15",
+    "ctx": null,
+    "flags": [
+     "iq4xs",
+     "swift15"
+    ],
+    "thinking": false,
+    "model": "Swift-1.5-27B IQ4_XS",
+    "model_slug": "swift-1-5-27b-iq4-xs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 0.846,
+    "lat_median": 0.62,
+    "lat_max": 5.25,
+    "fails": 2.0
+   },
+   "duration_s": 17.0
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-30T18:13:24",
+   "label": "swift15_iq4xs_128k_think",
+   "model": "Swift-1.5-27B IQ4_XS",
+   "mode": "think",
+   "tasks": 13,
+   "score": 13,
+   "score_avg": 1.0,
+   "lat_median": 3.07,
+   "lat_max": 14.6,
+   "total_wall_s": 71.2,
+   "fails": [],
+   "source": "llm-benchmarks/224-2026-09-30/batteries/results_swift15_iq4xs_128k_think.json",
+   "entry_id": "battery:llm-benchmarks/224-2026-09-30/batteries/results_swift15_iq4xs_128k_think.json",
+   "variant": {
+    "key": "swift-1-5-27b-iq4-xs_think_iq4xs_swift15",
+    "label": "Swift-1.5-27B IQ4_XS · think · iq4xs · swift15",
+    "ctx": null,
+    "flags": [
+     "iq4xs",
+     "swift15"
+    ],
+    "thinking": true,
+    "model": "Swift-1.5-27B IQ4_XS",
+    "model_slug": "swift-1-5-27b-iq4-xs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "battery"
+   },
+   "metric_values": {
+    "score_avg": 1.0,
+    "lat_median": 3.07,
+    "lat_max": 14.6,
+    "fails": 0.0
+   },
+   "duration_s": 71.2
   },
   {
    "kind": "humaneval",
@@ -685,7 +4978,37 @@
    "avg_latency_s": 1.28,
    "wall_s": 67.1,
    "avg_tokens_per_sec": 33.3,
-   "source": "llm-benchmarks/humaneval/27b_q4kxl_0-49/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/27b_q4kxl_0-49/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/27b_q4kxl_0-49/humaneval-summary.json",
+   "variant": {
+    "key": "qwen3-8-27b-ud-q4-k-xl_mtp-on_ctx128k_gpu_kv-q8-0_mach-gabriel_n-max3_split0-55",
+    "label": "Qwen3.8-27B UD-Q4_K_XL · 128k · MTP on · gpu · kv-q8-0…",
+    "ctx": 131072,
+    "flags": [
+     "gpu",
+     "kv-q8-0",
+     "mach-gabriel",
+     "n-max3",
+     "split0-55"
+    ],
+    "thinking": null,
+    "model": "Qwen3.8-27B UD-Q4_K_XL",
+    "model_slug": "qwen3-8-27b-ud-q4-k-xl",
+    "mtp": true,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 96.0,
+    "avg_latency_s": 1.28,
+    "avg_tokens_per_sec": 33.3,
+    "passed": 48.0,
+    "total": 50.0,
+    "wall_s": 67.1
+   },
+   "duration_s": 67.1
   },
   {
    "kind": "humaneval",
@@ -699,7 +5022,79 @@
    "avg_latency_s": 0.67,
    "wall_s": 36.0,
    "avg_tokens_per_sec": 83.3,
-   "source": "llm-benchmarks/humaneval/35b_iq4nl_0-49/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/35b_iq4nl_0-49/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/35b_iq4nl_0-49/humaneval-summary.json",
+   "variant": {
+    "key": "qwen3-6-35b-a3b-ud-iq4-nl_ctx256k_gpu_kv-q8-0_mach-gabriel_n-max2_split0-55",
+    "label": "Qwen3.6-35B-A3B UD-IQ4_NL · 256k · gpu · kv-q8-0 · mach-g…",
+    "ctx": 262144,
+    "flags": [
+     "gpu",
+     "kv-q8-0",
+     "mach-gabriel",
+     "n-max2",
+     "split0-55"
+    ],
+    "thinking": null,
+    "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+    "model_slug": "qwen3-6-35b-a3b-ud-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 98.0,
+    "avg_latency_s": 0.67,
+    "avg_tokens_per_sec": 83.3,
+    "passed": 49.0,
+    "total": 50.0,
+    "wall_s": 36.0
+   },
+   "duration_s": 36.0
+  },
+  {
+   "kind": "humaneval",
+   "date": "2026-09-29T22:47:57.973404",
+   "machine": "gabriel",
+   "model": "Ternary Bonsai 2 27B PTQ1_0",
+   "config": "ctx 32768 | KV q8_0",
+   "passed": 49,
+   "total": 50,
+   "score_pct": 98.0,
+   "avg_latency_s": 0.85,
+   "wall_s": 44.2,
+   "avg_tokens_per_sec": 57.4,
+   "source": "llm-benchmarks/humaneval/he-bonsai2-ptq1-32k/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/he-bonsai2-ptq1-32k/humaneval-summary.json",
+   "variant": {
+    "key": "ternary-bonsai-2-27b-ptq1-0_ctx32k_ctx_kv-q8-0_mach-gabriel",
+    "label": "Ternary Bonsai 2 27B PTQ1_0 · 32k · ctx · kv-q8-0 · mach-…",
+    "ctx": 32768,
+    "flags": [
+     "ctx",
+     "kv-q8-0",
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Ternary Bonsai 2 27B PTQ1_0",
+    "model_slug": "ternary-bonsai-2-27b-ptq1-0",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 98.0,
+    "avg_latency_s": 0.85,
+    "avg_tokens_per_sec": 57.4,
+    "passed": 49.0,
+    "total": 50.0,
+    "wall_s": 44.2
+   },
+   "duration_s": 44.2
   },
   {
    "kind": "humaneval",
@@ -713,7 +5108,33 @@
    "avg_latency_s": 1.25,
    "wall_s": 6.5,
    "avg_tokens_per_sec": 39.0,
-   "source": "llm-benchmarks/humaneval/he-mini-35b/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/he-mini-35b/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/he-mini-35b/humaneval-summary.json",
+   "variant": {
+    "key": "35b-a3b-ud-iq4-nl-ctx26-5d1e_mach-gabriel",
+    "label": "35B-A3B UD-IQ4_NL ctx262144 n_max2 · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "35B-A3B UD-IQ4_NL ctx262144 n_max2 (mini-test)",
+    "model_slug": "35b-a3b-ud-iq4-nl-ctx26-5d1e",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 100.0,
+    "avg_latency_s": 1.25,
+    "avg_tokens_per_sec": 39.0,
+    "passed": 5.0,
+    "total": 5.0,
+    "wall_s": 6.5
+   },
+   "duration_s": 6.5
   },
   {
    "kind": "humaneval",
@@ -727,7 +5148,33 @@
    "avg_latency_s": 1.18,
    "wall_s": 199.6,
    "avg_tokens_per_sec": 63.3,
-   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-35b-256k/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-35b-256k/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-2026-08-11-35b-256k/humaneval-summary.json",
+   "variant": {
+    "key": "marie-qwen3-6-35b-iq4-nl_mach-marie",
+    "label": "Marie · mach-marie",
+    "ctx": null,
+    "flags": [
+     "mach-marie"
+    ],
+    "thinking": null,
+    "model": "Marie (Qwen3.6-35B-IQ4_NL)",
+    "model_slug": "marie-qwen3-6-35b-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 82.3,
+    "avg_latency_s": 1.18,
+    "avg_tokens_per_sec": 63.3,
+    "passed": 135.0,
+    "total": 164.0,
+    "wall_s": 199.6
+   },
+   "duration_s": 199.6
   },
   {
    "kind": "humaneval",
@@ -741,7 +5188,33 @@
    "avg_latency_s": 1.26,
    "wall_s": 415.5,
    "avg_tokens_per_sec": 62.2,
-   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-35b-q4kxl/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-35b-q4kxl/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-2026-08-11-35b-q4kxl/humaneval-summary.json",
+   "variant": {
+    "key": "marie-qwen3-6-35b-iq4-nl_mach-marie",
+    "label": "Marie · mach-marie",
+    "ctx": null,
+    "flags": [
+     "mach-marie"
+    ],
+    "thinking": null,
+    "model": "Marie (Qwen3.6-35B-IQ4_NL)",
+    "model_slug": "marie-qwen3-6-35b-iq4-nl",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 83.5,
+    "avg_latency_s": 1.26,
+    "avg_tokens_per_sec": 62.2,
+    "passed": 137.0,
+    "total": 164.0,
+    "wall_s": 415.5
+   },
+   "duration_s": 415.5
   },
   {
    "kind": "humaneval",
@@ -755,7 +5228,33 @@
    "avg_latency_s": 1.74,
    "wall_s": 67.9,
    "avg_tokens_per_sec": 78.3,
-   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-marie-27b-q6k-fixed/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-marie-27b-q6k-fixed/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-2026-08-11-marie-27b-q6k-fixed/humaneval-summary.json",
+   "variant": {
+    "key": "marie-qwen3-6-27b-q6-k_mach-marie",
+    "label": "Marie · mach-marie",
+    "ctx": null,
+    "flags": [
+     "mach-marie"
+    ],
+    "thinking": null,
+    "model": "Marie (Qwen3.6-27B-Q6_K)",
+    "model_slug": "marie-qwen3-6-27b-q6-k",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 55.3,
+    "avg_latency_s": 1.74,
+    "avg_tokens_per_sec": 78.3,
+    "passed": 21.0,
+    "total": 38.0,
+    "wall_s": 67.9
+   },
+   "duration_s": 67.9
   },
   {
    "kind": "humaneval",
@@ -769,7 +5268,33 @@
    "avg_latency_s": 4.23,
    "wall_s": 704.5,
    "avg_tokens_per_sec": 15.0,
-   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-marie-27b-q6k/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-marie-27b-q6k/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-2026-08-11-marie-27b-q6k/humaneval-summary.json",
+   "variant": {
+    "key": "marie-qwen3-6-27b-q6-k_mach-marie",
+    "label": "Marie · mach-marie",
+    "ctx": null,
+    "flags": [
+     "mach-marie"
+    ],
+    "thinking": null,
+    "model": "Marie (Qwen3.6-27B-Q6_K)",
+    "model_slug": "marie-qwen3-6-27b-q6-k",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 76.8,
+    "avg_latency_s": 4.23,
+    "avg_tokens_per_sec": 15.0,
+    "passed": 126.0,
+    "total": 164.0,
+    "wall_s": 704.5
+   },
+   "duration_s": 704.5
   },
   {
    "kind": "humaneval",
@@ -783,7 +5308,33 @@
    "avg_latency_s": 2.6,
    "wall_s": 60.7,
    "avg_tokens_per_sec": 68.5,
-   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-marie-35b-q4kxl-fixed/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-2026-08-11-marie-35b-q4kxl-fixed/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-2026-08-11-marie-35b-q4kxl-fixed/humaneval-summary.json",
+   "variant": {
+    "key": "marie-qwen3-6-27b-q6-k_mach-marie",
+    "label": "Marie · mach-marie",
+    "ctx": null,
+    "flags": [
+     "mach-marie"
+    ],
+    "thinking": null,
+    "model": "Marie (Qwen3.6-27B-Q6_K)",
+    "model_slug": "marie-qwen3-6-27b-q6-k",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 13.0,
+    "avg_latency_s": 2.6,
+    "avg_tokens_per_sec": 68.5,
+    "passed": 3.0,
+    "total": 23.0,
+    "wall_s": 60.7
+   },
+   "duration_s": 60.7
   },
   {
    "kind": "humaneval",
@@ -797,7 +5348,33 @@
    "avg_latency_s": 4.11,
    "wall_s": 680.6,
    "avg_tokens_per_sec": 19.0,
-   "source": "llm-benchmarks/humaneval/humaneval-20260812-q4km-ctx262144/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-20260812-q4km-ctx262144/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-20260812-q4km-ctx262144/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-6-35b-a3b-2c28_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.6-35B-A3B-UD-Q4_K_M ctx262144)",
+    "model_slug": "gabriel-qwen3-6-35b-a3b-2c28",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 84.1,
+    "avg_latency_s": 4.11,
+    "avg_tokens_per_sec": 19.0,
+    "passed": 138.0,
+    "total": 164.0,
+    "wall_s": 680.6
+   },
+   "duration_s": 680.6
   },
   {
    "kind": "humaneval",
@@ -811,7 +5388,33 @@
    "avg_latency_s": 4.38,
    "wall_s": 724.6,
    "avg_tokens_per_sec": 18.1,
-   "source": "llm-benchmarks/humaneval/humaneval-20260812-q4km/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-20260812-q4km/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-20260812-q4km/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-6-35b-a3b-db39_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.6-35B-A3B-UD-Q4_K_M)",
+    "model_slug": "gabriel-qwen3-6-35b-a3b-db39",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 86.0,
+    "avg_latency_s": 4.38,
+    "avg_tokens_per_sec": 18.1,
+    "passed": 141.0,
+    "total": 164.0,
+    "wall_s": 724.6
+   },
+   "duration_s": 724.6
   },
   {
    "kind": "humaneval",
@@ -825,7 +5428,33 @@
    "avg_latency_s": 4.95,
    "wall_s": 819.4,
    "avg_tokens_per_sec": 16.7,
-   "source": "llm-benchmarks/humaneval/humaneval-20260812-q5km/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-20260812-q5km/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-20260812-q5km/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-6-35b-a3b-2e04_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.6-35B-A3B-UD-Q5_K_M)",
+    "model_slug": "gabriel-qwen3-6-35b-a3b-2e04",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 83.5,
+    "avg_latency_s": 4.95,
+    "avg_tokens_per_sec": 16.7,
+    "passed": 137.0,
+    "total": 164.0,
+    "wall_s": 819.4
+   },
+   "duration_s": 819.4
   },
   {
    "kind": "humaneval",
@@ -839,7 +5468,33 @@
    "avg_latency_s": 6.34,
    "wall_s": 1046.7,
    "avg_tokens_per_sec": 12.7,
-   "source": "llm-benchmarks/humaneval/humaneval-flashnext-q4km-off-2026-09-16/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-flashnext-q4km-off-2026-09-16/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-flashnext-q4km-off-2026-09-16/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-8-flash-n-e7c1_mach-flashnext",
+    "label": "Gabriel · mach-flashnext",
+    "ctx": null,
+    "flags": [
+     "mach-flashnext"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.8-Flash-Next Q4_K_M 177B MoE ctx262144)",
+    "model_slug": "gabriel-qwen3-8-flash-n-e7c1",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 81.7,
+    "avg_latency_s": 6.34,
+    "avg_tokens_per_sec": 12.7,
+    "passed": 134.0,
+    "total": 164.0,
+    "wall_s": 1046.7
+   },
+   "duration_s": 1046.7
   },
   {
    "kind": "humaneval",
@@ -853,7 +5508,33 @@
    "avg_latency_s": 5.86,
    "wall_s": 968.2,
    "avg_tokens_per_sec": 11.9,
-   "source": "llm-benchmarks/humaneval/humaneval-flashnext-q4km-off-FINAL/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-flashnext-q4km-off-FINAL/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-flashnext-q4km-off-FINAL/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-8-flash-n-e7c1_mach-flashnext",
+    "label": "Gabriel · mach-flashnext",
+    "ctx": null,
+    "flags": [
+     "mach-flashnext"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.8-Flash-Next Q4_K_M 177B MoE ctx262144)",
+    "model_slug": "gabriel-qwen3-8-flash-n-e7c1",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 91.5,
+    "avg_latency_s": 5.86,
+    "avg_tokens_per_sec": 11.9,
+    "passed": 150.0,
+    "total": 164.0,
+    "wall_s": 968.2
+   },
+   "duration_s": 968.2
   },
   {
    "kind": "humaneval",
@@ -867,7 +5548,33 @@
    "avg_latency_s": 22.21,
    "wall_s": 3649.2,
    "avg_tokens_per_sec": 22.2,
-   "source": "llm-benchmarks/humaneval/humaneval-flashnext-q4km-think-FINAL/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-flashnext-q4km-think-FINAL/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-flashnext-q4km-think-FINAL/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-flashnext-q4-k-c958_think_mach-flashnext-think",
+    "label": "Gabriel · think · mach-flashnext-think",
+    "ctx": null,
+    "flags": [
+     "mach-flashnext-think"
+    ],
+    "thinking": true,
+    "model": "Gabriel (FlashNext Q4_K_M — thinking ON)",
+    "model_slug": "gabriel-flashnext-q4-k-c958",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 98.2,
+    "avg_latency_s": 22.21,
+    "avg_tokens_per_sec": 22.2,
+    "passed": 161.0,
+    "total": 164.0,
+    "wall_s": 3649.2
+   },
+   "duration_s": 3649.2
   },
   {
    "kind": "humaneval",
@@ -881,7 +5588,33 @@
    "avg_latency_s": 2.03,
    "wall_s": 340.3,
    "avg_tokens_per_sec": 40.9,
-   "source": "llm-benchmarks/humaneval/humaneval-gabriel-35b-iq4nl-32k-2026-08-11/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-gabriel-35b-iq4nl-32k-2026-08-11/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-gabriel-35b-iq4nl-32k-2026-08-11/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-6-27b-iq4-ec78_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.6-27B-IQ4_NL dual-GPU)",
+    "model_slug": "gabriel-qwen3-6-27b-iq4-ec78",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 82.3,
+    "avg_latency_s": 2.03,
+    "avg_tokens_per_sec": 40.9,
+    "passed": 135.0,
+    "total": 164.0,
+    "wall_s": 340.3
+   },
+   "duration_s": 340.3
   },
   {
    "kind": "humaneval",
@@ -895,7 +5628,33 @@
    "avg_latency_s": 3.43,
    "wall_s": 568.9,
    "avg_tokens_per_sec": 24.1,
-   "source": "llm-benchmarks/humaneval/humaneval-gabriel-35b-q4km-32k-2026-08-11/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-gabriel-35b-q4km-32k-2026-08-11/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-gabriel-35b-q4km-32k-2026-08-11/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-6-27b-iq4-ec78_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.6-27B-IQ4_NL dual-GPU)",
+    "model_slug": "gabriel-qwen3-6-27b-iq4-ec78",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 84.8,
+    "avg_latency_s": 3.43,
+    "avg_tokens_per_sec": 24.1,
+    "passed": 139.0,
+    "total": 164.0,
+    "wall_s": 568.9
+   },
+   "duration_s": 568.9
   },
   {
    "kind": "humaneval",
@@ -909,7 +5668,34 @@
    "avg_latency_s": 4.76,
    "wall_s": null,
    "avg_tokens_per_sec": 2161.2,
-   "source": "llm-benchmarks/humaneval/humaneval-gabriel-iq4nl-f16-32k-2026-08-11/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-gabriel-iq4nl-f16-32k-2026-08-11/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-gabriel-iq4nl-f16-32k-2026-08-11/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-6-27b-iq4-ec78_f16_mach-gabriel",
+    "label": "Gabriel · f16 · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "f16",
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.6-27B-IQ4_NL dual-GPU)",
+    "model_slug": "gabriel-qwen3-6-27b-iq4-ec78",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 67.7,
+    "avg_latency_s": 4.76,
+    "avg_tokens_per_sec": 2161.2,
+    "passed": 111.0,
+    "total": 164.0,
+    "wall_s": null
+   },
+   "duration_s": null
   },
   {
    "kind": "humaneval",
@@ -923,7 +5709,34 @@
    "avg_latency_s": 4.7,
    "wall_s": null,
    "avg_tokens_per_sec": 2228.2,
-   "source": "llm-benchmarks/humaneval/humaneval-gabriel-nodraft-2026-08-11/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-gabriel-nodraft-2026-08-11/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-gabriel-nodraft-2026-08-11/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-6-27b-iq4-ec78_mtp-off_mach-gabriel",
+    "label": "Gabriel · MTP off · mach-gabriel · nodraft",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel",
+     "nodraft"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.6-27B-IQ4_NL dual-GPU)",
+    "model_slug": "gabriel-qwen3-6-27b-iq4-ec78",
+    "mtp": false,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 67.1,
+    "avg_latency_s": 4.7,
+    "avg_tokens_per_sec": 2228.2,
+    "passed": 110.0,
+    "total": 164.0,
+    "wall_s": null
+   },
+   "duration_s": null
   },
   {
    "kind": "humaneval",
@@ -937,7 +5750,33 @@
    "avg_latency_s": 33.19,
    "wall_s": 5839.3,
    "avg_tokens_per_sec": 15.9,
-   "source": "llm-benchmarks/humaneval/humaneval-gabriel-qwen38-uncensored-2026-08-21/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-gabriel-qwen38-uncensored-2026-08-21/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-gabriel-qwen38-uncensored-2026-08-21/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-8-27b-unc-94b1_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.8-27B-Uncensored-IQ4_XS ctx262144)",
+    "model_slug": "gabriel-qwen3-8-27b-unc-94b1",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 87.2,
+    "avg_latency_s": 33.19,
+    "avg_tokens_per_sec": 15.9,
+    "passed": 143.0,
+    "total": 164.0,
+    "wall_s": 5839.3
+   },
+   "duration_s": 5839.3
   },
   {
    "kind": "humaneval",
@@ -951,7 +5790,33 @@
    "avg_latency_s": 20.46,
    "wall_s": 102.5,
    "avg_tokens_per_sec": 15.9,
-   "source": "llm-benchmarks/humaneval/humaneval-gabriel-qwen38-uncensored-mini/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-gabriel-qwen38-uncensored-mini/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-gabriel-qwen38-uncensored-mini/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-8-27b-unc-94b1_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.8-27B-Uncensored-IQ4_XS ctx262144)",
+    "model_slug": "gabriel-qwen3-8-27b-unc-94b1",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 40.0,
+    "avg_latency_s": 20.46,
+    "avg_tokens_per_sec": 15.9,
+    "passed": 2.0,
+    "total": 5.0,
+    "wall_s": 102.5
+   },
+   "duration_s": 102.5
   },
   {
    "kind": "humaneval",
@@ -965,7 +5830,33 @@
    "avg_latency_s": 22.56,
    "wall_s": 113.0,
    "avg_tokens_per_sec": 16.6,
-   "source": "llm-benchmarks/humaneval/humaneval-gabriel-qwen38-uncensored-mini2/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-gabriel-qwen38-uncensored-mini2/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-gabriel-qwen38-uncensored-mini2/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-8-27b-unc-94b1_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.8-27B-Uncensored-IQ4_XS ctx262144)",
+    "model_slug": "gabriel-qwen3-8-27b-unc-94b1",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 60.0,
+    "avg_latency_s": 22.56,
+    "avg_tokens_per_sec": 16.6,
+    "passed": 3.0,
+    "total": 5.0,
+    "wall_s": 113.0
+   },
+   "duration_s": 113.0
   },
   {
    "kind": "humaneval",
@@ -979,7 +5870,33 @@
    "avg_latency_s": 4.95,
    "wall_s": null,
    "avg_tokens_per_sec": 2035.0,
-   "source": "llm-benchmarks/humaneval/humaneval-gabriel-udq3xl-2026-08-11/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-gabriel-udq3xl-2026-08-11/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-gabriel-udq3xl-2026-08-11/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-6-27b-iq4-ec78_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.6-27B-IQ4_NL dual-GPU)",
+    "model_slug": "gabriel-qwen3-6-27b-iq4-ec78",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 81.7,
+    "avg_latency_s": 4.95,
+    "avg_tokens_per_sec": 2035.0,
+    "passed": 134.0,
+    "total": 164.0,
+    "wall_s": null
+   },
+   "duration_s": null
   },
   {
    "kind": "humaneval",
@@ -993,7 +5910,33 @@
    "avg_latency_s": 13.51,
    "wall_s": 2222.5,
    "avg_tokens_per_sec": 38.3,
-   "source": "llm-benchmarks/humaneval/humaneval-louis-27B-Q4_K_XL-FINAL/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-louis-27B-Q4_K_XL-FINAL/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-louis-27B-Q4_K_XL-FINAL/humaneval-summary.json",
+   "variant": {
+    "key": "louis-qwen3-8-27b-ud-q4-72b5_mach-louis",
+    "label": "Louis · mach-louis",
+    "ctx": null,
+    "flags": [
+     "mach-louis"
+    ],
+    "thinking": null,
+    "model": "Louis (Qwen3.8-27B-UD-Q4_K_XL ctx262144) — cerveau de Ron",
+    "model_slug": "louis-qwen3-8-27b-ud-q4-72b5",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 98.2,
+    "avg_latency_s": 13.51,
+    "avg_tokens_per_sec": 38.3,
+    "passed": 161.0,
+    "total": 164.0,
+    "wall_s": 2222.5
+   },
+   "duration_s": 2222.5
   },
   {
    "kind": "humaneval",
@@ -1007,7 +5950,33 @@
    "avg_latency_s": 4.69,
    "wall_s": 776.0,
    "avg_tokens_per_sec": 16.4,
-   "source": "llm-benchmarks/humaneval/humaneval-q5km-20260811/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-q5km-20260811/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-q5km-20260811/humaneval-summary.json",
+   "variant": {
+    "key": "gabriel-qwen3-6-35b-a3b-2e04_mach-gabriel",
+    "label": "Gabriel · mach-gabriel",
+    "ctx": null,
+    "flags": [
+     "mach-gabriel"
+    ],
+    "thinking": null,
+    "model": "Gabriel (Qwen3.6-35B-A3B-UD-Q5_K_M)",
+    "model_slug": "gabriel-qwen3-6-35b-a3b-2e04",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 83.5,
+    "avg_latency_s": 4.69,
+    "avg_tokens_per_sec": 16.4,
+    "passed": 137.0,
+    "total": 164.0,
+    "wall_s": 776.0
+   },
+   "duration_s": 776.0
   },
   {
    "kind": "humaneval",
@@ -1021,7 +5990,33 @@
    "avg_latency_s": 61.75,
    "wall_s": 13425.9,
    "avg_tokens_per_sec": 9.5,
-   "source": "llm-benchmarks/humaneval/humaneval-qwen38-2026-08-19/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-qwen38-2026-08-19/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-qwen38-2026-08-19/humaneval-summary.json",
+   "variant": {
+    "key": "louis-qwen3-8-27b-ud-q3-6c5c_mach-louis",
+    "label": "Louis · mach-louis",
+    "ctx": null,
+    "flags": [
+     "mach-louis"
+    ],
+    "thinking": null,
+    "model": "Louis (Qwen3.8-27B-UD-Q3_K_XL ctx131072)",
+    "model_slug": "louis-qwen3-8-27b-ud-q3-6c5c",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 88.4,
+    "avg_latency_s": 61.75,
+    "avg_tokens_per_sec": 9.5,
+    "passed": 145.0,
+    "total": 164.0,
+    "wall_s": 13425.9
+   },
+   "duration_s": 13425.9
   },
   {
    "kind": "humaneval",
@@ -1035,7 +6030,33 @@
    "avg_latency_s": 35.22,
    "wall_s": 176.3,
    "avg_tokens_per_sec": 11.4,
-   "source": "llm-benchmarks/humaneval/humaneval-qwen38-mini/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-qwen38-mini/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-qwen38-mini/humaneval-summary.json",
+   "variant": {
+    "key": "louis-qwen3-8-27b-ud-q3-6c5c_mach-louis",
+    "label": "Louis · mach-louis",
+    "ctx": null,
+    "flags": [
+     "mach-louis"
+    ],
+    "thinking": null,
+    "model": "Louis (Qwen3.8-27B-UD-Q3_K_XL ctx131072)",
+    "model_slug": "louis-qwen3-8-27b-ud-q3-6c5c",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 100.0,
+    "avg_latency_s": 35.22,
+    "avg_tokens_per_sec": 11.4,
+    "passed": 5.0,
+    "total": 5.0,
+    "wall_s": 176.3
+   },
+   "duration_s": 176.3
   },
   {
    "kind": "humaneval",
@@ -1049,7 +6070,33 @@
    "avg_latency_s": 168.89,
    "wall_s": 1446.9,
    "avg_tokens_per_sec": 2.2,
-   "source": "llm-benchmarks/humaneval/humaneval-qwen38-q6k-marie-2026-08-20/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-qwen38-q6k-marie-2026-08-20/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-qwen38-q6k-marie-2026-08-20/humaneval-summary.json",
+   "variant": {
+    "key": "marie-qwen3-8-27b-q6-k_mach-marie",
+    "label": "Marie · mach-marie",
+    "ctx": null,
+    "flags": [
+     "mach-marie"
+    ],
+    "thinking": null,
+    "model": "Marie (Qwen3.8-27B-Q6_K)",
+    "model_slug": "marie-qwen3-8-27b-q6-k",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 100.0,
+    "avg_latency_s": 168.89,
+    "avg_tokens_per_sec": 2.2,
+    "passed": 5.0,
+    "total": 5.0,
+    "wall_s": 1446.9
+   },
+   "duration_s": 1446.9
   },
   {
    "kind": "humaneval",
@@ -1063,7 +6110,33 @@
    "avg_latency_s": 49.65,
    "wall_s": 10914.4,
    "avg_tokens_per_sec": 11.7,
-   "source": "llm-benchmarks/humaneval/humaneval-qwen38-q6k-marie-full-2026-08-20/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/humaneval-qwen38-q6k-marie-full-2026-08-20/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/humaneval-qwen38-q6k-marie-full-2026-08-20/humaneval-summary.json",
+   "variant": {
+    "key": "marie-qwen3-8-27b-q6-k_mach-marie",
+    "label": "Marie · mach-marie",
+    "ctx": null,
+    "flags": [
+     "mach-marie"
+    ],
+    "thinking": null,
+    "model": "Marie (Qwen3.8-27B-Q6_K)",
+    "model_slug": "marie-qwen3-8-27b-q6-k",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 86.6,
+    "avg_latency_s": 49.65,
+    "avg_tokens_per_sec": 11.7,
+    "passed": 142.0,
+    "total": 164.0,
+    "wall_s": 10914.4
+   },
+   "duration_s": 10914.4
   },
   {
    "kind": "humaneval",
@@ -1077,7 +6150,33 @@
    "avg_latency_s": 35.57,
    "wall_s": 178.1,
    "avg_tokens_per_sec": 16.8,
-   "source": "llm-benchmarks/humaneval/q6k-thinkingcap-mini/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/q6k-thinkingcap-mini/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/q6k-thinkingcap-mini/humaneval-summary.json",
+   "variant": {
+    "key": "marie-thinkingcap-qwen3-5794_mach-marie",
+    "label": "Marie · mach-marie",
+    "ctx": null,
+    "flags": [
+     "mach-marie"
+    ],
+    "thinking": null,
+    "model": "Marie (ThinkingCap-Qwen3.6-27B-Q6_K)",
+    "model_slug": "marie-thinkingcap-qwen3-5794",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 80.0,
+    "avg_latency_s": 35.57,
+    "avg_tokens_per_sec": 16.8,
+    "passed": 4.0,
+    "total": 5.0,
+    "wall_s": 178.1
+   },
+   "duration_s": 178.1
   },
   {
    "kind": "humaneval",
@@ -1091,7 +6190,33 @@
    "avg_latency_s": 7.53,
    "wall_s": 1242.8,
    "avg_tokens_per_sec": 8.7,
-   "source": "llm-benchmarks/humaneval/q6k-vanilla-2026-08-12/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/q6k-vanilla-2026-08-12/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/q6k-vanilla-2026-08-12/humaneval-summary.json",
+   "variant": {
+    "key": "marie-qwen3-6-27b-q6-k_mach-marie",
+    "label": "Marie · mach-marie",
+    "ctx": null,
+    "flags": [
+     "mach-marie"
+    ],
+    "thinking": null,
+    "model": "Marie (Qwen3.6-27B-Q6_K)",
+    "model_slug": "marie-qwen3-6-27b-q6-k",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 80.5,
+    "avg_latency_s": 7.53,
+    "avg_tokens_per_sec": 8.7,
+    "passed": 132.0,
+    "total": 164.0,
+    "wall_s": 1242.8
+   },
+   "duration_s": 1242.8
   },
   {
    "kind": "humaneval",
@@ -1105,7 +6230,601 @@
    "avg_latency_s": 1.38,
    "wall_s": 71.1,
    "avg_tokens_per_sec": 32.4,
-   "source": "llm-benchmarks/humaneval/swift15_0-49/humaneval-summary.json"
+   "source": "llm-benchmarks/humaneval/swift15_0-49/humaneval-summary.json",
+   "entry_id": "humaneval:llm-benchmarks/humaneval/swift15_0-49/humaneval-summary.json",
+   "variant": {
+    "key": "swift-1-5-qwen3-8-27b-iq4-xs_ctx256k_cpu_gpu_kv-q8-0_mach-gabriel_n-max3_split0-52_vision",
+    "label": "Swift-1.5-Qwen3.8-27B IQ4_XS · 256k · cpu · gpu · kv-q8-0…",
+    "ctx": 262144,
+    "flags": [
+     "cpu",
+     "gpu",
+     "kv-q8-0",
+     "mach-gabriel",
+     "n-max3",
+     "split0-52",
+     "vision"
+    ],
+    "thinking": null,
+    "model": "Swift-1.5-Qwen3.8-27B IQ4_XS",
+    "model_slug": "swift-1-5-qwen3-8-27b-iq4-xs",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "humaneval"
+   },
+   "metric_values": {
+    "score_pct": 96.0,
+    "avg_latency_s": 1.38,
+    "avg_tokens_per_sec": 32.4,
+    "passed": 48.0,
+    "total": 50.0,
+    "wall_s": 71.1
+   },
+   "duration_s": 71.1
+  },
+  {
+   "kind": "vram",
+   "date": "2026-09-29 22:50:52",
+   "label": "bonsai2-ptq1-128k",
+   "model": "Ternary Bonsai 2 27B",
+   "quant": "PTQ1_0",
+   "ctx": 131072,
+   "gpu": "nvidia-smi #1 (16 Go)",
+   "idle_mib": 1231.0,
+   "loaded_mib": 11523.0,
+   "peak_gen_mib": 12120.0,
+   "peak_duel_mib": 12120.0,
+   "peak_prefill_mib": 11890.0,
+   "peak_mib": 12120.0,
+   "peak_hors_cas_mib": 1547.0,
+   "peak_net_mib": 10889.0,
+   "total_gb": 11.84,
+   "budget_gb": 16,
+   "fits_8gb": false,
+   "fits_16gb": true,
+   "fits_8gb_net": false,
+   "fits_16gb_net": true,
+   "rss_mib": null,
+   "kv_offload": true,
+   "ngl": 99,
+   "loading_s": 5.0,
+   "tg": 97.7,
+   "pp": 373.3,
+   "duel_run_id": "2026-09-29_2251__ternary-bonsai-2-27b-ptq1_0__ctx131072__t0.2__nothink",
+   "n_samples": 4700,
+   "note": null,
+   "source": "llm-benchmarks/224-2026-09-30-bonsai2-k2/vram/vram-bonsai2-ptq1-128k.csv",
+   "entry_id": "vram:llm-benchmarks/224-2026-09-30-bonsai2-k2/vram/vram-bonsai2-ptq1-128k.csv",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_ctx128k_bonsai2_ptq1",
+    "label": "Ternary Bonsai 2 27B · 128k · bonsai2 · ptq1",
+    "ctx": 131072,
+    "flags": [
+     "bonsai2",
+     "ptq1"
+    ],
+    "thinking": null,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vram"
+   },
+   "metric_values": {
+    "peak_mib": 12120.0,
+    "peak_net_mib": 10889.0,
+    "idle_mib": 1231.0,
+    "loaded_mib": 11523.0,
+    "rss_mib": null,
+    "total_gb": 11.84,
+    "pp": 373.3,
+    "tg": 97.7
+   },
+   "duration_s": 5.0
+  },
+  {
+   "kind": "vram",
+   "date": "2026-09-29 21:56:15",
+   "label": "bonsai2-ptq1-32k",
+   "model": "Ternary Bonsai 2 27B",
+   "quant": "PTQ1_0",
+   "ctx": 32768,
+   "gpu": "nvidia-smi #1 (16 Go)",
+   "idle_mib": 895.0,
+   "loaded_mib": 7927.0,
+   "peak_gen_mib": 8029.0,
+   "peak_duel_mib": 8940.0,
+   "peak_prefill_mib": 8246.0,
+   "peak_mib": 8940.0,
+   "peak_hors_cas_mib": 12118.0,
+   "peak_net_mib": 8045.0,
+   "total_gb": 8.73,
+   "budget_gb": 16,
+   "fits_8gb": false,
+   "fits_16gb": true,
+   "fits_8gb_net": false,
+   "fits_16gb_net": true,
+   "rss_mib": null,
+   "kv_offload": true,
+   "ngl": 99,
+   "loading_s": 5.0,
+   "tg": 101.9,
+   "pp": 370.0,
+   "duel_run_id": "2026-09-29_2158__ternary-bonsai-2-27b-ptq1_0__ctx32768__t0.2__nothink",
+   "n_samples": 20350,
+   "note": "pic hors cas 12118 MiB ecarte (sampler encore actif apres l'arret du cas)",
+   "source": "llm-benchmarks/224-2026-09-30-bonsai2-k2/vram/vram-bonsai2-ptq1-32k.csv",
+   "entry_id": "vram:llm-benchmarks/224-2026-09-30-bonsai2-k2/vram/vram-bonsai2-ptq1-32k.csv",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_ctx32k_bonsai2_pic-hors-cas-12118-mib-e_ptq1",
+    "label": "Ternary Bonsai 2 27B · 32k · bonsai2 · pic-hors-cas-12118…",
+    "ctx": 32768,
+    "flags": [
+     "bonsai2",
+     "pic-hors-cas-12118-mib-e",
+     "ptq1"
+    ],
+    "thinking": null,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vram"
+   },
+   "metric_values": {
+    "peak_mib": 8940.0,
+    "peak_net_mib": 8045.0,
+    "idle_mib": 895.0,
+    "loaded_mib": 7927.0,
+    "rss_mib": null,
+    "total_gb": 8.73,
+    "pp": 370.0,
+    "tg": 101.9
+   },
+   "duration_s": 5.0
+  },
+  {
+   "kind": "vram",
+   "date": "2026-09-29 22:50:52",
+   "label": "bonsai2-ptq1-128k",
+   "model": "Ternary Bonsai 2 27B",
+   "quant": "PTQ1_0",
+   "ctx": 131072,
+   "gpu": "nvidia-smi #1 (16 Go)",
+   "idle_mib": 1231.0,
+   "loaded_mib": 11523.0,
+   "peak_gen_mib": 12120.0,
+   "peak_duel_mib": 12120.0,
+   "peak_prefill_mib": 11890.0,
+   "peak_mib": 12120.0,
+   "peak_hors_cas_mib": 1547.0,
+   "peak_net_mib": 10889.0,
+   "total_gb": 11.84,
+   "budget_gb": 16,
+   "fits_8gb": false,
+   "fits_16gb": true,
+   "fits_8gb_net": false,
+   "fits_16gb_net": true,
+   "rss_mib": 9396.5,
+   "kv_offload": true,
+   "ngl": 99,
+   "loading_s": 5.0,
+   "tg": 97.7,
+   "pp": 373.3,
+   "duel_run_id": "2026-09-29_2251__ternary-bonsai-2-27b-ptq1_0__ctx131072__t0.2__nothink",
+   "n_samples": 4700,
+   "note": null,
+   "source": "llm-benchmarks/224-2026-09-30/vram/vram-bonsai2-ptq1-128k.csv",
+   "entry_id": "vram:llm-benchmarks/224-2026-09-30/vram/vram-bonsai2-ptq1-128k.csv",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_ctx128k_bonsai2_ptq1",
+    "label": "Ternary Bonsai 2 27B · 128k · bonsai2 · ptq1",
+    "ctx": 131072,
+    "flags": [
+     "bonsai2",
+     "ptq1"
+    ],
+    "thinking": null,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vram"
+   },
+   "metric_values": {
+    "peak_mib": 12120.0,
+    "peak_net_mib": 10889.0,
+    "idle_mib": 1231.0,
+    "loaded_mib": 11523.0,
+    "rss_mib": 9396.5,
+    "total_gb": 11.84,
+    "pp": 373.3,
+    "tg": 97.7
+   },
+   "duration_s": 5.0
+  },
+  {
+   "kind": "vram",
+   "date": "2026-09-29 21:56:15",
+   "label": "bonsai2-ptq1-32k",
+   "model": "Ternary Bonsai 2 27B",
+   "quant": "PTQ1_0",
+   "ctx": 32768,
+   "gpu": "nvidia-smi #1 (16 Go)",
+   "idle_mib": 895.0,
+   "loaded_mib": 7927.0,
+   "peak_gen_mib": 8029.0,
+   "peak_duel_mib": 8940.0,
+   "peak_prefill_mib": 8246.0,
+   "peak_mib": 8940.0,
+   "peak_hors_cas_mib": 12118.0,
+   "peak_net_mib": 8045.0,
+   "total_gb": 8.73,
+   "budget_gb": 16,
+   "fits_8gb": false,
+   "fits_16gb": true,
+   "fits_8gb_net": false,
+   "fits_16gb_net": true,
+   "rss_mib": 9467.7,
+   "kv_offload": true,
+   "ngl": 99,
+   "loading_s": 5.0,
+   "tg": 101.9,
+   "pp": 370.0,
+   "duel_run_id": "2026-09-29_2158__ternary-bonsai-2-27b-ptq1_0__ctx32768__t0.2__nothink",
+   "n_samples": 20350,
+   "note": "pic hors cas 12118 MiB ecarte (sampler encore actif apres l'arret du cas)",
+   "source": "llm-benchmarks/224-2026-09-30/vram/vram-bonsai2-ptq1-32k.csv",
+   "entry_id": "vram:llm-benchmarks/224-2026-09-30/vram/vram-bonsai2-ptq1-32k.csv",
+   "variant": {
+    "key": "ternary-bonsai-2-27b_ctx32k_bonsai2_pic-hors-cas-12118-mib-e_ptq1",
+    "label": "Ternary Bonsai 2 27B · 32k · bonsai2 · pic-hors-cas-12118…",
+    "ctx": 32768,
+    "flags": [
+     "bonsai2",
+     "pic-hors-cas-12118-mib-e",
+     "ptq1"
+    ],
+    "thinking": null,
+    "model": "Ternary Bonsai 2 27B",
+    "model_slug": "ternary-bonsai-2-27b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vram"
+   },
+   "metric_values": {
+    "peak_mib": 8940.0,
+    "peak_net_mib": 8045.0,
+    "idle_mib": 895.0,
+    "loaded_mib": 7927.0,
+    "rss_mib": 9467.7,
+    "total_gb": 8.73,
+    "pp": 370.0,
+    "tg": 101.9
+   },
+   "duration_s": 5.0
+  },
+  {
+   "kind": "vram",
+   "date": "2026-09-30T18:13:21",
+   "label": "k2h37-q4km-128k",
+   "model": "K2 Horizon 3.7B",
+   "quant": "Q4_K_M",
+   "ctx": 131072,
+   "gpu": "nvidia-smi #1 (16 Go)",
+   "idle_mib": 1182.0,
+   "loaded_mib": 14531.0,
+   "peak_gen_mib": 14857.0,
+   "peak_duel_mib": 14857.0,
+   "peak_prefill_mib": null,
+   "peak_mib": 14564.0,
+   "peak_hors_cas_mib": 14857.0,
+   "peak_net_mib": 13382.0,
+   "total_gb": 14.22,
+   "budget_gb": 16,
+   "fits_8gb": false,
+   "fits_16gb": true,
+   "fits_8gb_net": false,
+   "fits_16gb_net": true,
+   "rss_mib": 18256.2,
+   "kv_offload": true,
+   "ngl": null,
+   "loading_s": null,
+   "tg": null,
+   "pp": null,
+   "duel_run_id": null,
+   "n_samples": 9951,
+   "note": null,
+   "source": "llm-benchmarks/224-2026-09-30/vram/vram-k2h37-q4km-128k.csv",
+   "entry_id": "vram:llm-benchmarks/224-2026-09-30/vram/vram-k2h37-q4km-128k.csv",
+   "variant": {
+    "key": "k2-horizon-3-7b_ctx128k_k2h37_q4km",
+    "label": "K2 Horizon 3.7B · 128k · k2h37 · q4km",
+    "ctx": 131072,
+    "flags": [
+     "k2h37",
+     "q4km"
+    ],
+    "thinking": null,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vram"
+   },
+   "metric_values": {
+    "peak_mib": 14564.0,
+    "peak_net_mib": 13382.0,
+    "idle_mib": 1182.0,
+    "loaded_mib": 14531.0,
+    "rss_mib": 18256.2,
+    "total_gb": 14.22,
+    "pp": null,
+    "tg": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "vram",
+   "date": "2026-09-30T18:13:21",
+   "label": "k2h37-q4km-32k",
+   "model": "K2 Horizon 3.7B",
+   "quant": "Q4_K_M",
+   "ctx": 32768,
+   "gpu": "nvidia-smi #1 (16 Go)",
+   "idle_mib": 1232.0,
+   "loaded_mib": 6897.0,
+   "peak_gen_mib": 6901.0,
+   "peak_duel_mib": 14845.0,
+   "peak_prefill_mib": null,
+   "peak_mib": 6942.0,
+   "peak_hors_cas_mib": 14845.0,
+   "peak_net_mib": 5710.0,
+   "total_gb": 6.78,
+   "budget_gb": 16,
+   "fits_8gb": true,
+   "fits_16gb": true,
+   "fits_8gb_net": true,
+   "fits_16gb_net": true,
+   "rss_mib": 18256.2,
+   "kv_offload": true,
+   "ngl": null,
+   "loading_s": null,
+   "tg": null,
+   "pp": null,
+   "duel_run_id": null,
+   "n_samples": 11196,
+   "note": "pic hors cas 14845 MiB ecarte (sampler encore actif apres l'arret du cas)",
+   "source": "llm-benchmarks/224-2026-09-30/vram/vram-k2h37-q4km-32k.csv",
+   "entry_id": "vram:llm-benchmarks/224-2026-09-30/vram/vram-k2h37-q4km-32k.csv",
+   "variant": {
+    "key": "k2-horizon-3-7b_ctx32k_k2h37_pic-hors-cas-14845-mib-e_q4km",
+    "label": "K2 Horizon 3.7B · 32k · k2h37 · pic-hors-cas-14845-mib-e…",
+    "ctx": 32768,
+    "flags": [
+     "k2h37",
+     "pic-hors-cas-14845-mib-e",
+     "q4km"
+    ],
+    "thinking": null,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vram"
+   },
+   "metric_values": {
+    "peak_mib": 6942.0,
+    "peak_net_mib": 5710.0,
+    "idle_mib": 1232.0,
+    "loaded_mib": 6897.0,
+    "rss_mib": 18256.2,
+    "total_gb": 6.78,
+    "pp": null,
+    "tg": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "vram",
+   "date": "2026-09-30T18:13:22",
+   "label": "k2h37-q4km-b8-48k",
+   "model": "K2 Horizon 3.7B",
+   "quant": "Q4_K_M",
+   "ctx": 49152,
+   "gpu": "nvidia-smi #0 (16 Go)",
+   "idle_mib": 2.0,
+   "loaded_mib": 6718.0,
+   "peak_gen_mib": 10468.0,
+   "peak_duel_mib": null,
+   "peak_prefill_mib": null,
+   "peak_mib": 6718.0,
+   "peak_hors_cas_mib": 10468.0,
+   "peak_net_mib": 6716.0,
+   "total_gb": 6.56,
+   "budget_gb": 8,
+   "fits_8gb": true,
+   "fits_16gb": true,
+   "fits_8gb_net": true,
+   "fits_16gb_net": true,
+   "rss_mib": 19107.8,
+   "kv_offload": true,
+   "ngl": null,
+   "loading_s": null,
+   "tg": null,
+   "pp": null,
+   "duel_run_id": null,
+   "n_samples": 416,
+   "note": "pic hors cas 10468 MiB ecarte (sampler encore actif apres l'arret du cas)",
+   "source": "llm-benchmarks/224-2026-09-30/vram/vram-k2h37-q4km-b8-48k.csv",
+   "entry_id": "vram:llm-benchmarks/224-2026-09-30/vram/vram-k2h37-q4km-b8-48k.csv",
+   "variant": {
+    "key": "k2-horizon-3-7b_ctx48k_b8_k2h37_pic-hors-cas-10468-mib-e_q4km",
+    "label": "K2 Horizon 3.7B · 48k · b8 · k2h37 · pic-hors-cas-10468-m…",
+    "ctx": 49152,
+    "flags": [
+     "b8",
+     "k2h37",
+     "pic-hors-cas-10468-mib-e",
+     "q4km"
+    ],
+    "thinking": null,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vram"
+   },
+   "metric_values": {
+    "peak_mib": 6718.0,
+    "peak_net_mib": 6716.0,
+    "idle_mib": 2.0,
+    "loaded_mib": 6718.0,
+    "rss_mib": 19107.8,
+    "total_gb": 6.56,
+    "pp": null,
+    "tg": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "vram",
+   "date": "2026-09-30T18:13:22",
+   "label": "k2h37-q8-32k",
+   "model": "K2 Horizon 3.7B",
+   "quant": "Q8_0",
+   "ctx": 32768,
+   "gpu": "nvidia-smi #1 (16 Go)",
+   "idle_mib": 982.0,
+   "loaded_mib": 8374.0,
+   "peak_gen_mib": 8502.0,
+   "peak_duel_mib": null,
+   "peak_prefill_mib": null,
+   "peak_mib": 8629.0,
+   "peak_hors_cas_mib": 8502.0,
+   "peak_net_mib": 7647.0,
+   "total_gb": 8.43,
+   "budget_gb": 16,
+   "fits_8gb": false,
+   "fits_16gb": true,
+   "fits_8gb_net": true,
+   "fits_16gb_net": true,
+   "rss_mib": 4389.9,
+   "kv_offload": true,
+   "ngl": null,
+   "loading_s": null,
+   "tg": null,
+   "pp": null,
+   "duel_run_id": null,
+   "n_samples": 77,
+   "note": null,
+   "source": "llm-benchmarks/224-2026-09-30/vram/vram-k2h37-q8-32k.csv",
+   "entry_id": "vram:llm-benchmarks/224-2026-09-30/vram/vram-k2h37-q8-32k.csv",
+   "variant": {
+    "key": "k2-horizon-3-7b_ctx32k_k2h37_q8",
+    "label": "K2 Horizon 3.7B · 32k · k2h37 · q8",
+    "ctx": 32768,
+    "flags": [
+     "k2h37",
+     "q8"
+    ],
+    "thinking": null,
+    "model": "K2 Horizon 3.7B",
+    "model_slug": "k2-horizon-3-7b",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vram"
+   },
+   "metric_values": {
+    "peak_mib": 8629.0,
+    "peak_net_mib": 7647.0,
+    "idle_mib": 982.0,
+    "loaded_mib": 8374.0,
+    "rss_mib": 4389.9,
+    "total_gb": 8.43,
+    "pp": null,
+    "tg": null
+   },
+   "duration_s": null
+  },
+  {
+   "kind": "vram",
+   "date": "2026-09-30T18:13:22",
+   "label": "live-ptq1-32k",
+   "model": "live-ptq1-32k",
+   "quant": "PTQ1_0",
+   "ctx": 32768,
+   "gpu": "nvidia-smi #1 (16 Go)",
+   "idle_mib": 895.0,
+   "loaded_mib": 7927.0,
+   "peak_gen_mib": 8029.0,
+   "peak_duel_mib": 8940.0,
+   "peak_prefill_mib": null,
+   "peak_mib": 8029.0,
+   "peak_hors_cas_mib": 8940.0,
+   "peak_net_mib": 7134.0,
+   "total_gb": 7.84,
+   "budget_gb": 16,
+   "fits_8gb": false,
+   "fits_16gb": true,
+   "fits_8gb_net": true,
+   "fits_16gb_net": true,
+   "rss_mib": 9418.2,
+   "kv_offload": true,
+   "ngl": null,
+   "loading_s": null,
+   "tg": null,
+   "pp": null,
+   "duel_run_id": null,
+   "n_samples": 6148,
+   "note": "live · pic hors cas 8940 MiB ecarte (sampler encore actif apres l'arret du cas)",
+   "source": "llm-benchmarks/224-2026-09-30/vram/vram-live-ptq1-32k.csv",
+   "entry_id": "vram:llm-benchmarks/224-2026-09-30/vram/vram-live-ptq1-32k.csv",
+   "variant": {
+    "key": "live-ptq1-32k_ctx32k_live-pic-hors-cas-8940-m",
+    "label": "live-ptq1-32k · 32k · live-pic-hors-cas-8940-m",
+    "ctx": 32768,
+    "flags": [
+     "live-pic-hors-cas-8940-m"
+    ],
+    "thinking": null,
+    "model": "live-ptq1-32k",
+    "model_slug": "live-ptq1-32k",
+    "mtp": null,
+    "temperature": null,
+    "max_tokens": null,
+    "kv": null,
+    "kind": "vram"
+   },
+   "metric_values": {
+    "peak_mib": 8029.0,
+    "peak_net_mib": 7134.0,
+    "idle_mib": 895.0,
+    "loaded_mib": 7927.0,
+    "rss_mib": 9418.2,
+    "total_gb": 7.84,
+    "pp": null,
+    "tg": null
+   },
+   "duration_s": null
   }
  ],
  "vault_notes": [
@@ -1113,6 +6832,11 @@
    "path": "wiki/casquettes/developpeur/llm-benchmarks/A_B_35B-A3B_vs_27B_dense_sur_le_224_Linux_-_vitesse_contexte_petites_taches_29_09_2026.md",
    "title": "A/B 35B-A3B vs 27B dense sur le .224 Linux - vitesse, contexte, petites taches (29/09/2026)",
    "mtime": "2026-09-29"
+  },
+  {
+   "path": "wiki/casquettes/developpeur/llm-benchmarks/Bonsai_2_27B_ternaire_et_K2_Horizon_4B_sur_le_224_-_VRAM_vitesse_qualite_29-30_09_2026.md",
+   "title": "Bonsai 2 27B ternaire et K2 Horizon 4B sur le .224 - VRAM, vitesse, qualite (29-30/09/2026)",
+   "mtime": "2026-09-30"
   },
   {
    "path": "wiki/casquettes/developpeur/llm-benchmarks/Centralisation_des_tests_LLM_-_index_unifie_et_page_benchmarks_29_09_2026.md",
@@ -1172,7 +6896,7 @@
   {
    "path": "wiki/casquettes/developpeur/llm-benchmarks/INDEX.md",
    "title": "Index — llm-benchmarks",
-   "mtime": "2026-09-29"
+   "mtime": "2026-09-30"
   },
   {
    "path": "wiki/casquettes/developpeur/llm-benchmarks/Test_remplissage_multi-slots_2_3_impact_RAM_KV_35B_IQ4_NL_desktop_224_19_08.md",

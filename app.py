@@ -40,6 +40,20 @@ test et par variante. **Masquer / supprimer / restaurer** un résultat depuis /g
 `visibility.py`, `settings.py`, `charts.py`, `page_graph.py` ; harnais de tests
 `scripts/run-tests.sh` (unitaires `tests/` + end-to-end `e2e/` sous Playwright).
 
+v1.6.1 : **bancs vitesse/mémoire sur un serveur sans routes natives** — Strata et les
+moteurs OpenAI-only ne servent ni `/tokenize` ni `/completion` : les tests de vitesse et
+de mémoire tombaient en erreur 404 en 0,1 s. `bench_tests.py` sonde une fois par serveur,
+bascule sur `/v1/chat/completions` (mêmes champs `timings` : `prompt_per_second`,
+`predicted_per_second`), estime le remplissage par un ratio caractères/token mesuré côté
+serveur SUR LE TEXTE DE REMPLISSAGE lui-même puis lit le compte exact dans `prompt_n`.
+Trois justesses de mesure au passage :
+le remplissage se corrige dans les deux sens (un test « 128k » ne se publie pas à 113k) ;
+un tir servi par le cache du serveur (`cache_n`) est écarté de la moyenne de prefill au
+lieu de la tirer vers le bas ; le needle envoie `cache_prompt: false`, lit aussi
+`reasoning_content` (avec 128 tokens de marge) et publie le contexte RÉELLEMENT servi
+(évalué + cache). Un modèle qui raisonne brûlait sinon son budget avant d'écrire, et un
+rappel juste était compté comme un échec.
+
 Python 3 stdlib UNIQUEMENT — aucune dépendance externe.
 
 Lancement :
@@ -81,7 +95,7 @@ try:
 except ImportError:        # module pas encore livré : /graph répondra 503, jamais de crash
     page_graph = None
 
-APP_VERSION = "1.6.0"
+APP_VERSION = "1.6.1"
 
 # Libellé affiché dans l'UI (utile si plusieurs instances)
 APP_TITLE = os.environ.get("APP_TITLE") or "Prompt Duel"
@@ -964,6 +978,17 @@ def list_already_done(model_slug=None, n_ctx=None, params=None, max_age=5.0):
     return done
 
 
+def _query_flag(path_or_query, name):
+    """Case a cocher portee par une URL (« ?partiels=1 ») : vraie sauf valeur fausse."""
+    texte = str(path_or_query or "")
+    if "?" in texte:
+        texte = urlparse(texte).query
+    valeurs = parse_qs(texte.lstrip("?"), keep_blank_values=True).get(name)
+    if not valeurs:
+        return False
+    return str(valeurs[-1]).strip().lower() not in ("0", "non", "false", "off", "no")
+
+
 def probe_llm(force=False):
     """Sonde /health, /v1/models, /props, /slots. Résultat mémorisé PROBE_CACHE_S."""
     with STATE.lock:
@@ -1670,16 +1695,55 @@ document.getElementById('onlyhtml').onchange=applyFilters;
 # Worker d'exécution (un seul à la fois — 1 slot llama.cpp)
 # --------------------------------------------------------------------------
 
+SLOTS_DISPONIBLE = None        # None = pas encore sondé ; False = serveur sans /slots
+
+
+SLOT_ESSAIS = 3                 # essais avant d'abandonner un prompt (serveur injoignable)
+SLOT_ESSAI_S = 5                # délai entre deux essais
+
+
 def wait_for_free_slot():
-    """Boucle jusqu'à ce que le slot soit libre. False si stop demandé."""
+    """Boucle jusqu'à ce que le slot soit libre. False si stop demandé.
+
+    Deux cas particuliers, tous deux mesurés sur un vrai duel :
+      * serveur qui n'expose PAS `/slots` (API OpenAI seule, ex. Strata) -> 404 :
+        on ne peut pas connaître l'état du slot ; les tirs étant déjà séquentiels,
+        on continue sans attente (une seule trace, pas une par prompt) ;
+      * serveur momentanément injoignable (relance du moteur en cours de run) :
+        quelques essais espacés avant d'abandonner le prompt, au lieu de brûler
+        le reste du duel.
+    """
+    global SLOTS_DISPONIBLE
+    essais = 0
     while True:
         with STATE.lock:
             if STATE.stop_requested:
                 return False
+        if SLOTS_DISPONIBLE is False:
+            return True
         try:
             busy = fetch_slot_busy()
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (404, 405, 501):
+                raise RuntimeError(f"lecture de /slots impossible : {exc}")
+            SLOTS_DISPONIBLE = False
+            LOG.add("/slots absent (404) — serveur sans routes natives : "
+                    "pas d'attente de slot, les tirs restent séquentiels")
+            return True
         except Exception as exc:
-            raise RuntimeError(f"lecture de /slots impossible : {exc}")
+            essais += 1
+            if essais > SLOT_ESSAIS:
+                raise RuntimeError(f"lecture de /slots impossible : {exc}")
+            LOG.add(f"serveur injoignable ({exc}) — essai {essais}/{SLOT_ESSAIS} "
+                    f"dans {SLOT_ESSAI_S} s")
+            for _ in range(int(SLOT_ESSAI_S * 10)):
+                time.sleep(0.1)
+                with STATE.lock:
+                    if STATE.stop_requested:
+                        return False
+            continue
+        essais = 0
+        SLOTS_DISPONIBLE = True
         if not busy:
             return True
         grp = []
@@ -3690,9 +3754,13 @@ class Handler(BaseHTTPRequestHandler):
                 state = visibility_state()
                 visible = visibility.apply(state, normalized)
                 charts = []
+                # `?partiels=1` : tracer aussi les resultats partiels (duel qui a perdu
+                # des prompts). Par defaut ils restent dans l'index mais hors courbes.
+                inclure_partiels = _query_flag(self.path, "partiels")
                 for kind, metric_key in GRAPH_METRICS:
                     data = metrics.series_for_chart(visible, metric_key=metric_key,
-                                                    kind=kind)
+                                                    kind=kind,
+                                                    include_partial=inclure_partiels)
                     data["kind"] = kind
                     charts.append(data)
                 by_kind = {}

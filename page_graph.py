@@ -208,6 +208,7 @@ def parse_query(query):
             raw[str(key)] = ["" if v is None else str(v) for v in values]
     kinds, variants = [], []
     show_hidden = False
+    show_partial = False
     for key, values in raw.items():
         low = key.strip().lower()
         for value in values:
@@ -221,7 +222,10 @@ def parse_query(query):
             elif low in ("masques", "masque", "hidden", "masquee"):
                 # case a cocher : « 1 », « on », « true » ou valeur vide = vrai
                 show_hidden = text.lower() not in ("0", "non", "false", "off", "no")
-    return {"kinds": kinds, "variants": variants, "show_hidden": show_hidden, "raw": raw}
+            elif low in ("partiels", "partiel", "partial", "incomplet", "incomplets"):
+                show_partial = text.lower() not in ("0", "non", "false", "off", "no")
+    return {"kinds": kinds, "variants": variants, "show_hidden": show_hidden,
+            "show_partial": show_partial, "raw": raw}
 
 
 def _passe_filtres(entry, kinds, variants):
@@ -259,7 +263,7 @@ def _familles_presentes(entries):
     return sorted(vues, key=lambda k: (metrics.KIND_RANK.get(k, 9), str(k)))
 
 
-def _charts_for(entries, familles):
+def _charts_for(entries, familles, include_partial=False):
     """Un graphique par metrique principale presente (au plus MAX_CHARTS)."""
     out = []
     for kind in familles:
@@ -267,7 +271,8 @@ def _charts_for(entries, familles):
             if len(out) >= MAX_CHARTS:
                 return out
             try:
-                data = metrics.series_for_chart(entries, metric_key=key, kind=kind)
+                data = metrics.series_for_chart(entries, metric_key=key, kind=kind,
+                                                include_partial=include_partial)
             except Exception:  # donnee abimee : on saute ce graphique, pas la page
                 continue
             if not _has_points(data):
@@ -287,13 +292,14 @@ def _charts_for(entries, familles):
     return out
 
 
-def _duration_data(entries, familles, charts_list):
+def _duration_data(entries, familles, charts_list, include_partial=False):
     """Donnees du graphique des durees : le premier lot qui porte des durees."""
     candidates = [c["data"] for c in charts_list]
     for kind in familles:
         for key in (PRIMARY_METRICS.get(kind, ()) or ()):
             try:
-                candidates.append(metrics.series_for_chart(entries, metric_key=key, kind=kind))
+                candidates.append(metrics.series_for_chart(entries, metric_key=key, kind=kind,
+                                                           include_partial=include_partial))
             except Exception:
                 continue
     for data in candidates:
@@ -336,7 +342,7 @@ def build_view(index, state=None, query=None):
     visibles = [e for e in gardees if _passe_filtres(e, filtres["kinds"], filtres["variants"])]
 
     familles = _familles_presentes(visibles)
-    listes = _charts_for(visibles, familles)
+    listes = _charts_for(visibles, familles, include_partial=filtres["show_partial"])
 
     # Variantes presentes (filtre) : tous les libelles, tries par cle.
     variantes = {}
@@ -373,9 +379,14 @@ def build_view(index, state=None, query=None):
     masques = _liste(etat.get("hidden"))
     supprimes = _liste(etat.get("deleted"))
 
-    duree_data = _duration_data(visibles, familles, listes)
+    duree_data = _duration_data(visibles, familles, listes,
+                                include_partial=filtres["show_partial"])
     duree_svg = charts.duration_chart(duree_data) if duree_data else ""
     duree_legend = charts.legend(duree_data) if duree_data else ""
+
+    # Resultats partiels (duel qui a perdu des prompts) : presents dans l'index,
+    # exclus des graphiques sauf demande explicite.
+    partiels = [e for e in visibles if e.get("partiel")]
 
     return {
         "entries": norm,
@@ -388,6 +399,7 @@ def build_view(index, state=None, query=None):
         "duree_legend": duree_legend,
         "masques": masques,
         "supprimes": supprimes,
+        "partiels": partiels,
         "filtres": filtres,
         "source": _source_of(index),
         "index_error": index_error,
@@ -396,6 +408,7 @@ def build_view(index, state=None, query=None):
             "visibles": len(visibles),
             "masques": len(masques),
             "supprimes": len(supprimes),
+            "partiels": len(partiels),
         },
     }
 
@@ -428,6 +441,7 @@ def _filtres_form(view):
             f'{" checked" if key in coches_v else ""}> {_esc(label)}</label>'
         )
     masques_coche = ' checked' if filtres["show_hidden"] else ''
+    partiels_coche = ' checked' if filtres["show_partial"] else ''
     return (
         '<section class="card"><h2>Filtres <span class="dim">'
         'par test et par variante &middot; fonctionnent sans JavaScript (formulaire GET)</span></h2>'
@@ -439,6 +453,8 @@ def _filtres_form(view):
         '<fieldset><legend>Visibilit&eacute;</legend>'
         f'<label class="dim"><input type="checkbox" name="masques" value="1"{masques_coche}> '
         'afficher les r&eacute;sultats masqu&eacute;s</label>'
+        f'<label class="dim"><input type="checkbox" name="partiels" value="1"{partiels_coche}> '
+        f'tracer aussi les r&eacute;sultats partiels ({view["counts"]["partiels"]})</label>'
         '</fieldset>'
         '<div style="display:flex;flex-direction:column;gap:8px">'
         '<button type="submit">Filtrer</button>'
@@ -666,6 +682,25 @@ def _resume(view):
         avertissement = f'<p class="dim">{EMPTY_HINT}</p>'
     else:
         avertissement = ""
+    # Resultats partiels : dits en clair, avec le nombre de prompts perdus. Un duel
+    # partiel n'est pas un resultat comparable -> il ne se trace pas par defaut.
+    if view.get("partiels") and not view["filtres"].get("show_partial"):
+        lignes = []
+        for entry in view["partiels"][:8]:
+            ok = entry.get("prompts_ok")
+            total = entry.get("prompts_total")
+            taux = f"{ok}/{total} prompt(s) abouti(s)" if total else "partiel"
+            lignes.append(f'<li>{_esc(entry.get("label") or entry.get("run_id"))} '
+                          f'<span class="dim">&middot; {_esc(taux)}</span></li>')
+        reste = len(view["partiels"]) - len(lignes)
+        partiels = (
+            f'<p class="dim">{len(view["partiels"])} r&eacute;sultat(s) <b>partiel(s)</b> '
+            f'non trac&eacute;(s) (r&eacute;glages « tracer aussi les r&eacute;sultats partiels ») :'
+            f'<ul class="dim">{"".join(lignes)}'
+            + (f'<li>&hellip; {reste} autre(s)</li>' if reste > 0 else "")
+            + '</ul></p>')
+    else:
+        partiels = ""
     return f"""<section class="card"><h2>&Ccedil;a a &eacute;t&eacute; test&eacute;
   <span class="dim">r&eacute;sultat chiffr&eacute; + temps que &ccedil;a a pris, par test et par r&eacute;glages</span></h2>
   <p class="dim">{counts['total']} entr&eacute;e(s) dans l'index &middot; {counts['visibles']} affich&eacute;e(s)
@@ -673,6 +708,7 @@ def _resume(view):
   <p class="dim">Graphiques en SVG inline (aucune CDN, aucun JavaScript requis, info-bulles natives) ;
     un graphique par m&eacute;trique principale et un pour le temps pass&eacute;. Les r&eacute;sultats
     masqu&eacute;s disparaissent des vues mais restent r&eacute;cup&eacute;rables en bas de page.</p>
+  {partiels}
   {avertissement}</section>"""
 
 

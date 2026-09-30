@@ -848,7 +848,7 @@ def _recency(entry):
     return (date, entry_id(entry))
 
 
-def series_for_chart(entries, *, metric_key, kind=None):
+def series_for_chart(entries, *, metric_key, kind=None, include_partial=False):
     """Donnees pretes a tracer pour UNE metrique.
 
     -> {"metric": {"key","label","unit","better"},
@@ -866,6 +866,18 @@ def series_for_chart(entries, *, metric_key, kind=None):
     norm = normalize_entries(entries or [])
     if wanted:
         norm = [e for e in norm if canon_kind(e.get("kind")) == wanted]
+    # Un duel partiel (prompts perdus en route) n'est pas un resultat comparable : il
+    # reste dans l'index et dans /benchmarks, mais ne se trace pas par defaut. La page
+    # /graph l'inclut sur demande (`?partiels=1`) et compte les points ecartes.
+    partiels_exclus = 0
+    if not include_partial:
+        gardees = []
+        for entry in norm:
+            if entry.get("partiel"):
+                partiels_exclus += 1
+            else:
+                gardees.append(entry)
+        norm = gardees
 
     groups = {}          # cle -> (tri, libelle)
     buckets = {}         # cle de serie -> {"variant":..., "points": {groupe: (recency, point)}}
@@ -936,7 +948,8 @@ def series_for_chart(entries, *, metric_key, kind=None):
         })
     duplicates.sort(key=lambda d: (d["series"], d["group"]))
     return {"metric": metric, "groups": ordered_groups, "series": series,
-            "duplicates": duplicates}
+            "duplicates": duplicates, "partiels_exclus": partiels_exclus,
+            "include_partial": bool(include_partial)}
 
 
 # --------------------------------------------------------------- CLI de debug
