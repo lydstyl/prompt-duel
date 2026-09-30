@@ -502,7 +502,15 @@ def app_bench_entry(run, result, bench_path, family):
         entry.setdefault("prefill_tps", m.get("pp_tps"))
         if family == "memoire":
             entry["tokens"] = m.get("prompt_n")
+    thinking_mode = run.get("thinking")
+    if thinking_mode is not None:
+        # nothink | think écrit par le bench : c'est ce champ qui sépare les séries de
+        # /graph (avec et sans raisonnement ne sont PAS la même mesure).
+        entry["thinking"] = str(thinking_mode).strip().lower() in (
+            "think", "thinking", "medium", "on", "true", "1")
+        entry["mode"] = thinking_mode
     entry["settings"] = {
+        "thinking": thinking_mode,
         "n_ctx": run.get("n_ctx"),
         "mtp": metrics.mtp_hint(run.get("notes"), run.get("label")) if metrics else None,
         "endpoint": run.get("endpoint"),

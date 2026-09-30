@@ -40,6 +40,14 @@ test et par variante. **Masquer / supprimer / restaurer** un résultat depuis /g
 `visibility.py`, `settings.py`, `charts.py`, `page_graph.py` ; harnais de tests
 `scripts/run-tests.sh` (unitaires `tests/` + end-to-end `e2e/` sous Playwright).
 
+v1.6.4 : **pensée des tests** — les bancs savent tourner avec le RAISONNEMENT ACTIF. Le mode se
+demande au lancement (`POST /api/tests/run` avec `"thinking": "medium"`, alias `think`/`on` ;
+défaut `nothink`, donc les campagnes passées restent comparables), traverse le corps chat des
+tirs de vitesse et du needle, le harnais FR (`small_tasks.py think`) et HumanEval (`run_he.py`
+5e argument), et se retrouve dans l'étiquette du bench (`…-think`) : deux campagnes qui ne
+mesurent pas la même chose ne se confondent jamais dans une série de /graph. Sans raisonnement,
+aucun champ n'est ajouté aux requêtes (comportement d'avant, inchangé).
+
 v1.6.3 : **/graph en deux étapes** — la page s'ouvre sur le CHOIX, plus sur un mur de
 graphiques. Étape 1 : le catalogue des réglages (une case par variante, avec son nombre
 de points et la date du dernier résultat) et la règle écrite en clair « coche de 2 à 6,
@@ -123,7 +131,7 @@ try:
 except ImportError:        # module pas encore livré : /graph répondra 503, jamais de crash
     page_graph = None
 
-APP_VERSION = "1.6.3"
+APP_VERSION = "1.6.4"
 
 # Libellé affiché dans l'UI (utile si plusieurs instances)
 APP_TITLE = os.environ.get("APP_TITLE") or "Prompt Duel"
@@ -2185,12 +2193,17 @@ def llm_is_local():
     return host in ("127.0.0.1", "localhost", "0.0.0.0", "::1")
 
 
-def bench_label(model_slug, n_ctx):
-    """Étiquette des artefacts : <slug court>-<ctx>k (convention des cas du parc)."""
+def bench_label(model_slug, n_ctx, thinking="nothink"):
+    """Étiquette des artefacts : <slug court>-<ctx>k[-think] (convention des cas du parc).
+
+    Le suffixe `-think` marque un bench lancé avec raisonnement : c'est lui qui sépare les
+    séries dans /graph (l'index lit ce mode dans l'étiquette).
+    """
     slug = re.sub(r"[^a-z0-9]+", "-", (model_slug or "modele").lower()).strip("-")
     slug = re.sub(r"-gguf$", "", slug)[:40].strip("-")
     k = int(n_ctx or 0) // 1024
-    return f"{slug}-{k}k" if k else slug
+    label = f"{slug}-{k}k" if k else slug
+    return f"{label}-think" if bench_tests.normalize_thinking(thinking) == "think" else label
 
 
 def bench_calib():
@@ -2313,7 +2326,7 @@ def write_bench_json():
         LOG.add(f"écriture du bench impossible : {exc}")
 
 
-def bench_worker(ids, declared_settings=None):
+def bench_worker(ids, declared_settings=None, thinking="nothink"):
     """Exécute les tests choisis, un par un. Un test en échec n'arrête pas la suite."""
     try:
         if DRY_RUN:
@@ -2333,7 +2346,8 @@ def bench_worker(ids, declared_settings=None):
                 write_bench_json()
                 return
 
-        label = bench_label(model_slug, n_ctx)
+        thinking = bench_tests.normalize_thinking(thinking)
+        label = bench_label(model_slug, n_ctx, thinking)
         base = datetime.now().strftime("%Y-%m-%d_%H%M") + f"__{label}__tests"
         run_dir = BENCH_DIR / base
         n = 2
@@ -2355,12 +2369,13 @@ def bench_worker(ids, declared_settings=None):
             local=llm_is_local(), dry=DRY_RUN, ssh=BENCH_HE_SSH, he_dir=BENCH_HE_DIR,
             he_results=BENCH_HE_RESULTS, llm_home=BENCH_LLM_HOME, log_src=BENCH_LOG_SRC,
             model_slug=model_slug, model_path=model_path, n_ctx=n_ctx,
-            settings=captured)
+            settings=captured, thinking=thinking)
         with STATE.lock:
             STATE._bench_json_path = run_dir / "bench.json"
             STATE.bench.update({
                 "run_id": run_dir.name, "run_dir": str(run_dir),
                 "run_url": f"/benches/{run_dir.name}/", "label": label,
+                "thinking": thinking,          # nothink | think (v1.6.4)
                 "model_path": model_path, "model_slug": model_slug, "n_ctx": n_ctx,
                 "settings": captured,          # réglages réels du serveur
                 "variant": variant,
@@ -2430,8 +2445,9 @@ def bench_worker(ids, declared_settings=None):
         probe_llm(force=True)
 
 
-def start_bench(ids, declared_settings=None):
+def start_bench(ids, declared_settings=None, thinking="nothink"):
     ids = [str(i) for i in ids]
+    thinking = bench_tests.normalize_thinking(thinking)
     with STATE.lock:
         if any_worker_running():
             return False, "un traitement est déjà en cours (duel ou tests)"
@@ -2451,12 +2467,13 @@ def start_bench(ids, declared_settings=None):
             "variant": None,
             "vram_note": bench_tests.vram_now() if llm_is_local() else None,
             "notes": llm_server_note(),
-            "selected_ids": ids, "status": "running",
+            "thinking": thinking, "selected_ids": ids, "status": "running",
             "est_total_s": round(sum((cat.get(i) or {}).get("est_s") or 0 for i in ids), 1),
             "results": [make_bench_result(t, (cat.get(t["id"]) or {}).get("est_s"))
                         for t in tests],
         }
-        worker = threading.Thread(target=bench_worker, args=(ids, declared_settings),
+        worker = threading.Thread(target=bench_worker,
+                                  args=(ids, declared_settings, thinking),
                                   name="prompt-duel-bench", daemon=True)
         STATE.bench_worker = worker
         worker.start()
@@ -3929,9 +3946,13 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json(409, {"ok": False, "error": "test(s) indisponible(s) — "
                                                                + " | ".join(refused)})
                 ok, msg = start_bench(ids, declared_settings=body.get("settings")
-                                      if isinstance(body.get("settings"), dict) else None)
-                return self._json(200 if ok else 409, {"ok": ok, "message": msg,
-                                                       "error": None if ok else msg})
+                                      if isinstance(body.get("settings"), dict) else None,
+                                      thinking=body.get("thinking") or "nothink")
+                return self._json(200 if ok else 409,
+                                  {"ok": ok, "message": msg,
+                                   "error": None if ok else msg,
+                                   "thinking": bench_tests.normalize_thinking(
+                                       body.get("thinking") or "nothink")})
 
             if path == "/api/visibility" and method == "POST":
                 # masquer / réafficher / supprimer / restaurer des résultats (v1.6)

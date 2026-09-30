@@ -55,6 +55,40 @@ DEFAULT_TG_TPS = 30.0
 # Plafond généreux : un prefill de 256k peut prendre 10-20 min sur un modèle lent.
 PREFILL_TIMEOUT_S = 3600
 
+# ---------------------------------------------------------------- pensée (thinking)
+# Demande Gabriel (30/09/2026) : pouvoir lancer les bancs avec le RAISONNEMENT ACTIF
+# (« thinking medium »), et pas seulement en nothink. Le mode est PAR RUN : il arrive dans
+# `BenchEnv.thinking` (« nothink » par défaut, donc aucune campagne passée n'est affectée),
+# se retrouve dans le nom du dossier de bench (`…-think`) et dans les réglages du bench.
+# Raison : deux exécutions qui ne mesurent pas la même chose (avec/sans raisonnement) ne
+# doivent JAMAIS se confondre dans une série du graphique — l'étiquette les sépare.
+THINKING_MODES = ("nothink", "think")
+THINKING_LABELS = {"nothink": "sans raisonnement", "think": "raisonnement medium"}
+
+
+def normalize_thinking(value, default="nothink"):
+    """« medium » / « on » / True → « think » ; « none » / False → « nothink »."""
+    if isinstance(value, bool):
+        return "think" if value else "nothink"
+    text = str(value or "").strip().lower()
+    if text in ("think", "thinking", "medium", "on", "true", "1", "oui", "yes"):
+        return "think"
+    if text in ("nothink", "no-think", "none", "off", "false", "0", "non", "no"):
+        return "nothink"
+    return default
+
+
+def think_payload(thinking):
+    """Champs d'un corps CHAT pour ce mode — les deux formes, comme l'app de runs.
+
+    `chat_template_kwargs.enable_thinking` n'est pas écouté partout (Ternary Bonsai 2,
+    PrismML) ; `reasoning_effort` au premier niveau couvre ces runtimes, et ceux qui
+    l'ignorent ne bronchent pas.
+    """
+    if normalize_thinking(thinking) == "think":
+        return {"reasoning_effort": "medium", "chat_template_kwargs": {"enable_thinking": True}}
+    return {"reasoning_effort": "none", "chat_template_kwargs": {"enable_thinking": False}}
+
 NEEDLE = "Note technique confidentielle : le code de vérification du projet est LUMIERE-777-42."
 NEEDLE_TOKEN = "LUMIERE-777-42"
 QUESTION = "Question : quel est le code de vérification du projet ? Réponds uniquement le code."
@@ -175,7 +209,7 @@ class BenchEnv:
     def __init__(self, base, port, label, run_dir, local=True, dry=False, ssh="", he_dir="",
                  he_results="/home/lydstyl/llm-bench/results", llm_home="", log_src="/home/gab/llm",
                  nvidia=True, model_slug=None, model_path=None, n_ctx=None, python="python3",
-                 settings=None):
+                 settings=None, thinking="nothink"):
         self.base = (base or "http://127.0.0.1:8080").rstrip("/")
         self.port = int(port or 8080)
         self.local = bool(local)              # le LLM sert sur cette machine (scripts + VRAM OK)
@@ -193,6 +227,7 @@ class BenchEnv:
         self.n_ctx = n_ctx
         self.python = python
         self.settings = settings              # réglages réels capturés au lancement (v1.6)
+        self.thinking = normalize_thinking(thinking)   # nothink | think (v1.6.4)
 
 
 def settings_capture(port, declared=None):
@@ -510,7 +545,8 @@ def _timings(d):
             "predicted_n": u.get("completion_tokens")}
 
 
-def _completion(base, prompt, n_predict, timeout, emit=None, prefer_chat=False):
+def _completion(base, prompt, n_predict, timeout, emit=None, prefer_chat=False,
+                thinking="nothink"):
     """Un tir de vitesse : /completion (repli CHAT) ou directement CHAT.
 
     ⚠️ Le repli coûte un PREFILL COMPLET : sur un prompt de 245k tokens, un tir brut
@@ -547,8 +583,8 @@ def _completion(base, prompt, n_predict, timeout, emit=None, prefer_chat=False):
         emit("  serveur sans routes natives → tir chat (/v1/chat/completions)")
     if t is None:
         body = {"messages": [{"role": "user", "content": prompt}], "max_tokens": n_predict,
-                "temperature": 0.0, "top_k": 1, "seed": 1, "cache_prompt": False,
-                "reasoning_effort": "none", "chat_template_kwargs": {"enable_thinking": False}}
+                "temperature": 0.0, "top_k": 1, "seed": 1, "cache_prompt": False}
+        body.update(think_payload(thinking))
         d, wall = _post(f"{base}/v1/chat/completions", body, timeout)
         t = _timings(d)
         mode = "chat"
@@ -592,7 +628,8 @@ def _run_vitesse(test, env, emit, stop_check):
     for i in range(test["runs"]):
         if stop_check():
             raise RuntimeError("arrêt demandé")
-        t = _completion(env.base, SHORT_PROMPT, test["n_predict"], PREFILL_TIMEOUT_S, emit)
+        t = _completion(env.base, SHORT_PROMPT, test["n_predict"], PREFILL_TIMEOUT_S, emit,
+                        thinking=env.thinking)
         results.append(t)
         emit(f"  tir {i + 1}/{test['runs']} : PP {t.get('pp_tps') or 0:.1f} t/s "
              f"({t.get('prompt_n')} tok évalués, {t.get('cache_n')} du cache) | "
@@ -626,7 +663,8 @@ def _run_vitesse_long(test, env, emit, stop_check):
     text, got = _fill_prompt(env.base, target, emit)
     if stop_check():
         raise RuntimeError("arrêt demandé")
-    t = _completion(env.base, text, test["n_predict"], PREFILL_TIMEOUT_S, emit, prefer_chat=True)
+    t = _completion(env.base, text, test["n_predict"], PREFILL_TIMEOUT_S, emit, prefer_chat=True,
+                    thinking=env.thinking)
     emit(f"  PP {t.get('pp_tps') or 0:.1f} t/s sur {t.get('prompt_n')} tokens | "
          f"TG {t.get('tg_tps') or 0:.1f} t/s | {t['wall_s']}s")
     return {
@@ -658,8 +696,8 @@ def _run_needle(test, env, emit, stop_check):
     # avant d'écrire sa réponse, et un rappel juste serait compté comme un échec.
     budget = max(int(test.get("n_predict") or 32), 128)
     body = {"messages": [{"role": "user", "content": text + "\n\n" + QUESTION}],
-            "max_tokens": budget, "temperature": 0.0, "cache_prompt": False,
-            "reasoning_effort": "none", "chat_template_kwargs": {"enable_thinking": False}}
+            "max_tokens": budget, "temperature": 0.0, "cache_prompt": False}
+    body.update(think_payload(env.thinking))
     d, wall = _post(f"{env.base}/v1/chat/completions", body, PREFILL_TIMEOUT_S)
     msg = (((d.get("choices") or [{}])[0]).get("message") or {})
     content = (msg.get("content") or "").strip()
@@ -700,10 +738,11 @@ def _run_batterie(test, env, emit, stop_check):
     if not os.path.exists(script):
         raise RuntimeError(f"harnais absent : {script}")
     outdir = os.path.join(env.llm_home, test.get("outdir") or "smalltasks")
-    cmd = [env.python, script, str(env.port), env.label, outdir, "nothink"]
+    mode = env.thinking                      # nothink | think (harnais : small_tasks.py)
+    cmd = [env.python, script, str(env.port), env.label, outdir, mode]
     emit(f"  batterie : {' '.join(cmd)}")
     rc, _ = _spawn_stream(cmd, emit, stop_check, cwd=env.llm_home)
-    json_path = os.path.join(outdir, f"results_{env.label}_nothink.json")
+    json_path = os.path.join(outdir, f"results_{env.label}_{mode}.json")
     metrics = {}
     if os.path.exists(json_path):
         try:
@@ -740,9 +779,11 @@ def _run_humaneval(test, env, emit, stop_check):
     problems = test["problems"]
     out = f"{env.he_results}/from224-{env.label}-{problems.replace(',', '_')}"
     display = f"{env.model_slug or '?'} [{int(env.n_ctx or 0) // 1024}k]"
-    remote = ("cd %s && python3 run_he.py %s %s %s %s && cat %s/humaneval-summary.json"
+    if env.thinking == "think":
+        display += " — raisonnement medium"
+    remote = ("cd %s && python3 run_he.py %s %s %s %s %s && cat %s/humaneval-summary.json"
               % (_q(env.he_dir), _q(display), _q(env.model_path or "local"), _q(problems),
-                 _q(out), _q(out)))
+                 _q(out), _q(env.thinking), _q(out)))
     emit(f"  HumanEval {problems} via {env.ssh} — modèle « {display} »")
     rc, txt = _spawn_stream(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
                              env.ssh, remote], emit, stop_check)
@@ -896,6 +937,7 @@ def render_md(bench):
                      or (bench.get("settings") or {}).get("variant_label"))
     if variant_label:
         lines.append(f"- réglages : {variant_label}")
+    lines.append(f"- pensée : {THINKING_LABELS.get(normalize_thinking(bench.get('thinking')), '?')}")
     lines.append(f"- endpoint : {bench.get('endpoint')} · dry_run={bench.get('dry_run')}")
     lines.append(f"- début / fin : {bench.get('started_at')} → {bench.get('finished_at')}")
     if bench.get("vram_note"):
