@@ -1,0 +1,1 @@
+llama-server -m /home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf --host 0.0.0.0 --port 8080 -ngl 99 --n-cpu-moe 8 -c 131072 -ctk turbo4 -ctv turbo3 -fa off --no-mmap -np 1 --load-mode mmap --mlock -t 8

@@ -1,0 +1,48 @@
+{
+  "metric": {"key": "pp", "label": "Prefill", "unit": "t/s", "better": "high"},
+  "groups": [
+    {"key": "vitesse-court", "label": "Vitesse court"},
+    {"key": "vitesse-128k", "label": "Vitesse 128k"},
+    {"key": "vitesse-256k", "label": "Vitesse 256k"},
+    {"key": "memoire-128k", "label": "Mémoire 128k"},
+    {"key": "memoire-256k", "label": "Mémoire 256k"}
+  ],
+  "series": [
+    {
+      "key": "qwen36-35b-128k",
+      "label": "Qwen3.6-35B · ctx 128k",
+      "hidden": false,
+      "points": [
+        {"group": "vitesse-court", "value": 1420.5, "duration_s": 152.4, "entry_id": "bench:2026-09-30_1146:vitesse-court", "date": "2026-09-30T11:46", "status": "ok"},
+        {"group": "vitesse-128k", "value": 1180.2, "duration_s": 210.9, "entry_id": "bench:2026-09-30_1149:vitesse-128k", "date": "2026-09-30T11:49", "status": "ok"},
+        {"group": "vitesse-256k", "value": 899.2, "duration_s": 275.2, "entry_id": "bench:2026-09-30_1207:vitesse-256k", "date": "2026-09-30T12:07", "status": "ok"},
+        {"group": "memoire-128k", "value": 1210.4, "duration_s": 331.5, "entry_id": "bench:2026-09-30_1149:memoire-128k", "date": "2026-09-30T12:04", "status": "ok"},
+        {"group": "memoire-256k", "value": null, "duration_s": 459.1, "entry_id": "bench:2026-09-30_1207:memoire-256k", "date": "2026-09-30T12:12", "status": "error"}
+      ]
+    },
+    {
+      "key": "qwen36-35b-256k",
+      "label": "Qwen3.6-35B · ctx 256k",
+      "hidden": false,
+      "points": [
+        {"group": "vitesse-court", "value": 1398.1, "duration_s": 148.7, "entry_id": "bench:2026-09-30_1146:vitesse-court-256k", "date": "2026-09-30T11:47", "status": "ok"},
+        {"group": "vitesse-128k", "value": 1310.6, "duration_s": 205.3, "entry_id": "bench:2026-09-30_1149:vitesse-128k-256k", "date": "2026-09-30T11:53", "status": "ok"},
+        {"group": "vitesse-256k", "value": 1015.8, "duration_s": 268.9, "entry_id": "bench:2026-09-30_1149:vitesse-256k", "date": "2026-09-30T11:58", "status": "ok"},
+        {"group": "memoire-128k", "value": 1288.7, "duration_s": 325.0, "entry_id": "bench:2026-09-30_1149:memoire-128k-256k", "date": "2026-09-30T12:04", "status": "ok"},
+        {"group": "memoire-256k", "value": 940.1, "duration_s": 448.2, "entry_id": "bench:2026-09-30_1149:memoire-256k", "date": "2026-09-30T12:11", "status": "ok"}
+      ]
+    },
+    {
+      "key": "qwen35-9b-128k",
+      "label": "Qwen3.5-9B · ctx 128k",
+      "hidden": true,
+      "points": [
+        {"group": "vitesse-court", "value": 2210.4, "duration_s": 88.2, "entry_id": "bench:2026-09-28_0901:vitesse-court", "date": "2026-09-28T09:01", "status": "ok"},
+        {"group": "vitesse-128k", "value": 1980.3, "duration_s": 120.6, "entry_id": "bench:2026-09-28_0901:vitesse-128k", "date": "2026-09-28T09:05", "status": "ok"},
+        {"group": "vitesse-256k", "value": 1720.9, "duration_s": 176.4, "entry_id": "bench:2026-09-28_0901:vitesse-256k", "date": "2026-09-28T09:09", "status": "ok"},
+        {"group": "memoire-128k", "value": 1955.2, "duration_s": 190.3, "entry_id": "bench:2026-09-28_0901:memoire-128k", "date": "2026-09-28T09:12", "status": "partial"},
+        {"group": "memoire-256k", "value": null, "duration_s": null, "entry_id": "bench:2026-09-28_0901:memoire-256k", "date": "2026-09-28T09:16", "status": "error"}
+      ]
+    }
+  ]
+}

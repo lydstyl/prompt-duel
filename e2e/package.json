@@ -1,0 +1,12 @@
+{
+  "name": "prompt-duel-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Suite Playwright end-to-end de prompt-duel. L'app est demarree par scripts/run-tests.sh (LLM_DRY_RUN=1, port de test) : ces specs ne font que la piloter dans un navigateur.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "playwright": "1.62.0"
+  }
+}

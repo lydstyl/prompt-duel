@@ -1,0 +1,35 @@
+{
+  "run_id": "2026-01-02_1200__fixture-model-a__ctx8192",
+  "model_slug": "fixture-model-a",
+  "n_ctx": 8192,
+  "label": "fixture-model-a-8k",
+  "started_at": "2026-01-02T12:00:00",
+  "finished_at": "2026-01-02T12:06:00",
+  "status": "finished",
+  "results": [
+    {
+      "id": "vitesse-court",
+      "group": "vitesse",
+      "title": "Vitesse courte",
+      "status": "ok",
+      "est_s": 180,
+      "duree_s": 172.4,
+      "summary": "pp 512 t/s · tg 41 t/s",
+      "metrics": {"pp": 512.0, "tg": 41.0},
+      "log": "vitesse-court.log",
+      "vram_peak": "11.7 Go"
+    },
+    {
+      "id": "memoire-128k",
+      "group": "memoire",
+      "title": "Mémoire 128k (needle)",
+      "status": "ok",
+      "est_s": 240,
+      "duree_s": 233.0,
+      "summary": "needle trouvé · prefill 480 t/s",
+      "metrics": {"needle": true, "prefill_tps": 480.0},
+      "log": "memoire-128k.log",
+      "vram_peak": "12.1 Go"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+[
+  {"pid": 4242, "cmdline": ["/usr/bin/python3", "/home/gab/bin/keepalive.py"]},
+  {"pid": 5150, "cmdline": ["/usr/local/bin/llama-server", "-m", "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf", "--host", "0.0.0.0", "--port", "8080", "-ngl", "99", "--n-cpu-moe", "10", "-c", "262144", "-ctk", "turbo4", "-ctv", "turbo3", "-fa", "on", "--mtp", "--draft-max", "16", "-np", "1", "--jinja", "-t", "8", "--mlock"]},
+  {"pid": 5151, "cmdline": ["/usr/local/bin/llama-server", "-m", "/home/gab/models/Qwen3.6-27B-IQ4_XS.gguf", "--port", "8081", "-c", "32768", "-ngl", "999", "-fa", "on"]}
+]

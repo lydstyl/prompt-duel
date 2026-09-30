@@ -1,0 +1,19 @@
+{
+ "timestamp": "2026-09-30T10:20:00.000001",
+ "benchmark": "HumanEval",
+ "total_problems": 50,
+ "wall_time_s": 67.1,
+ "machines": {
+  "gabriel": {
+   "display_name": "Test-35B | ctx131072 KV q8_0 n_max3 split0.55 draft MTP | 2 GPU .224",
+   "model": "Test-35B.gguf",
+   "passed": 48,
+   "failed": 2,
+   "total": 50,
+   "score_pct": 96.0,
+   "avg_latency_s": 1.28,
+   "total_tokens": 100,
+   "avg_tokens_per_sec": 33.3
+  }
+ }
+}

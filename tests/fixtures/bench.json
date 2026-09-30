@@ -1,0 +1,144 @@
+{
+  "run_id": "2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+  "run_dir": "/home/gab/apps/prompt-duel/benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests",
+  "run_url": "/benches/2026-09-30_1146__qwen3-6-35b-a3b-ud-iq4-nl-256k__tests/",
+  "started_at": "2026-09-30T11:46:08",
+  "finished_at": "2026-09-30T11:48:46",
+  "endpoint": "http://127.0.0.1:8080",
+  "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+  "model_slug": "qwen3.6-35b-a3b-ud-iq4_nl",
+  "n_ctx": 262144,
+  "label": "qwen3-6-35b-a3b-ud-iq4-nl-256k",
+  "dry_run": false,
+  "app_version": "1.5.0",
+  "python_version": "3.12.3",
+  "vram_note": "0: 10.2/15.9 Go · 1: 13.2/15.9 Go",
+  "notes": "draft MTP actif sur le serveur : les scores HumanEval peuvent être corrompus (~15 % historiquement) — sans draft pour un run officiel",
+  "selected_ids": [
+    "vitesse-court",
+    "batterie-13",
+    "memoire-128k",
+    "humaneval-50"
+  ],
+  "status": "finished",
+  "est_total_s": 2000.8,
+  "results": [
+    {
+      "id": "vitesse-court",
+      "group": "vitesse",
+      "title": "Vitesse courte — PP + TG",
+      "status": "ok",
+      "est_s": 24.1,
+      "duree_s": 4.5,
+      "summary": "PP 1158.2 t/s · TG 148.5 t/s (3 tir(s) valide(s))",
+      "erreur": null,
+      "metrics": {
+        "pp_tps": 1158.2,
+        "tg_tps": 148.5,
+        "runs": [
+          {
+            "pp_tps": 904.9657235035417,
+            "tg_tps": 149.9921488484587,
+            "prompt_n": 492,
+            "predicted_n": 128,
+            "wall_s": 1.99,
+            "mode": "brut"
+          },
+          {
+            "pp_tps": 1268.2177416444556,
+            "tg_tps": 146.32969681172742,
+            "prompt_n": 492,
+            "predicted_n": 128,
+            "wall_s": 1.26,
+            "mode": "brut"
+          },
+          {
+            "pp_tps": 1301.3359853784852,
+            "tg_tps": 149.18484468459062,
+            "prompt_n": 492,
+            "predicted_n": 128,
+            "wall_s": 1.24,
+            "mode": "brut"
+          }
+        ]
+      },
+      "log": "vitesse-court.log",
+      "vram_peak": "0: 10.2 Go · 1: 13.3 Go",
+      "started_at": "2026-09-30T11:46:08",
+      "finished_at": "2026-09-30T11:46:13"
+    },
+    {
+      "id": "batterie-13",
+      "group": "intelligence",
+      "title": "Batterie rapide — 13 petites tâches FR",
+      "status": "ok",
+      "est_s": 139.9,
+      "duree_s": 9.8,
+      "summary": "score 11.0/13 · complets 11/13 · latence méd 0.3 s",
+      "erreur": null,
+      "metrics": {
+        "score_sum": 11.0,
+        "score_full": 11,
+        "tasks": 13,
+        "score_avg": 0.846,
+        "lat_median": 0.3,
+        "lat_max": 4.66,
+        "battery_s": 9.4,
+        "fails": null,
+        "source": "/home/gab/llm/smalltasks/results_qwen3-6-35b-a3b-ud-iq4-nl-256k_nothink.json"
+      },
+      "log": "batterie-13.log",
+      "vram_peak": "0: 10.2 Go · 1: 13.3 Go",
+      "started_at": "2026-09-30T11:46:13",
+      "finished_at": "2026-09-30T11:46:23"
+    },
+    {
+      "id": "memoire-128k",
+      "group": "memoire",
+      "title": "Mémoire 128k — rappel à 85 %",
+      "status": "ok",
+      "est_s": 294.0,
+      "duree_s": 102.3,
+      "summary": "rappel OK · PP 1174.559213335399 t/s · 102 s",
+      "erreur": null,
+      "metrics": {
+        "needle_ok": true,
+        "answer": "LUMIERE-777-42",
+        "prompt_n": 119087,
+        "pp_tps": 1174.559213335399,
+        "tg_tps": 85.00750899662805,
+        "wall_s": 101.9
+      },
+      "log": "memoire-128k.log",
+      "vram_peak": "0: 10.4 Go · 1: 13.5 Go",
+      "started_at": "2026-09-30T11:46:23",
+      "finished_at": "2026-09-30T11:48:05"
+    },
+    {
+      "id": "humaneval-50",
+      "group": "intelligence",
+      "title": "HumanEval rapide — problèmes 0-49",
+      "status": "ok",
+      "est_s": 1542.8,
+      "duree_s": 40.9,
+      "summary": "pass@1 48/50 (96.0 %)",
+      "erreur": null,
+      "metrics": {
+        "rc": 0,
+        "problems": "0-49",
+        "remote_dir": "/home/lydstyl/llm-bench/results/from224-qwen3-6-35b-a3b-ud-iq4-nl-256k-0-49",
+        "display_name": "qwen3.6-35b-a3b-ud-iq4_nl [256k]",
+        "passed": 48,
+        "total": 50,
+        "score_pct": 96.0,
+        "avg_latency_s": 0.76,
+        "wall_s": 40.1,
+        "avg_tokens_per_sec": 75.4
+      },
+      "log": "humaneval-50.log",
+      "vram_peak": "0: 10.4 Go · 1: 13.5 Go",
+      "started_at": "2026-09-30T11:48:05",
+      "finished_at": "2026-09-30T11:48:46"
+    }
+  ]
+}

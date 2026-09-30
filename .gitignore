@@ -4,6 +4,8 @@ runs/
 # ⚠️ contient les résultats de la batterie de 13 tâches FR (données de domaine :
 # locataires, banque) → jamais dans le dépôt public, vault uniquement.
 benches/
+# état de visibilité (résultats masqués / supprimés) : état local, jamais versionné
+visibility.json
 # caches Python
 __pycache__/
 *.pyc

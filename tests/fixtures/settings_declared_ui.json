@@ -1,0 +1,5 @@
+{
+  "n_ctx": "256k",
+  "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+  "flags": "--mtp --draft-max 16 -fa on -c 262144 -ctk turbo4 -ctv turbo3 --weird-flag"
+}

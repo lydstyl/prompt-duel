@@ -1,0 +1,10 @@
+=== DEBUT fill test35b_256k 2026-09-30 10:10:00  ctx=262144 kv=q8_0 split=0.55,0.45 ub=128 n_max=2 fill=0.92 ===
+PID=4243  log=/tmp/case-test35b_256k.log
+PRET en 20s
+0, 10414 MiB, 16311 MiB
+1, 13555 MiB, 16303 MiB
+{"stage": "prompt_ready", "ctx": 262144, "tokens": 238084, "target": 241172}
+{"stage": "done", "ctx": 262144, "prompt_tokens": 238115, "completion_tokens": 12, "elapsed_s": 263.3, "pp_tps": 904.2, "needle_ok": true, "answer": "LUMIERE-777-42"}
+--- pic VRAM par GPU (MiB) ---
+GPU 0 pic 10892
+GPU 1 pic 13700

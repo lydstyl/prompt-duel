@@ -11,6 +11,10 @@ Ce que l'index agrege :
   * context: remplissages reels (fill-*.out) -> tokens ingeres, needle, prefill, pic VRAM
   * battery: batteries de 13 petites taches FR (results_*.json) -> score, latences
   * humaneval: sous-ensembles HumanEval (humaneval-summary*.json) -> score, latence
+  * vitesse / memoire / intelligence : tests lances par l'app elle-meme
+    (benches/<run>/bench.json) -> PP/TG, aiguille, score FR + HumanEval
+  * + v1.6 : chaque entree recoit `entry_id` (stable, unique) et `variant`
+    (reglages reellement utilises : ctx, MTP, thinking, temperature, flags)
 
 Usage (sur le .224, dans ~/apps/prompt-duel) :
     python3 bench_index.py              # scanne + copie les artefacts dans le vault + ecrit l'index
@@ -39,6 +43,18 @@ LOG_SRC = os.environ.get("BENCH_LOG_SRC") or "/home/gab/llm"
 MACHINE = os.environ.get("BENCH_MACHINE") or "224"
 CAMPAIGN = os.environ.get("BENCH_CAMPAIGN") or f"{MACHINE}-{datetime.now():%Y-%m-%d}"
 LOCAL_INDEX = os.path.join(APP_DIR, "bench_index.json")
+# Tests lances par l'app elle-meme (v1.6) : benches/<run>/bench.json
+BENCHES_DIR = os.environ.get("BENCHES_DIR") or os.path.join(APP_DIR, "benches")
+
+# `metrics.py` (v1.6, meme dossier) fournit entry_id / variante / valeurs de
+# metriques. Son absence ne doit PAS casser l'index : les champs sont alors
+# simplement absents (compatibilite ascendante).
+try:
+    if APP_DIR not in sys.path:
+        sys.path.insert(0, APP_DIR)
+    import metrics
+except ImportError:  # pragma: no cover - depend du deploiement
+    metrics = None
 
 # Libelles -> nom de modele lisible. Le plus specifique d'abord.
 MODEL_PRETTY = [
@@ -359,6 +375,110 @@ def parse_humaneval(path):
     return out
 
 
+# ---------------------------------------------------------------- benches de l'app
+# Tests lances par l'app elle-meme : un bench.json par run dans benches/<run>/.
+# Le fichier est la PREUVE : on ne recopie jamais un resume, on lit les chiffres
+# reels de results[]. Un resultat par entree (un test = une entree).
+APP_BENCH_FAMILIES = {"vitesse", "memoire", "intelligence"}
+# Repli si `group` manque dans bench.json : deduit du prefixe de l'identifiant.
+APP_BENCH_PREFIX = {"vitesse": "vitesse", "memoire": "memoire",
+                    "batterie": "intelligence", "humaneval": "intelligence"}
+
+
+def app_bench_family(result):
+    """Famille d'un resultat de bench : `group` reel, sinon prefixe de l'id.
+
+    Retourne None si la famille est inconnue — on n'invente jamais de famille.
+    """
+    fam = str(result.get("group") or "").strip().lower()
+    if fam in APP_BENCH_FAMILIES:
+        return fam
+    prefix = str(result.get("id") or "").split("-")[0].lower()
+    return APP_BENCH_PREFIX.get(prefix)
+
+
+def app_bench_entry(run, result, bench_path, family):
+    """Entree d'index pour un resultat de `benches/<run>/bench.json`."""
+    m = result.get("metrics") or {}
+    source = f"{os.path.relpath(bench_path, APP_DIR)}#{result.get('id')}"
+    entry = {
+        "kind": family,
+        "date": (result.get("finished_at") or result.get("started_at")
+                 or run.get("finished_at") or run.get("started_at")),
+        "test_id": result.get("id"),
+        "title": result.get("title"),
+        "label": run.get("label"),
+        "model": pretty_model(run.get("model_slug")),
+        "model_slug": run.get("model_slug"),
+        "model_path": run.get("model_path"),
+        "ctx": run.get("n_ctx"),
+        "n_ctx": run.get("n_ctx"),
+        "run_id": run.get("run_id") or os.path.basename(os.path.dirname(bench_path)),
+        "run_url": run.get("run_url") or f"/benches/{os.path.basename(os.path.dirname(bench_path))}/",
+        "status": result.get("status"),
+        "duree_s": result.get("duree_s"),
+        "summary": result.get("summary"),
+        "erreur": result.get("erreur"),
+        "log": result.get("log"),
+        "vram_peak": result.get("vram_peak") or run.get("vram_note"),
+        "notes": run.get("notes"),
+        "started_at": result.get("started_at"),
+        "finished_at": result.get("finished_at"),
+        "dry_run": run.get("dry_run"),
+        "app_version": run.get("app_version"),
+        "source": source,
+    }
+    # chiffres reellement mesures (jamais un chiffre de resume recalcule)
+    for key, value in m.items():
+        if isinstance(value, (int, float, bool)) and key not in entry:
+            entry[key] = value
+    if isinstance(m.get("fails"), list):
+        entry["fails"] = m["fails"]
+    # alias vers les cles du registre de metriques (metrics.py)
+    if "needle_ok" in m:
+        entry["needle"] = bool(m["needle_ok"])
+    if family in ("memoire", "vitesse"):
+        entry.setdefault("prompt_n", m.get("prompt_n"))
+        entry.setdefault("prefill_tps", m.get("pp_tps"))
+        if family == "memoire":
+            entry["tokens"] = m.get("prompt_n")
+    entry["settings"] = {
+        "n_ctx": run.get("n_ctx"),
+        "mtp": metrics.mtp_hint(run.get("notes"), run.get("label")) if metrics else None,
+        "endpoint": run.get("endpoint"),
+        "app_version": run.get("app_version"),
+        "vram_note": run.get("vram_note"),
+        "source": "bench.json",
+    }
+    # enrichissement v1.6 : identifiant stable + variante (reglages)
+    if metrics is not None:
+        entry["entry_id"] = metrics.entry_id(entry)
+        entry["variant"] = metrics.entry_variant(entry)
+    return entry
+
+
+def scan_app_benches(benches_dir=None):
+    """Entrees des tests lances par l'app (benches/<run>/bench.json)."""
+    root = benches_dir or BENCHES_DIR
+    out = []
+    for path in sorted(glob.glob(os.path.join(root, "*", "bench.json"))):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                run = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(run, dict):
+            continue
+        for result in run.get("results") or []:
+            if not isinstance(result, dict):
+                continue
+            family = app_bench_family(result)
+            if not family:
+                continue
+            out.append(app_bench_entry(run, result, path, family))
+    return out
+
+
 # ---------------------------------------------------------------- VRAM (sampler)
 def _median(vals):
     vals = sorted(vals)
@@ -630,6 +750,7 @@ def build(mirror=True, verbose=True):
 
     entries = []
     entries += scan_duels()
+    entries += scan_app_benches()          # v1.6 : tests lances par l'app
 
     campaign_dirs = [d for d in glob.glob(os.path.join(VAULT_DOCS, "*")) if os.path.isdir(d)]
     cases = []
@@ -681,6 +802,13 @@ def build(mirror=True, verbose=True):
         if s:
             v["tg"] = v.get("tg") or s.get("tg")
             v["pp"] = v.get("pp") or s.get("pp")
+
+    # --- enrichissement v1.6 : entry_id stable + variante (reglages) --------
+    # Additif : aucune cle existante n'est renommee ni supprimee et l'ordre de la
+    # liste est conserve (benchmarks.py continue de lire exactement les memes
+    # champs) ; `metrics.py` absent -> on laisse l'index tel quel.
+    if metrics is not None:
+        entries = metrics.normalize_entries(entries)
 
     index = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),

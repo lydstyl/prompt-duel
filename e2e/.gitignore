@@ -1,0 +1,9 @@
+# sorties de Playwright (jamais versionnees) — le .gitignore racine ne les couvre pas
+node_modules/
+test-results/
+playwright-report/
+
+# les fixtures e2e veulent etre versionnees : le .gitignore racine ignore
+# `runs/` et `benches/` a tout niveau — on les re-inclut ici.
+!fixtures/runs/
+!fixtures/benches/

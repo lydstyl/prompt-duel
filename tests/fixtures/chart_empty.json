@@ -1,0 +1,5 @@
+{
+  "metric": {"key": "score_avg", "label": "Score moyen", "unit": "pts", "better": "high"},
+  "groups": [],
+  "series": []
+}

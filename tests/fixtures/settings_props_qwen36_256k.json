@@ -1,0 +1,23 @@
+{
+  "default_generation_settings": {
+    "n_ctx": 262144,
+    "n_predict": -1,
+    "temperature": 0.8,
+    "top_k": 40,
+    "top_p": 0.95,
+    "min_p": 0.05,
+    "seed": 4294967295,
+    "n_keep": 0,
+    "stop": [],
+    "grammar": ""
+  },
+  "total_slots": 1,
+  "model_path": "/home/gab/models/Qwen3.6-35B-A3B-UD-IQ4_NL.gguf",
+  "build_info": "b6211-945abe2",
+  "n_ctx": 262144,
+  "chat_template": "{% for message in messages %}{{ message['role'] }} {{ message['content'] }}{% endfor %}",
+  "bos_token": "<|im_start|>",
+  "eos_token": "<|im_end|>",
+  "modalities": {"vision": false, "audio": false},
+  "is_sleeping": false
+}

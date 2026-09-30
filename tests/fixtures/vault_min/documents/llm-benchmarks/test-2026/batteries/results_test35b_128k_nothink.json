@@ -1,0 +1,39 @@
+{
+ "summary": {
+  "label": "test35b_128k_nothink",
+  "port": 8080,
+  "mode": "nothink",
+  "tasks": 13,
+  "total_wall_s": 20.1,
+  "score_sum": 11.0,
+  "score_avg": 0.846,
+  "score_full": 11,
+  "lat_median": 0.71,
+  "lat_max": 5.38,
+  "lat_min": 0.51
+ },
+ "results": [
+  {
+   "id": "T1_classification",
+   "desc": "Classer",
+   "score": 1.0,
+   "note": "exact",
+   "wall": 0.53,
+   "tokens_out": 5,
+   "tokens_in": 75,
+   "tok_s": 9.4,
+   "empty": false
+  },
+  {
+   "id": "T3_arithmetique",
+   "desc": "Calcul",
+   "score": 0.0,
+   "note": "faux",
+   "wall": 0.66,
+   "tokens_out": 7,
+   "tokens_in": 90,
+   "tok_s": 10.6,
+   "empty": false
+  }
+ ]
+}

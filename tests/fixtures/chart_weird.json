@@ -1,0 +1,27 @@
+{
+  "metric": {"key": "score", "label": "Score <tâches FR> & HumanEval", "unit": "%<&>", "better": "high"},
+  "groups": [
+    {"key": "g1", "label": "Tâche 1 : « résume & compare » <b>brut</b>"},
+    {"key": "g2", "label": "Tâche 2 & suite avec un libellé vraiment très long qui doit être tronqué proprement au caractère"}
+  ],
+  "series": [
+    {
+      "key": "s<1>",
+      "label": "Série <script>alert('xss')</script> & \"guillemets\"",
+      "hidden": false,
+      "points": [
+        {"group": "g1", "value": "72,5", "duration_s": "755", "entry_id": "e<1>", "date": "2026-09-30T10:00", "status": "ok"},
+        {"group": "g2", "value": 0.0, "duration_s": 0, "entry_id": "e<2>", "date": "date inconnue", "status": null}
+      ]
+    },
+    {
+      "key": "s'2",
+      "label": "Série 2 — négatif & unité absente",
+      "hidden": false,
+      "points": [
+        {"group": "g1", "value": -12.4, "duration_s": "n/d", "entry_id": null, "date": null, "status": "error"},
+        {"group": "g2", "value": "n/d", "duration_s": 3900, "entry_id": "e<4>", "date": "2026-09-30", "status": "partial"}
+      ]
+    }
+  ]
+}

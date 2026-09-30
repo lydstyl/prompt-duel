@@ -1,0 +1,105 @@
+{
+ "_provenance": "extrait RÉEL de documents/llm-benchmarks/index.json du vault (lecture seule)",
+ "_vault_path": "documents/llm-benchmarks/index.json",
+ "_generated_at": "2026-09-29T21:51:16",
+ "_counts": {
+  "duel": 18,
+  "speed": 7,
+  "context": 2,
+  "battery": 10,
+  "humaneval": 31
+ },
+ "_familles": [
+  "speed",
+  "context",
+  "battery",
+  "humaneval",
+  "duel"
+ ],
+ "entries": [
+  {
+   "kind": "speed",
+   "date": "2026-09-29T20:34:01",
+   "label": "27b_q4kxl_128k",
+   "model": "Qwen3.8-27B UD-Q4_K_XL",
+   "mode": null,
+   "note": null,
+   "ctx": 131072,
+   "tg": 46.0,
+   "tg_samples": 3,
+   "pp": 657.0,
+   "pp_samples": 3,
+   "vram": "12.4 / 12.8 Go",
+   "load_s": 70,
+   "method": "bench 128 tok (lignes run N)",
+   "source": "llm-benchmarks/224-2026-09-29/vitesse/case-27b_q4kxl_128k.full.log"
+  },
+  {
+   "kind": "context",
+   "date": "2026-09-29T20:34:01",
+   "label": "35b_iq4nl_256k",
+   "model": "Qwen3.6-35B-A3B UD-IQ4_NL",
+   "ctx": 262144,
+   "kv": "q8_0",
+   "status": "ok",
+   "tokens": 238115,
+   "needle": true,
+   "prefill_tps": 904.2,
+   "peak_vram": "10.6 Go",
+   "note": null,
+   "source": "llm-benchmarks/224-2026-09-29/contexte/fill-35b_iq4nl_256k.out",
+   "elapsed_s": 263.3
+  },
+  {
+   "kind": "battery",
+   "date": "2026-09-29T20:34:01",
+   "label": "27b_q4kxl_128k_nothink",
+   "model": "Qwen3.8-27B UD-Q4_K_XL",
+   "mode": "nothink",
+   "tasks": 13,
+   "score": 11,
+   "score_avg": 0.846,
+   "lat_median": 0.71,
+   "lat_max": 5.38,
+   "total_wall_s": 20.1,
+   "fails": [
+    "T3_arithmetique",
+    "T4_date_jour_semaine"
+   ],
+   "source": "llm-benchmarks/224-2026-09-29/batteries/results_27b_q4kxl_128k_nothink.json"
+  },
+  {
+   "kind": "humaneval",
+   "date": "2026-09-29T20:30:58.996303",
+   "machine": "gabriel",
+   "model": "Qwen3.8-27B UD-Q4_K_XL",
+   "config": "ctx131072 KV q8_0 n_max3 split0.55 draft MTP | 2 GPU .224",
+   "passed": 48,
+   "total": 50,
+   "score_pct": 96.0,
+   "avg_latency_s": 1.28,
+   "wall_s": 67.1,
+   "avg_tokens_per_sec": 33.3,
+   "source": "llm-benchmarks/humaneval/27b_q4kxl_0-49/humaneval-summary.json"
+  },
+  {
+   "kind": "duel",
+   "date": "2026-09-25T23:14:45",
+   "run_id": "2026-09-25_2314__dry-run__ctx8192__t0.2__nothink-2",
+   "model": "dry-run",
+   "model_slug": "dry-run",
+   "model_path": "dry-run",
+   "ctx": 8192,
+   "temperature": 0.2,
+   "max_tokens": 8192,
+   "thinking": false,
+   "prompts_total": 3,
+   "prompts_ok": 1,
+   "duration_s": 3.0,
+   "tokens_out": 460,
+   "tok_s": 153.3,
+   "run_url": "/runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink-2/",
+   "source": "runs/2026-09-25_2314__dry-run__ctx8192__t0.2__nothink-2/run.json"
+  }
+ ]
+}

@@ -30,6 +30,16 @@ de contexte (needle à 128k et 256k), intelligence (batterie de 13 tâches FR, H
 sinon valeurs par défaut) et résultats écrits dans `benches/<run>/` (+ `bench.json`,
 `bench.md`, `<test>.log`). Module `bench_tests.py`.
 
+v1.6.0 : **réglages et variantes** — l'app détecte les réglages RÉELS du serveur
+llama.cpp (cmdline du process + `/props` : ctx, MTP/draft, flash-attn, flags) et les
+enregistre dans chaque run et chaque bench (`settings` + `variant`) ; un run « MTP on »
+n'est jamais réutilisé pour un « MTP off ». Page **/graph** (SVG inline, sans CDN ni
+JavaScript obligatoire) : un graphique par métrique chiffrée + les durées, filtres par
+test et par variante. **Masquer / supprimer / restaurer** un résultat depuis /graph et
+/benchmarks (`visibility.json`, état local non versionné). Modules neufs : `metrics.py`,
+`visibility.py`, `settings.py`, `charts.py`, `page_graph.py` ; harnais de tests
+`scripts/run-tests.sh` (unitaires `tests/` + end-to-end `e2e/` sous Playwright).
+
 Python 3 stdlib UNIQUEMENT — aucune dépendance externe.
 
 Lancement :
@@ -61,7 +71,17 @@ from urllib.parse import parse_qs, unquote, urlparse
 import bench_tests  # tests vitesse / mémoire de contexte / intelligence (v1.5)
 from benchmarks import render_benchmarks_page  # page /benchmarks (index des tests)
 
-APP_VERSION = "1.5.0"
+# v1.6 : la logique descend dans des modules (contrat §5) ; app.py reste le routeur.
+import metrics      # registre des métriques, variantes, séries du graphique
+import settings     # réglages réellement servis par le serveur llama.cpp
+import visibility   # résultats masqués / supprimés (tombstones) + filtres
+
+try:
+    import page_graph      # page /graph, écrite par un second lot (v1.6)
+except ImportError:        # module pas encore livré : /graph répondra 503, jamais de crash
+    page_graph = None
+
+APP_VERSION = "1.6.0"
 
 # Libellé affiché dans l'UI (utile si plusieurs instances)
 APP_TITLE = os.environ.get("APP_TITLE") or "Prompt Duel"
@@ -88,6 +108,15 @@ BENCH_HE_RESULTS = os.environ.get("BENCH_HE_RESULTS", "/home/lydstyl/llm-bench/r
 # Harnais locaux du .224 (batterie de 13 tâches, bench de vitesse du parc).
 BENCH_LLM_HOME = os.environ.get("BENCH_LLM_HOME", "/home/gab/llm")
 BENCH_LOG_SRC = os.environ.get("BENCH_LOG_SRC", BENCH_LLM_HOME)
+
+# --- index unifié des tests (v1.6) -----------------------------------------
+# Mêmes sources que benchmarks.py : BENCH_INDEX (tests/e2e), le vault (source de
+# vérité), puis la copie locale. LECTURE SEULE : jamais écrit par l'app.
+BENCH_INDEX_CANDIDATES = [
+    os.environ.get("BENCH_INDEX") or "",
+    "/home/gab/NAS/AgentsMirror/vaults/personnel/documents/llm-benchmarks/index.json",
+    str(BASE_DIR / "bench_index.json"),
+]
 
 HOST = os.environ.get("HOST", "0.0.0.0")
 try:
@@ -1004,15 +1033,171 @@ def probe_llm(force=False):
 
 
 # --------------------------------------------------------------------------
+# Réglages, variantes et index unifié (v1.6)
+#
+# Les réglages réellement servis (cmdline + /props) sont capturés AU LANCEMENT
+# d'un run ou d'un bench, puis figés dans run.json / meta.json / bench.json :
+# un résultat n'est jamais attribuable à un réglage supposé.
+# --------------------------------------------------------------------------
+
+# Une entrée de graphique par métrique principale (famille -> métrique chiffrée).
+GRAPH_METRICS = (
+    ("speed", "pp"),
+    ("context", "prefill_tps"),
+    ("battery", "score_avg"),
+    ("humaneval", "score_pct"),
+    ("duel", "tok_s"),
+    ("vitesse", "pp_tps"),
+    ("memoire", "prefill_tps"),
+    ("intelligence", "score_pct"),
+    ("intelligence", "score_avg"),
+    ("vram", "peak_mib"),
+)
+
+# Actions acceptées par POST /api/visibility (tout le reste -> 400).
+# « restore » = ré-afficher : il lève le masque ET le tombstone, pour que la
+# paire « hide -> restore » du contrat §7-E1.7 ramène bien l'entrée.
+def _action_restore(state, ids):
+    visibility.restore(state, ids)
+    return visibility.unhide(state, ids)
+
+
+VISIBILITY_ACTIONS = {
+    "hide": visibility.hide,
+    "unhide": visibility.unhide,
+    "delete": visibility.delete,
+    "restore": _action_restore,
+}
+
+_SETTINGS_CACHE = {"at": 0.0, "port": None, "value": None}
+VISIBILITY_LOCK = threading.RLock()
+
+
+def llm_port():
+    """Port du serveur llama.cpp derrière LLM_BASE (8080 par défaut)."""
+    try:
+        return urlparse(LLM_BASE).port or 8080
+    except Exception:
+        return 8080
+
+
+def detect_settings(force=False, max_age=5.0):
+    """`settings.detect` du serveur courant, mémorisé quelques secondes.
+
+    /api/state est pollé chaque seconde : sans ce cache, chaque poll ferait un
+    appel /props et un scan de /proc. `settings.detect` ne lève jamais ; ici on
+    ajoute quand même un filet (jamais de traceback dans l'UI).
+    """
+    now = time.time()
+    port = llm_port()
+    with STATE.lock:
+        cached = dict(_SETTINGS_CACHE)
+    if (not force and cached["value"] is not None and cached["port"] == port
+            and (now - cached["at"]) < max_age):
+        return dict(cached["value"])
+    try:
+        value = settings.detect(port)
+    except Exception as exc:  # pragma: no cover - ceinture et bretelles
+        value = {"source": "declared", "error": f"{exc.__class__.__name__}: {exc}",
+                 "variant_key": "default", "variant_label": "réglages inconnus"}
+    with STATE.lock:
+        _SETTINGS_CACHE.update({"at": now, "port": port, "value": value})
+    return dict(value)
+
+
+def capture_settings(declared=None):
+    """Réglages AU LANCEMENT d'un run / d'un bench : détection fraîche + UI.
+
+    Les réglages déclarés par l'UI ne remplissent que les champs que la
+    détection n'a pas pu lire (la cmdline réelle fait foi). Jamais d'exception.
+    """
+    captured = bench_tests.settings_capture(llm_port(), declared)
+    if captured is None:  # repli : capture côté bench_tests indisponible
+        captured = detect_settings(force=True)
+        captured["variant_key"] = settings.variant_key(captured)
+        captured["variant_label"] = settings.variant_label(captured)
+    captured["captured_at"] = now_iso()
+    return captured
+
+
+def variant_of(captured):
+    """Variante (contrat §6) d'un run / d'un bench, calculée par metrics."""
+    try:
+        return metrics.entry_variant(captured or {})
+    except Exception:
+        return {"key": "standard", "label": "standard"}
+
+
+def load_bench_index():
+    """Index unifié des tests (mêmes sources que /benchmarks), ou {}."""
+    for path in BENCH_INDEX_CANDIDATES:
+        if not path or not os.path.exists(path):
+            continue
+        try:
+            with open(path, encoding="utf-8") as fh:
+                data = json.load(fh)
+        except (OSError, ValueError) as exc:
+            LOG.add(f"index de benchmarks illisible ({path}) : {exc}")
+            return {}
+        if isinstance(data, dict):
+            data["_source"] = path
+            return data
+        return {}
+    return {}
+
+
+def visibility_state():
+    """État de visibilité persisté (jamais d'exception, jamais None)."""
+    with VISIBILITY_LOCK:
+        return visibility.load()
+
+
+def apply_visibility_action(action, ids):
+    """Applique une action de visibilité puis persiste l'état.
+
+    -> (ok, payload) : `payload` est la réponse JSON à renvoyer (400 si l'action
+    est inconnue ou si la liste d'identifiants est vide).
+    """
+    fn = VISIBILITY_ACTIONS.get(str(action or "").strip().lower())
+    if fn is None:
+        return False, {"ok": False, "error": f"action inconnue : {action!r}",
+                       "action": action}
+    if isinstance(ids, (str, bytes)):
+        ids = [ids]
+    ids = [str(i) for i in ids if str(i)] if isinstance(ids, (list, tuple)) else []
+    if not ids:
+        return False, {"ok": False, "error": "ids doit être une liste non vide",
+                       "action": action}
+    with VISIBILITY_LOCK:
+        state = visibility.load()
+        fn(state, ids)
+        visibility.save(state)
+        clean = visibility.normalize_state(state)
+    LOG.add(f"visibilité : {action} — {len(ids)} entrée(s)")
+    return True, {"ok": True, "action": str(action).strip().lower(), "ids": ids,
+                  "state": clean}
+
+
+# --------------------------------------------------------------------------
 # Gestion des runs sur disque
 # --------------------------------------------------------------------------
 
-def run_suffix(model_slug, n_ctx, params=None):
+def run_suffix(model_slug, n_ctx, params=None, variant_key=None):
+    """Bouts de nom de dossier identifiant un run (modèle, ctx, réglages).
+
+    `variant_key` (settings.variant_key) est ajouté à la fin : deux exécutions
+    qui ne diffèrent que par un réglage serveur (MTP par ex.) ne partagent
+    JAMAIS un dossier — sans quoi find_reusable_run confondrait un run « MTP on »
+    avec un run « MTP off ».
+    """
     params = normalize_params(params)
     ctx = n_ctx if n_ctx else 0
     think = "think" if params["enable_thinking"] else "nothink"
-    return (f"__{model_slug}__ctx{ctx}__t{params['temperature']:g}__{think}"
-            f"{params_suffix(params)}")
+    suffix = (f"__{model_slug}__ctx{ctx}__t{params['temperature']:g}__{think}"
+              f"{params_suffix(params)}")
+    if variant_key:
+        suffix += "__" + slugify(variant_key)
+    return suffix
 
 
 def find_reusable_run(suffix, ids):
@@ -1532,7 +1717,7 @@ def make_result(prompt, params=None):
     }
 
 
-def run_worker(ids, params=None):
+def run_worker(ids, params=None, declared_settings=None):
     """Exécute les prompts un par un, dans l'ordre croissant des ids."""
     params = normalize_params(params)
     try:
@@ -1554,8 +1739,12 @@ def run_worker(ids, params=None):
                 write_run_json()
                 return
 
-        suffix = run_suffix(model_slug, n_ctx, params)
+        # réglages réellement servis, capturés au lancement (jamais supposés)
+        captured = capture_settings(declared_settings)
+        variant = variant_of(captured)
+        suffix = run_suffix(model_slug, n_ctx, params, captured.get("variant_key"))
         LOG.add(f"réglages du run : {params_label(params)}")
+        LOG.add(f"réglages serveur ({captured.get('source')}) : {captured.get('variant_label')}")
         with STATE.lock:
             reuse = find_reusable_run(suffix, ids)
             previous_started_at = None
@@ -1587,6 +1776,8 @@ def run_worker(ids, params=None):
                 "model_path": model_path,
                 "model_slug": model_slug,
                 "n_ctx": n_ctx,
+                "settings": captured,          # réglages réels du serveur
+                "variant": variant,            # variante (contrat §6)
                 "status": "running",
                 "last_run_at": now_iso(),
             })
@@ -1749,6 +1940,8 @@ def run_worker(ids, params=None):
                     "model_path": model_path,
                     "model_slug": model_slug,
                     "n_ctx": n_ctx,
+                    "settings": captured,          # réglages réels du serveur
+                    "variant": variant,
                     "fichier": filename,
                     "erreur": None,
                     "dry_run": DRY_RUN,
@@ -1794,6 +1987,7 @@ def run_worker(ids, params=None):
                         "duree_s": round(time.time() - t_start, 2),
                         "prompt": prompt["prompt"], "model_path": model_path,
                         "model_slug": model_slug, "n_ctx": n_ctx, "fichier": None,
+                        "settings": captured, "variant": variant,
                         "params": {**params, "max_tokens": eff_max_tokens},
                         "dry_run": DRY_RUN,
                     }, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -1835,7 +2029,7 @@ def run_worker(ids, params=None):
         probe_llm(force=True)
 
 
-def start_run(ids, params=None):
+def start_run(ids, params=None, declared_settings=None):
     params = normalize_params(params)
     prompts = {p["id"]: p for p in STATE.prompts}
     ids = sorted(int(i) for i in ids)
@@ -1860,6 +2054,8 @@ def start_run(ids, params=None):
             "n_ctx": None,
             "params": dict(params),
             "params_label": params_label(params),
+            "settings": None,              # rempli par le worker (détection réelle)
+            "variant": None,
             "python_version": sys.version.split()[0],
             "app_version": APP_VERSION,
             "prompts_version": STATE.prompts_version,
@@ -1870,7 +2066,8 @@ def start_run(ids, params=None):
             "status": "running",
             "results": [make_result(prompts[i], params) for i in ids],
         }
-        worker = threading.Thread(target=run_worker, args=(ids, params),
+        worker = threading.Thread(target=run_worker,
+                                  args=(ids, params, declared_settings),
                                   name="prompt-duel-worker", daemon=True)
         STATE.worker = worker
         worker.start()
@@ -2024,7 +2221,7 @@ def write_bench_json():
         LOG.add(f"écriture du bench impossible : {exc}")
 
 
-def bench_worker(ids):
+def bench_worker(ids, declared_settings=None):
     """Exécute les tests choisis, un par un. Un test en échec n'arrête pas la suite."""
     try:
         if DRY_RUN:
@@ -2056,17 +2253,25 @@ def bench_worker(ids):
             port = urlparse(LLM_BASE).port or 8080
         except Exception:
             port = 8080
+        # réglages réellement servis, capturés au lancement du bench
+        captured = capture_settings(declared_settings)
+        variant = variant_of(captured)
+        LOG.add(f"réglages du bench ({captured.get('source')}) : "
+                f"{captured.get('variant_label')}")
         env = bench_tests.BenchEnv(
             base=LLM_BASE, port=port, label=label, run_dir=str(run_dir),
             local=llm_is_local(), dry=DRY_RUN, ssh=BENCH_HE_SSH, he_dir=BENCH_HE_DIR,
             he_results=BENCH_HE_RESULTS, llm_home=BENCH_LLM_HOME, log_src=BENCH_LOG_SRC,
-            model_slug=model_slug, model_path=model_path, n_ctx=n_ctx)
+            model_slug=model_slug, model_path=model_path, n_ctx=n_ctx,
+            settings=captured)
         with STATE.lock:
             STATE._bench_json_path = run_dir / "bench.json"
             STATE.bench.update({
                 "run_id": run_dir.name, "run_dir": str(run_dir),
                 "run_url": f"/benches/{run_dir.name}/", "label": label,
                 "model_path": model_path, "model_slug": model_slug, "n_ctx": n_ctx,
+                "settings": captured,          # réglages réels du serveur
+                "variant": variant,
                 "status": "running",
             })
         LOG.add(f"bench {run_dir.name} — modèle {model_slug} (ctx {n_ctx})")
@@ -2133,7 +2338,7 @@ def bench_worker(ids):
         probe_llm(force=True)
 
 
-def start_bench(ids):
+def start_bench(ids, declared_settings=None):
     ids = [str(i) for i in ids]
     with STATE.lock:
         if any_worker_running():
@@ -2150,6 +2355,8 @@ def start_bench(ids):
             "endpoint": LLM_BASE, "model_path": None, "model_slug": None, "n_ctx": None,
             "label": None, "dry_run": DRY_RUN, "app_version": APP_VERSION,
             "python_version": sys.version.split()[0],
+            "settings": None,              # rempli par le worker (détection réelle)
+            "variant": None,
             "vram_note": bench_tests.vram_now() if llm_is_local() else None,
             "notes": llm_server_note(),
             "selected_ids": ids, "status": "running",
@@ -2157,8 +2364,8 @@ def start_bench(ids):
             "results": [make_bench_result(t, (cat.get(t["id"]) or {}).get("est_s"))
                         for t in tests],
         }
-        worker = threading.Thread(target=bench_worker, args=(ids,), name="prompt-duel-bench",
-                                  daemon=True)
+        worker = threading.Thread(target=bench_worker, args=(ids, declared_settings),
+                                  name="prompt-duel-bench", daemon=True)
         STATE.bench_worker = worker
         worker.start()
     LOG.add(f"tests lancés — {len(ids)} test(s) : {ids}")
@@ -2206,6 +2413,8 @@ def list_past_benches(limit=50):
 def build_state(force_probe=False, params=None):
     params = normalize_params(params)
     probe = probe_llm(force=force_probe)
+    # réglages détectés maintenant (mis en cache : /api/state est pollé 1×/s)
+    settings_now = detect_settings(force=force_probe)
     with STATE.lock:
         run = None
         if STATE.run:
@@ -2226,6 +2435,8 @@ def build_state(force_probe=False, params=None):
             "llm_base": LLM_BASE,
             "runs_dir": str(RUNS_DIR),
             "llm": dict(probe),
+            "settings": settings_now,            # réglages réellement servis (v1.6)
+            "variant": variant_of(settings_now),  # variante correspondante
             "groups": json.loads(json.dumps(STATE.groups)),
             "prompts": [dict(p) for p in STATE.prompts],
             "already_done": list_already_done(model_slug=probe.get("model_slug"),
@@ -3445,8 +3656,64 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, page, "text/html; charset=utf-8", head)
 
             if path in ("/benchmarks", "/benchmarks/") and method in ("GET", "HEAD"):
-                # index unifie des tests LLM (duels, vitesse, batteries, HumanEval, contexte)
-                return self._send(200, render_benchmarks_page(), "text/html; charset=utf-8", head)
+                # index unifie des tests LLM (duels, vitesse, batteries, HumanEval, contexte).
+                # etat de visibilite + requete transmis : les liens « afficher les
+                # resultats masques » fonctionnent donc aussi SANS JavaScript.
+                return self._send(200, render_benchmarks_page(visibility_state(), query),
+                                  "text/html; charset=utf-8", head)
+
+            if path in ("/graph", "/graph/") and method in ("GET", "HEAD"):
+                # page du graphique (v1.6) — rendue par page_graph.py (lot parallèle).
+                if page_graph is None:
+                    return self._send(
+                        503,
+                        "Page /graph indisponible : le module page_graph.py n'est pas "
+                        "présent sur cette instance (il est livré séparément).\n",
+                        "text/plain; charset=utf-8", head)
+                index = load_bench_index()
+                state = visibility_state()
+                try:
+                    page = page_graph.render_graph_page(index, state, query)
+                except Exception as exc:
+                    LOG.add(f"ERREUR rendu /graph : {exc!r}")
+                    return self._send(500, f"Erreur de rendu de la page /graph : {exc}\n",
+                                      "text/plain; charset=utf-8", head)
+                return self._send(200, page, "text/html; charset=utf-8", head)
+
+            if path == "/api/graph" and method in ("GET", "HEAD"):
+                # données du graphique : index unifié -> entrées normalisées ->
+                # visibilité (masqués/supprimés retirés) -> une série par métrique.
+                index = load_bench_index()
+                entries = index.get("entries") if isinstance(index, dict) else []
+                entries = entries if isinstance(entries, list) else []
+                normalized = metrics.normalize_entries(entries)
+                state = visibility_state()
+                visible = visibility.apply(state, normalized)
+                charts = []
+                for kind, metric_key in GRAPH_METRICS:
+                    data = metrics.series_for_chart(visible, metric_key=metric_key,
+                                                    kind=kind)
+                    data["kind"] = kind
+                    charts.append(data)
+                by_kind = {}
+                for entry in visible:
+                    k = entry.get("kind") or "?"
+                    by_kind[k] = by_kind.get(k, 0) + 1
+                hidden_ids = sorted(set((state.get("hidden") or [])
+                                        + (state.get("deleted") or [])))
+                payload = {
+                    "charts": charts,
+                    "hidden": hidden_ids,
+                    "counts": {
+                        "entries": len(entries),
+                        "visible": len(visible),
+                        "hidden": len(hidden_ids),
+                        "by_kind": by_kind,
+                        "index": (index.get("counts") or {}) if isinstance(index, dict) else {},
+                    },
+                    "source": (index.get("_source") if isinstance(index, dict) else None),
+                }
+                return self._json(200, payload, head)
 
             if path == "/api/state" and method in ("GET", "HEAD"):
                 force = str((query.get("refresh") or ["0"])[0]).lower() in ("1", "true", "yes")
@@ -3527,7 +3794,9 @@ class Handler(BaseHTTPRequestHandler):
                                  "démarre ton serveur llama.cpp puis réessaie "
                                  f"({probe.get('error') or 'injoignable'})",
                     })
-                ok, msg = start_run(ids, params=normalize_params(body))
+                declared = body.get("settings") if isinstance(body.get("settings"), dict) else None
+                ok, msg = start_run(ids, params=normalize_params(body),
+                                    declared_settings=declared)
                 return self._json(200 if ok else 409, {"ok": ok, "error": None if ok else msg,
                                                        "message": msg,
                                                        "params": normalize_params(body)})
@@ -3563,9 +3832,16 @@ class Handler(BaseHTTPRequestHandler):
                 if refused:
                     return self._json(409, {"ok": False, "error": "test(s) indisponible(s) — "
                                                                + " | ".join(refused)})
-                ok, msg = start_bench(ids)
+                ok, msg = start_bench(ids, declared_settings=body.get("settings")
+                                      if isinstance(body.get("settings"), dict) else None)
                 return self._json(200 if ok else 409, {"ok": ok, "message": msg,
                                                        "error": None if ok else msg})
+
+            if path == "/api/visibility" and method == "POST":
+                # masquer / réafficher / supprimer / restaurer des résultats (v1.6)
+                body = self._read_body()
+                ok, payload = apply_visibility_action(body.get("action"), body.get("ids"))
+                return self._json(200 if ok else 400, payload)
 
             if path == "/api/tests/stop" and method == "POST":
                 with STATE.lock:

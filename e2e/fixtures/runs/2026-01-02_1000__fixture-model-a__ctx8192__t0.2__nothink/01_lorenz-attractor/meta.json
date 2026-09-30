@@ -1,0 +1,11 @@
+{
+  "id": 1,
+  "slug": "lorenz-attractor",
+  "title": "Attracteur de Lorenz",
+  "group": "canvas-2d",
+  "status": "ok",
+  "duree_s": 11.5,
+  "tok_s": 42.0,
+  "completion_tokens": 456,
+  "prompt_tokens": 123
+}

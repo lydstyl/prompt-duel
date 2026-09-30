@@ -1,0 +1,50 @@
+{
+  "run_id": "2026-01-02_1100__fixture-model-b__ctx8192__t0.2__nothink",
+  "run_dir": "2026-01-02_1100__fixture-model-b__ctx8192__t0.2__nothink",
+  "started_at": "2026-01-02T11:00:00",
+  "finished_at": "2026-01-02T11:00:30",
+  "endpoint": "http://127.0.0.1:8080",
+  "model_path": "/models/fixture-model-b.gguf",
+  "model_slug": "fixture-model-b",
+  "n_ctx": 8192,
+  "params": {
+    "temperature": 0.2,
+    "top_p": 0.95,
+    "max_tokens": 16384,
+    "enable_thinking": false,
+    "cache_prompt": false
+  },
+  "python_version": "3.11.15",
+  "app_version": "1.5.0",
+  "prompts_version": 2,
+  "dry_run": false,
+  "selected_ids": [1, 2],
+  "status": "finished",
+  "results": [
+    {
+      "id": 1,
+      "slug": "lorenz-attractor",
+      "title": "Attracteur de Lorenz",
+      "group": "canvas-2d",
+      "status": "ok",
+      "duree_s": 14.2,
+      "tok_s": 29.3,
+      "prompt_tokens": 123,
+      "completion_tokens": 420,
+      "rel": "01_lorenz-attractor",
+      "url": "/runs/2026-01-02_1100__fixture-model-b__ctx8192__t0.2__nothink/01_lorenz-attractor/index.html"
+    },
+    {
+      "id": 2,
+      "slug": "mandelbrot-zoom",
+      "title": "Zoom de Mandelbrot",
+      "group": "canvas-2d",
+      "status": "no_html",
+      "duree_s": 6.0,
+      "tok_s": 31.0,
+      "prompt_tokens": 140,
+      "completion_tokens": 210,
+      "rel": "02_mandelbrot-zoom"
+    }
+  ]
+}

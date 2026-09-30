@@ -1,0 +1,1264 @@
+{
+ "metric": {
+  "key": "pp",
+  "label": "Prefill",
+  "unit": "t/s",
+  "better": "high"
+ },
+ "groups": [
+  {
+   "key": "g-court",
+   "label": "Court"
+  },
+  {
+   "key": "g-long",
+   "label": "Un libellé de groupe vraiment très long pour vérifier la troncature"
+  },
+  {
+   "key": "g-html",
+   "label": "<script>alert('g')</script> & \"fin\""
+  }
+ ],
+ "series": [
+  {
+   "key": "edge-00",
+   "label": "Série <script>alert(1)</script>",
+   "hidden": true,
+   "points": [
+    {
+     "group": "g-court",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:00:g-court",
+     "date": null,
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": 1241.2,
+     "duration_s": 90,
+     "entry_id": "edge:00:g-long",
+     "date": "2026-09-30T12:00",
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": 1282.5,
+     "duration_s": 120,
+     "entry_id": "edge:00:g-html",
+     "date": "2026-09-30T12:00",
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-01",
+   "label": "Série & \"coins\" 'simples' < >",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 1174.5,
+     "duration_s": 63,
+     "entry_id": "edge:01:g-court",
+     "date": "2026-09-30T12:01",
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": 1215.8,
+     "duration_s": 93,
+     "entry_id": "edge:01:g-long",
+     "date": "2026-09-30T12:01",
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": 1257.0,
+     "duration_s": 123,
+     "entry_id": "edge:01:g-html",
+     "date": "2026-09-30T12:01",
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-02",
+   "label": "Qwen3.6-35B-A3B-UD-IQ4_NL · 256k · MTP on · flash-attn on",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 1149.0,
+     "duration_s": 66,
+     "entry_id": "edge:02:g-court",
+     "date": "2026-09-30T12:02",
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": 1190.2,
+     "duration_s": 96,
+     "entry_id": "edge:02:g-long",
+     "date": "2026-09-30T12:02",
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": 1231.5,
+     "duration_s": 126,
+     "entry_id": "edge:02:g-html",
+     "date": "2026-09-30T12:02",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-03",
+   "label": "Qwen3.6-35B-A3B-UD-IQ4_NL · 256k · MTP off · flash-attn on",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 1123.5,
+     "duration_s": 69,
+     "entry_id": "edge:03:g-court",
+     "date": "2026-09-30T12:03",
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": 1164.8,
+     "duration_s": 99,
+     "entry_id": "edge:03:g-long",
+     "date": "2026-09-30T12:03",
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": 1206.0,
+     "duration_s": "n/d",
+     "entry_id": "edge:03:g-html",
+     "date": "2026-09-30T12:03",
+     "status": "error"
+    }
+   ]
+  },
+  {
+   "key": "edge-04",
+   "label": "Qwen3.5-9B-Instruct-Q8_0 · 128k · kv f16",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 1098.0,
+     "duration_s": 72,
+     "entry_id": "edge:04:g-court",
+     "date": "2026-09-30T12:04",
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": 1139.2,
+     "duration_s": "n/d",
+     "entry_id": "edge:04:g-long",
+     "date": "2026-09-30T12:04",
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": 1180.5,
+     "duration_s": 132,
+     "entry_id": "edge:04:g-html",
+     "date": "2026-09-30T12:04",
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-05",
+   "label": "Variante 05 — flags custom & ctx 128k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 1072.5,
+     "duration_s": "n/d",
+     "entry_id": "edge:05:g-court",
+     "date": "2026-09-30T12:05",
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": 1113.8,
+     "duration_s": 105,
+     "entry_id": "edge:05:g-long",
+     "date": "2026-09-30T12:05",
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:05:g-html",
+     "date": "2026-09-30T12:05",
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-06",
+   "label": "Variante 06 — flags custom & ctx 192k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 1047.0,
+     "duration_s": 78,
+     "entry_id": "edge:06:g-court",
+     "date": "2026-09-30T12:06",
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:06:g-long",
+     "date": "2026-09-30T12:06",
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": 1129.5,
+     "duration_s": 138,
+     "entry_id": "edge:06:g-html",
+     "date": "2026-09-30T12:06",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-07",
+   "label": "Variante 07 — flags custom & ctx 256k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:07:g-court",
+     "date": "2026-09-30T12:07",
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": 1062.8,
+     "duration_s": 111,
+     "entry_id": "edge:07:g-long",
+     "date": "2026-09-30T12:07",
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": 1104.0,
+     "duration_s": 141,
+     "entry_id": "edge:07:g-html",
+     "date": null,
+     "status": "error"
+    }
+   ]
+  },
+  {
+   "key": "edge-08",
+   "label": "Variante 08 — flags custom & ctx 64k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 996.0,
+     "duration_s": 84,
+     "entry_id": "edge:08:g-court",
+     "date": "2026-09-30T12:08",
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": 1037.2,
+     "duration_s": 114,
+     "entry_id": "edge:08:g-long",
+     "date": null,
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": 1078.5,
+     "duration_s": "n/d",
+     "entry_id": "edge:08:g-html",
+     "date": "2026-09-30T12:08",
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-09",
+   "label": "Variante 09 — flags custom & ctx 128k",
+   "hidden": true,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 970.5,
+     "duration_s": 87,
+     "entry_id": "edge:09:g-court",
+     "date": null,
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": 1011.8,
+     "duration_s": "n/d",
+     "entry_id": "edge:09:g-long",
+     "date": "2026-09-30T12:09",
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": 0,
+     "duration_s": 147,
+     "entry_id": "edge:09:g-html",
+     "date": "2026-09-30T12:09",
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-10",
+   "label": "Variante 10 — flags custom & ctx 192k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 945.0,
+     "duration_s": "n/d",
+     "entry_id": "edge:10:g-court",
+     "date": "2026-09-30T12:10",
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": 0,
+     "duration_s": 120,
+     "entry_id": "edge:10:g-long",
+     "date": "2026-09-30T12:10",
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": 1027.5,
+     "duration_s": 150,
+     "entry_id": "edge:10:g-html",
+     "date": "2026-09-30T12:10",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-11",
+   "label": "Variante 11 — flags custom & ctx 256k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 0,
+     "duration_s": 93,
+     "entry_id": "edge:11:g-court",
+     "date": "2026-09-30T12:11",
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": 960.8,
+     "duration_s": 123,
+     "entry_id": "edge:11:g-long",
+     "date": "2026-09-30T12:11",
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": -8.7,
+     "duration_s": 153,
+     "entry_id": "edge:11:g-html",
+     "date": "2026-09-30T12:11",
+     "status": "error"
+    }
+   ]
+  },
+  {
+   "key": "edge-12",
+   "label": "Variante 12 — flags custom & ctx 64k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 894.0,
+     "duration_s": 96,
+     "entry_id": "edge:12:g-court",
+     "date": "2026-09-30T12:12",
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": -9.2,
+     "duration_s": 126,
+     "entry_id": "edge:12:g-long",
+     "date": "2026-09-30T12:12",
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:12:g-html",
+     "date": "2026-09-30T12:12",
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-13",
+   "label": "Variante 13 — flags custom & ctx 128k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": -9.7,
+     "duration_s": 99,
+     "entry_id": "edge:13:g-court",
+     "date": "2026-09-30T12:13",
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:13:g-long",
+     "date": "2026-09-30T12:13",
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": 951.0,
+     "duration_s": "n/d",
+     "entry_id": "edge:13:g-html",
+     "date": "2026-09-30T12:13",
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-14",
+   "label": "Variante 14 — flags custom & ctx 192k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:14:g-court",
+     "date": "2026-09-30T12:14",
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": 884.2,
+     "duration_s": "n/d",
+     "entry_id": "edge:14:g-long",
+     "date": "2026-09-30T12:14",
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": 925.5,
+     "duration_s": 162,
+     "entry_id": "edge:14:g-html",
+     "date": "2026-09-30T12:14",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-15",
+   "label": "Variante 15 — flags custom & ctx 256k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 817.5,
+     "duration_s": "n/d",
+     "entry_id": "edge:15:g-court",
+     "date": "2026-09-30T12:15",
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": 858.8,
+     "duration_s": 135,
+     "entry_id": "edge:15:g-long",
+     "date": "2026-09-30T12:15",
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": 900.0,
+     "duration_s": 165,
+     "entry_id": "edge:15:g-html",
+     "date": "2026-09-30T12:15",
+     "status": "error"
+    }
+   ]
+  },
+  {
+   "key": "edge-16",
+   "label": "Variante 16 — flags custom & ctx 64k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 792.0,
+     "duration_s": 108,
+     "entry_id": "edge:16:g-court",
+     "date": "2026-09-30T12:16",
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": 833.2,
+     "duration_s": 138,
+     "entry_id": "edge:16:g-long",
+     "date": "2026-09-30T12:16",
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": 874.5,
+     "duration_s": 168,
+     "entry_id": "edge:16:g-html",
+     "date": null,
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-17",
+   "label": "Variante 17 — flags custom & ctx 128k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 766.5,
+     "duration_s": 111,
+     "entry_id": "edge:17:g-court",
+     "date": "2026-09-30T12:17",
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": 807.8,
+     "duration_s": 141,
+     "entry_id": "edge:17:g-long",
+     "date": null,
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": 849.0,
+     "duration_s": 171,
+     "entry_id": "edge:17:g-html",
+     "date": "2026-09-30T12:17",
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-18",
+   "label": "Variante 18 — flags custom & ctx 192k",
+   "hidden": true,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 741.0,
+     "duration_s": 114,
+     "entry_id": "edge:18:g-court",
+     "date": null,
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": 782.2,
+     "duration_s": 144,
+     "entry_id": "edge:18:g-long",
+     "date": "2026-09-30T12:18",
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": 823.5,
+     "duration_s": "n/d",
+     "entry_id": "edge:18:g-html",
+     "date": "2026-09-30T12:18",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-19",
+   "label": "Variante 19 — flags custom & ctx 256k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 715.5,
+     "duration_s": 117,
+     "entry_id": "edge:19:g-court",
+     "date": "2026-09-30T12:19",
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": 756.8,
+     "duration_s": "n/d",
+     "entry_id": "edge:19:g-long",
+     "date": "2026-09-30T12:19",
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:19:g-html",
+     "date": "2026-09-30T12:19",
+     "status": "error"
+    }
+   ]
+  },
+  {
+   "key": "edge-20",
+   "label": "Variante 20 — flags custom & ctx 64k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 690.0,
+     "duration_s": "n/d",
+     "entry_id": "edge:20:g-court",
+     "date": "2026-09-30T12:20",
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:20:g-long",
+     "date": "2026-09-30T12:20",
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": 0,
+     "duration_s": 180,
+     "entry_id": "edge:20:g-html",
+     "date": "2026-09-30T12:20",
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-21",
+   "label": "Variante 21 — flags custom & ctx 128k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:21:g-court",
+     "date": "2026-09-30T12:21",
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": 0,
+     "duration_s": 153,
+     "entry_id": "edge:21:g-long",
+     "date": "2026-09-30T12:21",
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": 747.0,
+     "duration_s": 183,
+     "entry_id": "edge:21:g-html",
+     "date": "2026-09-30T12:21",
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-22",
+   "label": "Variante 22 — flags custom & ctx 192k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 0,
+     "duration_s": 126,
+     "entry_id": "edge:22:g-court",
+     "date": "2026-09-30T12:22",
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": 680.2,
+     "duration_s": 156,
+     "entry_id": "edge:22:g-long",
+     "date": "2026-09-30T12:22",
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": 721.5,
+     "duration_s": 186,
+     "entry_id": "edge:22:g-html",
+     "date": "2026-09-30T12:22",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-23",
+   "label": "Variante 23 — flags custom & ctx 256k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 613.5,
+     "duration_s": 129,
+     "entry_id": "edge:23:g-court",
+     "date": "2026-09-30T12:23",
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": 654.8,
+     "duration_s": 159,
+     "entry_id": "edge:23:g-long",
+     "date": "2026-09-30T12:23",
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": 696.0,
+     "duration_s": "n/d",
+     "entry_id": "edge:23:g-html",
+     "date": "2026-09-30T12:23",
+     "status": "error"
+    }
+   ]
+  },
+  {
+   "key": "edge-24",
+   "label": "Variante 24 — flags custom & ctx 64k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 588.0,
+     "duration_s": 132,
+     "entry_id": "edge:24:g-court",
+     "date": "2026-09-30T12:24",
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": 629.2,
+     "duration_s": "n/d",
+     "entry_id": "edge:24:g-long",
+     "date": "2026-09-30T12:24",
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": -15.2,
+     "duration_s": 192,
+     "entry_id": "edge:24:g-html",
+     "date": "2026-09-30T12:24",
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-25",
+   "label": "Variante 25 — flags custom & ctx 128k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 562.5,
+     "duration_s": "n/d",
+     "entry_id": "edge:25:g-court",
+     "date": "2026-09-30T12:25",
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": -15.7,
+     "duration_s": 165,
+     "entry_id": "edge:25:g-long",
+     "date": "2026-09-30T12:25",
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": 645.0,
+     "duration_s": 195,
+     "entry_id": "edge:25:g-html",
+     "date": null,
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-26",
+   "label": "Variante 26 — flags custom & ctx 192k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": -16.2,
+     "duration_s": 138,
+     "entry_id": "edge:26:g-court",
+     "date": "2026-09-30T12:26",
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": 578.2,
+     "duration_s": 168,
+     "entry_id": "edge:26:g-long",
+     "date": null,
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:26:g-html",
+     "date": "2026-09-30T12:26",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-27",
+   "label": "Variante 27 — flags custom & ctx 256k",
+   "hidden": true,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 511.5,
+     "duration_s": 141,
+     "entry_id": "edge:27:g-court",
+     "date": null,
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:27:g-long",
+     "date": "2026-09-30T12:27",
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": 594.0,
+     "duration_s": 201,
+     "entry_id": "edge:27:g-html",
+     "date": "2026-09-30T12:27",
+     "status": "error"
+    }
+   ]
+  },
+  {
+   "key": "edge-28",
+   "label": "Variante 28 — flags custom & ctx 64k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:28:g-court",
+     "date": "2026-09-30T12:28",
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": 527.2,
+     "duration_s": 174,
+     "entry_id": "edge:28:g-long",
+     "date": "2026-09-30T12:28",
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": 568.5,
+     "duration_s": "n/d",
+     "entry_id": "edge:28:g-html",
+     "date": "2026-09-30T12:28",
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-29",
+   "label": "Variante 29 — flags custom & ctx 128k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 460.5,
+     "duration_s": 147,
+     "entry_id": "edge:29:g-court",
+     "date": "2026-09-30T12:29",
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": 501.8,
+     "duration_s": "n/d",
+     "entry_id": "edge:29:g-long",
+     "date": "2026-09-30T12:29",
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": 543.0,
+     "duration_s": 207,
+     "entry_id": "edge:29:g-html",
+     "date": "2026-09-30T12:29",
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-30",
+   "label": "Variante 30 — flags custom & ctx 192k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 435.0,
+     "duration_s": "n/d",
+     "entry_id": "edge:30:g-court",
+     "date": "2026-09-30T12:30",
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": 476.2,
+     "duration_s": 180,
+     "entry_id": "edge:30:g-long",
+     "date": "2026-09-30T12:30",
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": 517.5,
+     "duration_s": 210,
+     "entry_id": "edge:30:g-html",
+     "date": "2026-09-30T12:30",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-31",
+   "label": "Variante 31 — flags custom & ctx 256k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 409.5,
+     "duration_s": 153,
+     "entry_id": "edge:31:g-court",
+     "date": "2026-09-30T12:31",
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": 450.8,
+     "duration_s": 183,
+     "entry_id": "edge:31:g-long",
+     "date": "2026-09-30T12:31",
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": 0,
+     "duration_s": 213,
+     "entry_id": "edge:31:g-html",
+     "date": "2026-09-30T12:31",
+     "status": "error"
+    }
+   ]
+  },
+  {
+   "key": "edge-32",
+   "label": "Variante 32 — flags custom & ctx 64k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 384.0,
+     "duration_s": 156,
+     "entry_id": "edge:32:g-court",
+     "date": "2026-09-30T12:32",
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": 0,
+     "duration_s": 186,
+     "entry_id": "edge:32:g-long",
+     "date": "2026-09-30T12:32",
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": 466.5,
+     "duration_s": 216,
+     "entry_id": "edge:32:g-html",
+     "date": "2026-09-30T12:32",
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-33",
+   "label": "Variante 33 — flags custom & ctx 128k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 0,
+     "duration_s": 159,
+     "entry_id": "edge:33:g-court",
+     "date": "2026-09-30T12:33",
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": 399.8,
+     "duration_s": 189,
+     "entry_id": "edge:33:g-long",
+     "date": "2026-09-30T12:33",
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:33:g-html",
+     "date": "2026-09-30T12:33",
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-34",
+   "label": "Variante 34 — flags custom & ctx 192k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 333.0,
+     "duration_s": 162,
+     "entry_id": "edge:34:g-court",
+     "date": "2026-09-30T12:34",
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:34:g-long",
+     "date": "2026-09-30T12:34",
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": 415.5,
+     "duration_s": 222,
+     "entry_id": "edge:34:g-html",
+     "date": null,
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-35",
+   "label": "Variante 35 — flags custom & ctx 256k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": null,
+     "duration_s": null,
+     "entry_id": "edge:35:g-court",
+     "date": "2026-09-30T12:35",
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": 348.8,
+     "duration_s": 195,
+     "entry_id": "edge:35:g-long",
+     "date": null,
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": 390.0,
+     "duration_s": 225,
+     "entry_id": "edge:35:g-html",
+     "date": "2026-09-30T12:35",
+     "status": "error"
+    }
+   ]
+  },
+  {
+   "key": "edge-36",
+   "label": "Variante 36 — flags custom & ctx 64k",
+   "hidden": true,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 282.0,
+     "duration_s": 168,
+     "entry_id": "edge:36:g-court",
+     "date": null,
+     "status": "ok"
+    },
+    {
+     "group": "g-long",
+     "value": 323.2,
+     "duration_s": 198,
+     "entry_id": "edge:36:g-long",
+     "date": "2026-09-30T12:36",
+     "status": "error"
+    },
+    {
+     "group": "g-html",
+     "value": 364.5,
+     "duration_s": 228,
+     "entry_id": "edge:36:g-html",
+     "date": "2026-09-30T12:36",
+     "status": null
+    }
+   ]
+  },
+  {
+   "key": "edge-37",
+   "label": "Variante 37 — flags custom & ctx 128k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 256.5,
+     "duration_s": 171,
+     "entry_id": "edge:37:g-court",
+     "date": "2026-09-30T12:37",
+     "status": "error"
+    },
+    {
+     "group": "g-long",
+     "value": 297.8,
+     "duration_s": 201,
+     "entry_id": "edge:37:g-long",
+     "date": "2026-09-30T12:37",
+     "status": null
+    },
+    {
+     "group": "g-html",
+     "value": -21.7,
+     "duration_s": 231,
+     "entry_id": "edge:37:g-html",
+     "date": "2026-09-30T12:37",
+     "status": "partial"
+    }
+   ]
+  },
+  {
+   "key": "edge-38",
+   "label": "Variante 38 — flags custom & ctx 192k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": 231.0,
+     "duration_s": 174,
+     "entry_id": "edge:38:g-court",
+     "date": "2026-09-30T12:38",
+     "status": null
+    },
+    {
+     "group": "g-long",
+     "value": -22.2,
+     "duration_s": 204,
+     "entry_id": "edge:38:g-long",
+     "date": "2026-09-30T12:38",
+     "status": "partial"
+    },
+    {
+     "group": "g-html",
+     "value": 313.5,
+     "duration_s": "n/d",
+     "entry_id": "edge:38:g-html",
+     "date": "2026-09-30T12:38",
+     "status": "ok"
+    }
+   ]
+  },
+  {
+   "key": "edge-39",
+   "label": "Variante 39 — flags custom & ctx 256k",
+   "hidden": false,
+   "points": [
+    {
+     "group": "g-court",
+     "value": -22.7,
+     "duration_s": 177,
+     "entry_id": "edge:39:g-court",
+     "date": "2026-09-30T12:39",
+     "status": "partial"
+    },
+    {
+     "group": "g-long",
+     "value": 246.8,
+     "duration_s": "n/d",
+     "entry_id": "edge:39:g-long",
+     "date": "2026-09-30T12:39",
+     "status": "ok"
+    },
+    {
+     "group": "g-html",
+     "value": 288.0,
+     "duration_s": 237,
+     "entry_id": "edge:39:g-html",
+     "date": "2026-09-30T12:39",
+     "status": "error"
+    }
+   ]
+  }
+ ]
+}

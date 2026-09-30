@@ -35,6 +35,13 @@ import threading
 import time
 import urllib.request
 
+# v1.6 : capture des réglages réellement servis (cmdline + /props) au lancement
+# d'un bench. Import facultatif : bench_tests doit rester utilisable seul.
+try:
+    import settings as _settings
+except ImportError:  # pragma: no cover - dépend de l'environnement
+    _settings = None
+
 # ---------------------------------------------------------------- valeurs par défaut
 # Cadence supposée d'un LLM local **quand rien n'a encore été mesuré** sur ce modèle.
 # Volontairement prudentes : mieux vaut une estimation haute qu'un créneau raté.
@@ -162,7 +169,8 @@ class BenchEnv:
 
     def __init__(self, base, port, label, run_dir, local=True, dry=False, ssh="", he_dir="",
                  he_results="/home/lydstyl/llm-bench/results", llm_home="", log_src="/home/gab/llm",
-                 nvidia=True, model_slug=None, model_path=None, n_ctx=None, python="python3"):
+                 nvidia=True, model_slug=None, model_path=None, n_ctx=None, python="python3",
+                 settings=None):
         self.base = (base or "http://127.0.0.1:8080").rstrip("/")
         self.port = int(port or 8080)
         self.local = bool(local)              # le LLM sert sur cette machine (scripts + VRAM OK)
@@ -179,6 +187,43 @@ class BenchEnv:
         self.model_path = model_path
         self.n_ctx = n_ctx
         self.python = python
+        self.settings = settings              # réglages réels capturés au lancement (v1.6)
+
+
+def settings_capture(port, declared=None):
+    """Réglages réellement servis au lancement d'un bench (contrat §7-E1.2).
+
+    `settings.detect` (cmdline + /props) ne lève jamais ; les réglages déclarés
+    par l'UI ne remplissent que les champs que la détection n'a pas lus. Ajoute
+    `variant_key` / `variant_label` (contrat §6). Renvoie None si le module
+    `settings` n'est pas disponible (l'appelant décide alors du repli).
+    """
+    if _settings is None:
+        return None
+    try:
+        detected = _settings.detect(port)
+    except Exception:  # detect ne lève pas, mais on ne prend aucun risque
+        detected = {}
+    out = dict(detected) if isinstance(detected, dict) else {}
+    if declared:
+        try:
+            declared_norm = _settings.normalize(declared)
+        except Exception:
+            declared_norm = None
+        if isinstance(declared_norm, dict):
+            for key, value in declared_norm.items():
+                if out.get(key) in (None, [], {}, ""):
+                    out[key] = value
+            keep = {k: v for k, v in declared_norm.items() if v not in (None, [], {}, "")}
+            if keep:
+                out["declared"] = keep
+    try:
+        out["variant_key"] = _settings.variant_key(out)
+        out["variant_label"] = _settings.variant_label(out)
+    except Exception:  # pragma: no cover - ceinture
+        out.setdefault("variant_key", "default")
+        out.setdefault("variant_label", "réglages inconnus")
+    return out
 
 
 # ---------------------------------------------------------------- VRAM
@@ -733,6 +778,10 @@ def render_md(bench):
     lines = [f"# Tests prompt-duel — {bench.get('run_id')}", ""]
     lines.append(f"- modèle : `{bench.get('model_path')}`")
     lines.append(f"- slug / ctx : `{bench.get('model_slug')}` · {bench.get('n_ctx')}")
+    variant_label = ((bench.get("variant") or {}).get("label")
+                     or (bench.get("settings") or {}).get("variant_label"))
+    if variant_label:
+        lines.append(f"- réglages : {variant_label}")
     lines.append(f"- endpoint : {bench.get('endpoint')} · dry_run={bench.get('dry_run')}")
     lines.append(f"- début / fin : {bench.get('started_at')} → {bench.get('finished_at')}")
     if bench.get("vram_note"):

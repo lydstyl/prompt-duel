@@ -1,0 +1,11 @@
+=== DEBUT cas test35b_128k 2026-09-30 10:00:00 ===
+PID=4242  log=/tmp/case-test35b_128k.log
+PRET en 42s
+0, 10000 MiB, 16311 MiB
+1, 11000 MiB, 16303 MiB
+--- bench vitesse (port 8080) ---
+VRAM avant : 0, NVIDIA GeForce RTX 5060 Ti, 10000 MiB, 16311 MiB | 1, NVIDIA GeForce RTX 5080, 11000 MiB, 16303 MiB
+run 1: PP 600.0 t/s (489 tok) | TG 40.0 t/s (128 tok) | wall 3.6s | 'reponse 1'
+run 2: PP 620.5 t/s (489 tok) | TG 41.2 t/s (128 tok) | wall 3.5s | 'reponse 2'
+run 3: PP 640.5 t/s (489 tok) | TG 42.0 t/s (128 tok) | wall 3.5s | 'reponse 3'
+n_ctx_slot = 131072

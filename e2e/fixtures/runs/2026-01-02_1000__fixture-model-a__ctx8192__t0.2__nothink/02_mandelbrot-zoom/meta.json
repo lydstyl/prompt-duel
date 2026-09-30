@@ -1,0 +1,11 @@
+{
+  "id": 2,
+  "slug": "mandelbrot-zoom",
+  "title": "Zoom de Mandelbrot",
+  "group": "canvas-2d",
+  "status": "ok",
+  "duree_s": 9.0,
+  "tok_s": 38.5,
+  "completion_tokens": 380,
+  "prompt_tokens": 140
+}
