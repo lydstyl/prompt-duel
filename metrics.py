@@ -116,6 +116,12 @@ KINDS = {
                     AVG_LATENCY, AVG_TOK_S],
         "duration": _duration("duree_s", "Test d'intelligence"),
     },
+    # --- batteries d'intelligence par niveau (v1.6.5) ----------------------
+    "niveau": {
+        "label": "Niveaux 1·2·3 (raisonnement dur)",
+        "metrics": [SCORE_PCT, SCORE_AVG, LAT_MEDIAN, LAT_MAX, FAILS],
+        "duration": _duration("duree_s", "Niveau complet"),
+    },
     # --- empreinte VRAM (sampler, deja gere par bench_index.py) ------------
     "vram": {
         "label": "Empreinte VRAM",
@@ -131,13 +137,15 @@ KINDS = {
 }
 
 # Alias FR acceptes a l'entree (confort pour les appels cote UI).
-KIND_ALIASES = {"batterie": "battery", "contexte": "context", "battery_fr": "battery"}
+KIND_ALIASES = {"batterie": "battery", "contexte": "context", "battery_fr": "battery",
+                "niveaux": "niveau"}
 
 # Ordre d'affichage des familles (axe X du graphique).
 KIND_RANK = {
     "vitesse": 0, "speed": 0,
     "memoire": 1, "context": 1,
     "intelligence": 2, "battery": 2,
+    "niveaux": 2, "niveau": 2,
     "humaneval": 3,
     "duel": 4,
     "vram": 5,
@@ -153,6 +161,7 @@ DURATION_FALLBACK = {
     "vitesse": ("wall_s",),
     "memoire": ("wall_s",),
     "intelligence": ("wall_s",),
+    "niveau": ("wall_s",),
     "vram": ("duree_s",),
 }
 

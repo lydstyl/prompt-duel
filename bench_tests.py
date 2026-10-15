@@ -62,17 +62,40 @@ PREFILL_TIMEOUT_S = 3600
 # se retrouve dans le nom du dossier de bench (`…-think`) et dans les réglages du bench.
 # Raison : deux exécutions qui ne mesurent pas la même chose (avec/sans raisonnement) ne
 # doivent JAMAIS se confondre dans une série du graphique — l'étiquette les sépare.
-THINKING_MODES = ("nothink", "think")
-THINKING_LABELS = {"nothink": "sans raisonnement", "think": "raisonnement medium"}
+# v1.6.5 (30/09/2026, demande Gabriel) : quatre niveaux au lieu de deux. Le template du
+# Qwen3.8 servi par Strata n'accepte QUE `xhigh | medium | low` et remappe `high` sur
+# `xhigh` (verifie dans /props : `raise_exception('Unexpected reasoning effort …')`).
+# « think » reste l'alias historique de « medium » pour que les campagnes passees
+# gardent leur etiquette.
+THINKING_MODES = ("nothink", "low", "medium", "xhigh")
+THINKING_LABELS = {
+    "nothink": "sans raisonnement",
+    "low": "raisonnement low",
+    "medium": "raisonnement medium",
+    "xhigh": "raisonnement xhigh",
+}
+# effort transmis au serveur pour chaque niveau (nothink n'en transmet aucun niveau)
+THINKING_EFFORT = {"low": "low", "medium": "medium", "xhigh": "xhigh"}
+# etiquette du dossier de bench : « medium » garde le suffixe historique -think
+THINKING_SUFFIX = {"low": "-think-low", "medium": "-think", "xhigh": "-think-xhigh"}
 
 
 def normalize_thinking(value, default="nothink"):
-    """« medium » / « on » / True → « think » ; « none » / False → « nothink »."""
+    """Niveau de raisonnement canonique : nothink | low | medium | xhigh.
+
+    Alias acceptes : « think »/« on »/« oui »/True/1 → medium (historique) ; « high » →
+    xhigh (le template le remappe) ; « none »/False/0/« non » → nothink. Tout autre mot
+    retombe sur `default` — un mode inconnu ne doit JAMAIS allumer le raisonnement.
+    """
     if isinstance(value, bool):
-        return "think" if value else "nothink"
+        return "medium" if value else "nothink"
     text = str(value or "").strip().lower()
+    if text in ("low", "leger", "léger"):
+        return "low"
     if text in ("think", "thinking", "medium", "on", "true", "1", "oui", "yes"):
-        return "think"
+        return "medium"
+    if text in ("xhigh", "high", "tres-haut", "very-high"):
+        return "xhigh"
     if text in ("nothink", "no-think", "none", "off", "false", "0", "non", "no"):
         return "nothink"
     return default
@@ -85,8 +108,14 @@ def think_payload(thinking):
     PrismML) ; `reasoning_effort` au premier niveau couvre ces runtimes, et ceux qui
     l'ignorent ne bronchent pas.
     """
-    if normalize_thinking(thinking) == "think":
-        return {"reasoning_effort": "medium", "chat_template_kwargs": {"enable_thinking": True}}
+    mode = normalize_thinking(thinking)
+    effort = THINKING_EFFORT.get(mode)
+    if effort:
+        # le niveau voyage dans LES DEUX formes : chat_template_kwargs (lu par le template
+        # Qwen3.8 de Strata) et reasoning_effort au premier niveau (lu par les runtimes
+        # qui n'injectent pas les kwargs de template).
+        return {"reasoning_effort": effort,
+                "chat_template_kwargs": {"enable_thinking": True, "reasoning_effort": effort}}
     return {"reasoning_effort": "none", "chat_template_kwargs": {"enable_thinking": False}}
 
 NEEDLE = "Note technique confidentielle : le code de vérification du projet est LUMIERE-777-42."
@@ -119,6 +148,10 @@ GROUPS = [
      "note": "remplissage réel du contexte, fait caché à 85 % de profondeur"},
     {"id": "intelligence", "title": "Intelligence — rapide et complet",
      "note": "batterie FR notée par du code · HumanEval pass@1 (50 = contrôle, 164 = corpus)"},
+    {"id": "niveaux", "title": "Niveaux 1·2·3 — raisonnement dur, noté par du code",
+     "note": "16 épreuves exactes · 10 épreuves à contraintes (crédit partiel) · 7 épreuves "
+             "lourdes (puzzle 5x5, cryptarithmes, planification optimale, document long) — "
+             "~5 min chacun en nothink, la référence 27B Q4 doit être battue"},
 ]
 
 TESTS = [
@@ -181,6 +214,40 @@ TESTS = [
      "est": {"tin": 250, "tout": 900, "count": 50, "overhead": 15},
      "needs_ctx": 8192},
 
+    # ---- niveaux 1/2/3 (v1.6.5) ----------------------------------------
+    {"id": "niveau-1", "group": "niveaux", "kind": "niveau",
+     "title": "Niveau 1 — Raisonnement exact (16 épreuves)",
+     "desc": "16 épreuves courtes à réponse unique : calendrier, arithmétique modulaire, "
+             "suites, transvasement (minimum de coups), syllogisme, classement, combinatoire, "
+             "horloge, probabilité. Le harnais CALCULE chaque réponse (BFS, force brute) et "
+             "note par du code — aucune valeur attendue écrite à la main.",
+     "script": "niveau1_raisonnement.py", "outdir": "niveaux", "items": 16,
+     "est": {"tin": 8000, "tout": 5400, "count": 1, "overhead": 30},
+     "needs_ctx": 8192},
+
+    {"id": "niveau-2", "group": "niveaux", "kind": "niveau",
+     "title": "Niveau 2 — Contraintes & cohérence (10 épreuves)",
+     "desc": "10 épreuves à vérification multi-critères avec CRÉDIT PARTIEL : JSON sous schéma, "
+             "agrégation exacte sur 30 lignes, contrainte formelle dure (4 phrases, sans « e »), "
+             "résumé à longueur exacte, 12 dates à normaliser, fonction Python testée par "
+             "8 cas cachés, ordonnancement optimal, audit de devis, tableau trié + agrégats, "
+             "acrostiche contraint.",
+     "script": "niveau2_contraintes.py", "outdir": "niveaux", "items": 10,
+     "est": {"tin": 9000, "tout": 7000, "count": 1, "overhead": 40},
+     "needs_ctx": 8192},
+
+    {"id": "niveau-3", "group": "niveaux", "kind": "niveau",
+     "title": "Niveau 3 — Raisonnement long & planification (7 épreuves)",
+     "desc": "7 épreuves lourdes : puzzle logique 5x5 à solution unique (solveur CSP), deux "
+             "cryptarithmes vérifiés uniques (SEND+MORE=MONEY, DONALD+GERALD=ROBERT), cas "
+             "multi-étapes cohérent, localisation d'une erreur dans un raisonnement, "
+             "planification 3 machines + disponibilités (optimum par énumération exacte), "
+             "tableau sous contraintes numériques globales, raisonnement multi-sauts dans "
+             "~30k tokens de registre.",
+     "script": "niveau3_long.py", "outdir": "niveaux", "items": 7,
+     "est": {"tin": 36000, "tout": 8400, "count": 1, "overhead": 60},
+     "needs_ctx": 65536},
+
     {"id": "humaneval-164", "group": "intelligence", "kind": "humaneval",
      "title": "HumanEval complet — 164 problèmes",
      "desc": "le jeu complet : seul score comparable au corpus historique (76-98 %). "
@@ -227,7 +294,7 @@ class BenchEnv:
         self.n_ctx = n_ctx
         self.python = python
         self.settings = settings              # réglages réels capturés au lancement (v1.6)
-        self.thinking = normalize_thinking(thinking)   # nothink | think (v1.6.4)
+        self.thinking = normalize_thinking(thinking)   # nothink | low | medium | xhigh
 
 
 def settings_capture(port, declared=None):
@@ -378,6 +445,11 @@ def update_calib(calib, key, fields, last_summary=None, test_id=None):
     for k in ("pp_tps", "tg_tps", "battery_s", "he_s_problem", "tasks"):
         if fields.get(k) is not None:
             cur[k] = fields[k]
+    # durée mesurée PAR TEST (les trois niveaux n'ont pas le même coût : une seule clé
+    # `battery_s` commune écraserait les trois estimations l'une après l'autre).
+    by_test = fields.get("by_test") or {}
+    if by_test:
+        cur.setdefault("by_test", {}).update({k: v for k, v in by_test.items() if v})
     # PP mesuré PAR PALIER DE CONTEXTE : à 256k le PP réel est bien plus bas qu'à
     # 128k (899 vs 1203 t/s mesurés sur le 35B) — on garde la mesure du palier
     # plutôt qu'un facteur de dégradation générique.
@@ -416,8 +488,12 @@ def estimate_seconds(test, entry=None):
         if per:
             return per * count + overhead, "mesuré"
         return overhead + count * (est["tin"] / pp + est["tout"] / tg), source
-    if test["kind"] == "batterie" and e.get("battery_s"):
-        return float(e["battery_s"]) + 10, "mesuré"
+    if test["kind"] in ("batterie", "niveau"):
+        per = (e.get("by_test") or {}).get(test["id"])
+        if per:
+            return float(per) + 10, "mesuré"
+        if test["kind"] == "batterie" and e.get("battery_s"):
+            return float(e["battery_s"]) + 10, "mesuré"
     # à 256k le PP réel chute (KV plein, reprocessing) : on utilise le PP MESURÉ du
     # palier si on l'a, sinon on dégrade génériquement l'estimation.
     ctx = test.get("ctx")
@@ -738,7 +814,7 @@ def _run_batterie(test, env, emit, stop_check):
     if not os.path.exists(script):
         raise RuntimeError(f"harnais absent : {script}")
     outdir = os.path.join(env.llm_home, test.get("outdir") or "smalltasks")
-    mode = env.thinking                      # nothink | think (harnais : small_tasks.py)
+    mode = env.thinking                      # nothink | low | medium | xhigh (small_tasks.py)
     cmd = [env.python, script, str(env.port), env.label, outdir, mode]
     emit(f"  batterie : {' '.join(cmd)}")
     rc, _ = _spawn_stream(cmd, emit, stop_check, cwd=env.llm_home)
@@ -773,14 +849,93 @@ def _run_batterie(test, env, emit, stop_check):
     }
 
 
+def niveau_options():
+    """Options passées au harnais (5e argument JSON) — réglages d'échantillonnage,
+    répétitions et budget, pilotés par l'environnement depuis l'UI."""
+    def num(name, cast, default=None):
+        raw = os.environ.get(name)
+        if raw is None or str(raw).strip() == "":
+            return default
+        try:
+            return cast(raw)
+        except (TypeError, ValueError):
+            return default
+    out = {}
+    for env_name, key, cast in (("BENCH_TEMP", "temperature", float),
+                               ("BENCH_TOP_P", "top_p", float),
+                               ("BENCH_TOP_K", "top_k", int),
+                               ("BENCH_SEED", "seed", int),
+                               ("BENCH_REPEATS", "repeats", int),
+                               ("BENCH_BUDGET_S", "budget_s", float)):
+        val = num(env_name, cast)
+        if val is not None:
+            out[key] = val
+    return out
+
+
+def _run_niveau(test, env, emit, stop_check):
+    """Batterie d'intelligence « niveau 1/2/3 » — même contrat que la batterie FR,
+    avec en plus les réglages d'échantillonnage (temp/top_p/top_k/seed/répétitions)."""
+    script = os.path.join(env.llm_home, test["script"])
+    if not os.path.exists(script):
+        raise RuntimeError(f"harnais absent : {script}")
+    outdir = os.path.join(env.llm_home, test.get("outdir") or "niveaux")
+    mode = env.thinking                       # nothink | low | medium | xhigh
+    opts = niveau_options()
+    cmd = [env.python, script, str(env.port), env.label, outdir, mode, json.dumps(opts)]
+    emit(f"  {test['id']} : mode de raisonnement « {mode} » · options {opts or '—'}")
+    rc, _ = _spawn_stream(cmd, emit, stop_check, cwd=env.llm_home)
+    json_path = os.path.join(outdir, f"results_{env.label}_{mode}.json")
+    metrics = {}
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, encoding="utf-8") as fh:
+                d = json.load(fh)
+            s = d.get("summary") or {}
+            metrics = {"score_sum": s.get("score_sum"), "score_full": s.get("score_full"),
+                       "tasks": s.get("tasks"), "weight_sum": s.get("weight_sum"),
+                       "score_avg": s.get("score_avg"), "score_pct": s.get("score_pct"),
+                       "lat_median": s.get("lat_median"), "lat_max": s.get("lat_max"),
+                       "battery_s": s.get("total_wall_s"),
+                       "out_tokens": s.get("out_tokens"),
+                       "reasoning_chars": s.get("reasoning_chars"),
+                       "mode": mode, "options": opts, "fails": s.get("fails"),
+                       "source": json_path}
+            for dest, src in ((f"{test['id']}.json", json_path),
+                              (f"{test['id']}.md",
+                               os.path.join(outdir, f"results_{env.label}_{mode}.md"))):
+                try:
+                    if os.path.exists(src):
+                        shutil.copyfile(src, os.path.join(env.run_dir, dest))
+                except OSError:
+                    pass
+        except (OSError, ValueError) as exc:
+            emit(f"  résumé {test['id']} illisible : {exc}")
+    if not metrics:
+        return {"metrics": {"rc": rc}, "ok": False, "calib": {},
+                "summary": "aucun résumé produit par le harnais"}
+    return {
+        "metrics": metrics,
+        "calib": {"by_test": {test["id"]: metrics.get("battery_s")}},
+        "ok": bool(rc == 0 and metrics.get("score_sum") is not None),
+        "summary": (f"score {metrics.get('score_sum')}/{metrics.get('weight_sum')} "
+                    f"({metrics.get('score_pct')} %) · complets "
+                    f"{metrics.get('score_full')}/{metrics.get('tasks')} · "
+                    f"{fmt_dur(metrics.get('battery_s'))} · latence méd "
+                    f"{metrics.get('lat_median')} s"
+                    + (f" · échecs {len(metrics.get('fails') or [])}"
+                       if metrics.get("fails") else "")),
+    }
+
+
 def _run_humaneval(test, env, emit, stop_check):
     if not env.ssh or not env.he_dir:
         raise RuntimeError("cible ssh du harnais HumanEval non configurée")
     problems = test["problems"]
     out = f"{env.he_results}/from224-{env.label}-{problems.replace(',', '_')}"
     display = f"{env.model_slug or '?'} [{int(env.n_ctx or 0) // 1024}k]"
-    if env.thinking == "think":
-        display += " — raisonnement medium"
+    if env.thinking != "nothink":
+        display += " — " + THINKING_LABELS.get(env.thinking, env.thinking)
     remote = ("cd %s && python3 run_he.py %s %s %s %s %s && cat %s/humaneval-summary.json"
               % (_q(env.he_dir), _q(display), _q(env.model_path or "local"), _q(problems),
                  _q(out), _q(env.thinking), _q(out)))
@@ -860,6 +1015,7 @@ RUNNERS = {
     "vitesse-long": _run_vitesse_long,
     "needle": _run_needle,
     "batterie": _run_batterie,
+    "niveau": _run_niveau,
     "humaneval": _run_humaneval,
 }
 
@@ -882,6 +1038,12 @@ def _run_dry(test, env, emit, stop_check):
         return {"metrics": {"score_sum": 11.5, "tasks": 13, "score_full": 10,
                             "lat_median": 0.5, "battery_s": 12.0}, "calib": {},
                 "ok": True, "summary": "score 11.5/13 (dry)"}
+    if kind == "niveau":
+        n = test.get("items") or 16
+        return {"metrics": {"score_sum": round(n * 0.6, 2), "weight_sum": n, "tasks": n,
+                            "score_full": 5, "score_pct": 60.0, "lat_median": 18.0,
+                            "lat_max": 40.0, "battery_s": 300.0, "fails": ["dry"]},
+                "calib": {}, "ok": True, "summary": f"score {round(n * 0.6, 2)}/{n} (60.0 %) (dry)"}
     return {"metrics": {"passed": 40, "total": 50, "score_pct": 80.0, "avg_latency_s": 1.0},
             "calib": {}, "ok": True, "summary": "pass@1 40/50 (80.0 %) (dry)"}
 

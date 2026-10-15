@@ -390,6 +390,37 @@ def render_body(data, state=None, show_hidden=False, liens_requete=True):
                      'Les 2 echecs communs en mode rapide (prorata, jour de la semaine) sont une limite du '
                      'mode sans reflexion, pas d\'un modele.</p></section>')
 
+    # 3bis) Niveaux 1/2/3 — raisonnement dur, credit partiel (v1.6.5)
+    niv = sorted([e for e in entries if e.get("kind") == "niveau"],
+                 key=lambda e: (e.get("model") or "", e.get("label") or "",
+                                e.get("test_id") or ""))
+    if niv:
+        avec = _avec_variante(niv)
+        rows = []
+        for e in niv:
+            fails = e.get("fails") or []
+            pct = e.get("score_pct")
+            rows.append((_attrs(e, masques), [
+                f'<td>{_esc(e.get("model"))}<br><span class="dim">{_esc(e.get("label"))}</span></td>',
+                *_variant_cell(e, avec),
+                f'<td class="tag">{_esc(e.get("mode"))}</td>',
+                f'<td>{_esc(e.get("test_id") or "")}</td>',
+                f'<td class="n"><b>{_num(pct,1," %")}</b><br><span class="dim">'
+                f'{_esc(e.get("score_sum"))}/{_esc(e.get("weight_sum"))}</span></td>',
+                f'<td class="n">{_num(e.get("total_wall_s"),0," s")}</td>',
+                f'<td class="n">{_num(e.get("lat_median"),1," s")}</td>',
+                f'<td class="dim">{_esc(", ".join(str(f) for f in fails)) if fails else "aucun"}</td>',
+            ] + [_action_cell(e, hidden_ids, deleted_ids)]))
+        out.append('<section class="card"><h2>Niveaux 1 &middot; 2 &middot; 3 '
+                   '<span class="dim">raisonnement exact, contraintes, planification — '
+                   'noté par du code, crédit partiel</span></h2>'
+                   + _table(["modèle"] + (["variante"] if avec else [])
+                            + ["raisonnement", "niveau", "score", "durée", "latence méd",
+                               "échecs", ""], rows)
+                   + '<p class="dim">Chaque niveau dure ~5 min sans raisonnement, davantage en '
+                     'low/medium/xhigh : <b>le score et la durée sont les deux chiffres à '
+                     'comparer</b>. Les épreuves en échec sont listées pour audit.</p></section>')
+
     # 4) HumanEval
     he = sorted([e for e in entries if e.get("kind") == "humaneval"],
                 key=lambda e: (-(e.get("total") or 0), -(e.get("score_pct") or 0)))
@@ -589,6 +620,7 @@ def render_benchmarks_page(state=None, query=None):
   <h1>Benchmarks LLM <span class="dim">&middot; index unifie des tests locaux</span></h1>
   <div class="spacer" style="flex:1"></div>
   <a class="navlink" href="/">&#8592; Prompt Duel</a>
+  <a class="navlink" href="/llms">Tests par LLM</a>
   <a class="navlink" href="/graph">Graphique</a>
   <a class="navlink" href="/compare">Comparaison de runs</a>
   <span class="dim">index {gen}</span>

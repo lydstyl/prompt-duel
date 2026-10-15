@@ -321,6 +321,54 @@ en entrée, 128 en sortie) ; on garde la moyenne des `eval time` du log serveur,
 façon d'obtenir des valeurs comparables entre modèles. Un log sans mesure de prefill
 (HumanEval, remplissage de contexte) est ignoré : ce n'est pas un bench de vitesse.
 
+## Page `/llms` — comparer des **LLM**, pas des dates (v1.7.0)
+
+Le problème que cette page résout : `/graph` et `/benchmarks` rangent les résultats par
+**variante** (modèle + contexte + MTP + thinking + température). Trois tirs du même modèle à
+trois dates, ou avec deux quantifications, apparaissent donc comme trois « réglages » distincts
+— impossible de dire « ce LLM-là, tous ses tests, face à cet autre LLM-là ».
+
+Ici, un LLM = **un nom de modèle**, indépendant de la quantification (`UD-Q4_K_XL`,
+`IQ3_XXS`…), du contexte (128k/256k), du mode de raisonnement (think/nothink), de la
+température et de la machine. Le regroupement vit dans `llms.py` (`MODELES`, l'ordre compte :
+un dérivé — Swift-1.5, Uncensored — passe avant son modèle de base).
+
+- **Étape 1 — `/llms`** : le catalogue des LLM présents dans l'index (test(s), mesure(s),
+  variantes, plage de dates) + le `<select multiple>` (1 à 6).
+- **Étape 2 — `/llms?llm=<clé>&llm=<clé>`** : un tableau **« test × LLM »** (meilleure valeur
+  mesurée par LLM pour chaque métrique, avec **sa date** et le nombre d'autres mesures), puis
+  le **détail chronologique complet** de chaque LLM (toutes les variantes, tous les statuts,
+  la source), et la liste des variantes regroupées (transparence : on voit *ce qui* a été
+  agrégé).
+
+**Jamais de moyenne entre deux dates** : pour un (LLM, test, métrique), la meilleure valeur est
+retenue — le sens est lu dans le registre (`better` = `high`/`low`, donc une latence ou une VRAM
+se comparent « plus bas = mieux ») — et les autres mesures restent consultables au détail.
+Un manque s'affiche `—` : aucune valeur n'est estimée ni recopiée d'une fiche modèle.
+
+**Mesures sans modèle identifié** : les artefacts dont le nom de fichier ne dit pas le modèle
+(`case-35b_n4.log`, `probe-k2q4-48k.speed.log`, `dry-run`, `smoke-n1`…) ne sont **jamais**
+fusionnés au hasard dans une famille. Ceux qu'une règle explicite (`RATTACHEMENTS`, justification
+affichée sous la famille) rattache à un LLM du parc — `35B-A3B`, `35b` seul, sondes `k2q4` — sont
+agrégés ; les autres sont regroupés en bas de catalogue sous « mesures sans modèle identifié »,
+nom d'artefact visible tel quel.
+
+## Page `/graph` — comparer des réglages **ou** des LLM (v1.7.0)
+
+Deux axes de sélection coexistent, le second nouveau, le premier inchangé :
+
+- **`?llm=<clé>&llm=<clé>`** — comparer des **LLM** (2 à 6) : une **série par LLM**, chaque
+  point étant la *meilleure* valeur mesurée de ce LLM pour ce test, toutes quantifications,
+  tous contextes et toutes dates confondus. L'étape 1 (`/graph`) met ce catalogue **en tête**
+  (bouton « Afficher les LLM ») ; `?axe=reglages` remet le catalogue des réglages en premier.
+- **`?sel=<clé>&sel=<clé>`** — comparer des **réglages** (variantes), comme depuis la v1.6.3 :
+  une série par variante.
+
+Les liens `?llm=<clé de variante>` écrits avant la v1.7 continuent de fonctionner : une valeur
+qui est une clé de variante connue reste une variante (seule une clé de famille de LLM bascule
+sur le nouvel axe). Si une adresse porte les deux, l'axe LLM est tracé et les réglages cochés
+servent de **filtre** — c'est écrit dans un bandeau, jamais appliqué en silence.
+
 ## Page `/graph` — comparer des réglages (v1.6.3)
 
 Une **série** de graphique n'est pas un modèle mais un **réglage** : un modèle *et* ses
@@ -352,10 +400,12 @@ des résultats et la liste des masques. Le panneau reporte la sélection en cham
   bandeau, pour ne pas croire la sélection appliquée ;
 - **index vide ou un seul réglage** → message explicite, page vide jamais.
 
-Alias d'URL acceptés pour la sélection : `sel`, `selection`, `series`, `serie`, `llm`,
-`reglages`/`reglage` (paramètres répétés ou en liste). Le rendu reste **stdlib + SVG
-inline**, sans JavaScript applicatif ; `metrics.series_catalogue()` construit le catalogue
-(dédoublonné par clé de variante, trié dernier résultat d'abord).
+Alias d'URL acceptés pour la sélection : `sel`, `selection`, `series`, `serie`, `reglages`/`reglage`
+(paramètres répétés ou en liste) ; `llm`, `llms`, `modele`/`modeles`/`model` désignent l'axe LLM
+(une valeur qui est une clé de variante connue reste traitée comme un réglage : les liens d'avant
+la v1.7 fonctionnent). Le rendu reste **stdlib + SVG inline**, sans JavaScript applicatif ;
+`metrics.series_catalogue()` construit le catalogue des réglages et `llms.catalogue_llm()` celui
+des LLM (dédoublonné par clé de variante / par famille, trié dernier résultat d'abord).
 
 ## Suivi en direct
 
@@ -448,6 +498,14 @@ testable sans llama.cpp. Tout le reste du pipeline est exercé (nommage, écritu
 - `README.md` — ce fichier.
 - `runs/` — sorties générées.
 - `benchmarks.py` — page `/benchmarks` : rend l'index unifié (stdlib seule).
+- `page_graph.py` — page `/graph` : deux axes de sélection (LLM et réglages), SVG inline.
+- `llms.py` — page `/llms` : regroupement par **LLM** (table de familles + `RATTACHEMENTS`),
+  tableau « test × LLM » et détail chronologique ; sert aussi l'axe `?llm=` de `/graph`.
+- `metrics.py` — registre des métriques par famille, `entry_id` stable, clés de variante.
+- `charts.py` — SVG inline (barres groupées, durées, légende), stdlib pure, sans JavaScript.
+- `tests/` — tests unitaires (`python3 -m unittest discover -s tests`) ;
+  `scripts/run-tests.sh` (unitaires + e2e Playwright) et
+  `scripts/check-app-locale.sh` (test HTTP réel de toutes les routes, données temporaires).
 - `bench_index.py` — construit l'index : scanne les runs, miroite les artefacts
   dans le vault, écrit `index.json` (vault + copie locale).
 - `bench_index.json` — copie locale de l'index (généré ; versionné pour garder

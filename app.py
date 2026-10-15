@@ -40,6 +40,19 @@ test et par variante. **Masquer / supprimer / restaurer** un résultat depuis /g
 `visibility.py`, `settings.py`, `charts.py`, `page_graph.py` ; harnais de tests
 `scripts/run-tests.sh` (unitaires `tests/` + end-to-end `e2e/` sous Playwright).
 
+v1.7.0 : **comparer des LLM, pas des dates ni des variantes** (demande de Gabriel). Nouvel axe de
+sélection `?llm=<clé>` sur `/graph` : le catalogue de l'étape 1 liste les **LLM** (le nom du modèle —
+quantification, contexte, mode de raisonnement et machine ne font pas un autre LLM) et l'étape 2
+trace **une série par LLM** (2 à 6), chaque point étant la **meilleure** valeur mesurée de ce LLM
+pour ce test, avec sa date — jamais une moyenne entre deux dates. Nouvelle page **`/llms`**
+(« Tests par LLM ») : catalogue des LLM reconnus, tableau « test × LLM » (meilleure valeur, date,
+nombre d'autres mesures) puis détail chronologique complet par LLM (toutes les variantes, tous les
+statuts). Les artefacts dont le nom ne porte pas de modèle (« dry-run », « smoke-n1 », sondes de
+vitesse) sont regroupés en bas de catalogue sous « mesures sans modèle identifié » — seuls ceux
+qu'une règle explicite et affichée rattache à un modèle du parc sont agrégés (35B-A3B, sondes k2q4).
+L'axe `?sel=` (réglages/variantes) reste inchangé et les liens `?llm=<clé de variante>` d'avant
+cette version continuent de fonctionner.
+
 v1.6.4 : **pensée des tests** — les bancs savent tourner avec le RAISONNEMENT ACTIF. Le mode se
 demande au lancement (`POST /api/tests/run` avec `"thinking": "medium"`, alias `think`/`on` ;
 défaut `nothink`, donc les campagnes passées restent comparables), traverse le corps chat des
@@ -119,6 +132,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 import bench_tests  # tests vitesse / mémoire de contexte / intelligence (v1.5)
+import engine       # pilotage du moteur strata : ctx / MTP / KV (v1.6.5)
 from benchmarks import render_benchmarks_page  # page /benchmarks (index des tests)
 
 # v1.6 : la logique descend dans des modules (contrat §5) ; app.py reste le routeur.
@@ -131,7 +145,12 @@ try:
 except ImportError:        # module pas encore livré : /graph répondra 503, jamais de crash
     page_graph = None
 
-APP_VERSION = "1.6.4"
+try:
+    import llms            # page /llms : tous les tests d'un LLM, dates comprises (v1.7)
+except ImportError:        # module pas encore livré : /llms répondra 503, jamais de crash
+    llms = None
+
+APP_VERSION = "1.7.0"
 
 # Libellé affiché dans l'UI (utile si plusieurs instances)
 APP_TITLE = os.environ.get("APP_TITLE") or "Prompt Duel"
@@ -208,6 +227,10 @@ DEFAULT_PARAMS = {
     "top_p": TOP_P,
     "max_tokens": MAX_TOKENS,
     "enable_thinking": ENABLE_THINKING,
+    # v1.6.5 : le raisonnement n'est plus un simple booléen mais un NIVEAU
+    # (nothink | low | medium | xhigh). `enable_thinking` reste calculé à partir de lui
+    # pour ne rien casser en aval (labels d'anciens runs, find_reusable_run, index).
+    "thinking_level": "nothink",
     "cache_prompt": CACHE_PROMPT,
 }
 PARAMS_MIN_TOKENS = 64
@@ -274,10 +297,22 @@ def normalize_params(raw=None):
             p["max_tokens"] = mt
     except (TypeError, ValueError):
         pass
-    think = raw.get("enable_thinking", p["enable_thinking"])
-    if isinstance(think, str):
-        think = think.strip().lower() not in ("", "0", "false", "no", "off")
-    p["enable_thinking"] = bool(think)
+    # v1.6.5 — NIVEAU de raisonnement : nothink | low | medium | xhigh.
+    # `thinking_level` fait foi ; `enable_thinking` (booléen historique) est accepté en
+    # entrée et TOUJOURS recalculé en sortie, donc les appelants d'avant continuent de
+    # marcher sans connaître les niveaux.
+    raw_level = raw.get("thinking_level")
+    if raw_level in (None, ""):
+        if raw.get("thinking") not in (None, ""):
+            raw_level = raw.get("thinking")
+        elif "enable_thinking" in raw:
+            think = raw["enable_thinking"]
+            if isinstance(think, str):
+                think = think.strip().lower() not in ("", "0", "false", "no", "off")
+            raw_level = "medium" if think else "nothink"
+    p["thinking_level"] = bench_tests.normalize_thinking(raw_level,
+                                                        default=p["thinking_level"])
+    p["enable_thinking"] = p["thinking_level"] != "nothink"
     return p
 
 
@@ -293,11 +328,25 @@ def params_suffix(params):
     return ("__" + "__".join(bits)) if bits else ""
 
 
+def thinking_tag(params=None, thinking=None):
+    """Étiquette de raisonnement d'un run : nothink | think | think-low | think-xhigh.
+
+    « medium » garde l'étiquette historique `think` pour que les dossiers de runs déjà
+    produits restent réutilisables (find_reusable_run compare ce suffixe).
+    """
+    if thinking is None:
+        params = normalize_params(params)
+        thinking = params.get("thinking_level") or (
+            "medium" if params.get("enable_thinking") else "nothink")
+    level = bench_tests.normalize_thinking(thinking)
+    return {"low": "think-low", "medium": "think", "xhigh": "think-xhigh"}.get(level, "nothink")
+
+
 def params_label(params):
-    """Résumé court et lisible des réglages : « t0.2 · nothink · mt16384 »."""
+    """Résumé court et lisible des réglages : « t0.2 · think-low · mt16384 »."""
     params = normalize_params(params)
     return (f"t{params['temperature']:g} · "
-            f"{'think' if params['enable_thinking'] else 'nothink'} · "
+            f"{thinking_tag(params)} · "
             f"mt{params['max_tokens']}")
 
 
@@ -608,13 +657,16 @@ def _chat_payload(prompt, max_tokens, stream=False, params=None):
         "top_p": params["top_p"],
         "max_tokens": int(max_tokens or params["max_tokens"]),
         "cache_prompt": params["cache_prompt"],
-        "chat_template_kwargs": {"enable_thinking": params["enable_thinking"]},
         # v1.4.1 — champ de PREMIER NIVEAU : certains modèles (Ternary Bonsai 2,
         # PrismML) ignorent `chat_template_kwargs.enable_thinking` et raisonnent
-        # par défaut. Seul `reasoning_effort` les éteint ("none") ; "medium"
-        # raccourcit le raisonnement quand il est demandé. Les runtimes qui ne
-        # connaissent pas le champ l'ignorent simplement (rétrocompatible).
-        "reasoning_effort": "medium" if params["enable_thinking"] else "none",
+        # par défaut. v1.6.5 : le niveau (low/medium/xhigh) voyage dans les DEUX formes,
+        # le template Qwen3.8 de Strata lisant `reasoning_effort` dans les kwargs.
+        "chat_template_kwargs": dict(
+            {"enable_thinking": params["enable_thinking"]},
+            **({"reasoning_effort": bench_tests.THINKING_EFFORT[params["thinking_level"]]}
+               if params["enable_thinking"] else {})),
+        "reasoning_effort": (bench_tests.THINKING_EFFORT[params["thinking_level"]]
+                             if params["enable_thinking"] else "none"),
         "stream": bool(stream),
     }
     if stream:
@@ -1253,7 +1305,7 @@ def run_suffix(model_slug, n_ctx, params=None, variant_key=None):
     """
     params = normalize_params(params)
     ctx = n_ctx if n_ctx else 0
-    think = "think" if params["enable_thinking"] else "nothink"
+    think = thinking_tag(params)
     suffix = (f"__{model_slug}__ctx{ctx}__t{params['temperature']:g}__{think}"
               f"{params_suffix(params)}")
     if variant_key:
@@ -2203,7 +2255,77 @@ def bench_label(model_slug, n_ctx, thinking="nothink"):
     slug = re.sub(r"-gguf$", "", slug)[:40].strip("-")
     k = int(n_ctx or 0) // 1024
     label = f"{slug}-{k}k" if k else slug
-    return f"{label}-think" if bench_tests.normalize_thinking(thinking) == "think" else label
+    # v1.6.5 : le niveau est dans l'étiquette ("-think", "-think-low", "-think-xhigh") :
+    # c'est elle qui sépare les séries dans /graph, un run low n'est pas un run xhigh.
+    return label + bench_tests.THINKING_SUFFIX.get(
+        bench_tests.normalize_thinking(thinking), "")
+
+
+# ------------------------------------------------------------------ moteur (v1.6.5)
+# Le contexte (64k/128k/256k), le MTP et la speculation sont des FLAGS DE LANCEMENT du
+# moteur : les changer veut dire relancer le process, ce qui prend plusieurs minutes
+# (plusieurs dizaines de Go a lire). On le fait donc dans un THREAD et l'UI suit
+# l'avancement ; `engine.apply` refuse de toucher au moteur si un run tourne.
+ENGINE_JOB = {"running": False, "step": None, "steps": [], "ok": None, "message": None,
+              "started_at": None, "finished_at": None, "lock": threading.Lock()}
+_ENGINE_CACHE = {"at": 0.0, "state": None}
+
+
+def engine_state(base=None, force=False):
+    """Etat du moteur, mis en cache 5 s (le probe lance `ps` et 2 requêtes HTTP)."""
+    if not force and _ENGINE_CACHE["state"] and (time.time() - _ENGINE_CACHE["at"]) < 5:
+        return _ENGINE_CACHE["state"]
+    try:
+        port = urlparse(LLM_BASE).port or 8080
+    except Exception:
+        port = 8080
+    try:
+        st = engine.state(base or LLM_BASE, port)
+    except Exception as exc:
+        st = {"available": False, "running": False, "error": f"{exc.__class__.__name__}: {exc}"}
+    _ENGINE_CACHE.update({"at": time.time(), "state": st})
+    return st
+
+
+def engine_job_snapshot():
+    job = dict(ENGINE_JOB)
+    job.pop("lock", None)
+    return job
+
+
+def start_engine_apply(opts):
+    """(ok, message) — lance la relance du moteur dans un thread."""
+    with ENGINE_JOB["lock"]:
+        if ENGINE_JOB["running"]:
+            return False, "une relance du moteur est déjà en cours"
+        if any_worker_running():
+            return False, ("un duel ou un bench tourne : le relancer le tuerait. "
+                           "Arrête-le d'abord.")
+        ENGINE_JOB.update({"running": True, "step": "démarrage", "steps": [], "ok": None,
+                           "message": None, "started_at": now_iso(), "finished_at": None})
+
+    def worker():
+        def on_step(msg):
+            with ENGINE_JOB["lock"]:
+                ENGINE_JOB["step"] = msg
+                ENGINE_JOB["steps"].append(f"{time.strftime('%H:%M:%S')} {msg}")
+            LOG.add(f"[moteur] {msg}")
+        try:
+            ok, message, _st = engine.apply(
+                opts, base=LLM_BASE,
+                port=(urlparse(LLM_BASE).port or 8080),
+                busy=any_worker_running, on_step=on_step)
+        except Exception as exc:
+            ok, message = False, f"{exc.__class__.__name__}: {exc}"
+        with ENGINE_JOB["lock"]:
+            ENGINE_JOB.update({"running": False, "ok": bool(ok), "message": message,
+                               "finished_at": now_iso()})
+        LOG.add(f"[moteur] {'OK' if ok else 'ÉCHEC'} — {message}")
+        _ENGINE_CACHE.update({"at": 0.0, "state": None})
+        probe_llm(force=True)
+
+    threading.Thread(target=worker, name="prompt-duel-engine", daemon=True).start()
+    return True, "relance du moteur lancée (plusieurs minutes)"
 
 
 def bench_calib():
@@ -2276,7 +2398,7 @@ def bench_availability(test, probe=None):
     if need and have and have < need:
         return False, (f"serveur à ctx {have} — il faut ≥ {need} "
                        f"(recharge le modèle avec -c {need})")
-    if test["kind"] == "batterie":
+    if test["kind"] in ("batterie", "niveau"):
         if not llm_is_local():
             return False, f"harnais local : LLM_BASE doit être 127.0.0.1 (ici {LLM_BASE})"
         script = os.path.join(BENCH_LLM_HOME, test["script"])
@@ -2326,7 +2448,48 @@ def write_bench_json():
         LOG.add(f"écriture du bench impossible : {exc}")
 
 
-def bench_worker(ids, declared_settings=None, thinking="nothink"):
+# v1.6.5 — réglages d'échantillonnage des batteries d'intelligence. Ils partent en
+# variables d'environnement : le harnais est un sous-processus, il n'a pas d'autre canal.
+# Défauts = ceux d'avant (temp 0, graine 42, 1 passage) tant que l'UI n'envoie rien.
+BENCH_OPTIONS_ENV = {
+    "temperature": "BENCH_TEMP",
+    "top_p": "BENCH_TOP_P",
+    "top_k": "BENCH_TOP_K",
+    "seed": "BENCH_SEED",
+    "repeats": "BENCH_REPEATS",
+    "budget_s": "BENCH_BUDGET_S",
+}
+
+
+def bench_options(raw=None):
+    """Valide les options de test reçues de l'UI (bornes strictes, jamais d'exception)."""
+    raw = raw if isinstance(raw, dict) else {}
+    out = {}
+    for key, lo, hi, cast in (("temperature", 0.0, 2.0, float), ("top_p", 0.0, 1.0, float),
+                              ("top_k", 0, 1000, int), ("seed", 0, 2 ** 31, int),
+                              ("repeats", 1, 5, int), ("budget_s", 0.0, 86400.0, float)):
+        val = raw.get(key)
+        if val in (None, ""):
+            continue
+        try:
+            num = cast(val)
+        except (TypeError, ValueError):
+            continue
+        if lo <= num <= hi:
+            out[key] = num
+    return out
+
+
+def apply_bench_options(options):
+    """Pose (ou retire) les variables d'environnement lues par les harnais."""
+    for key, env_name in BENCH_OPTIONS_ENV.items():
+        if options and options.get(key) is not None:
+            os.environ[env_name] = str(options[key])
+        else:
+            os.environ.pop(env_name, None)
+
+
+def bench_worker(ids, declared_settings=None, thinking="nothink", options=None):
     """Exécute les tests choisis, un par un. Un test en échec n'arrête pas la suite."""
     try:
         if DRY_RUN:
@@ -2347,6 +2510,7 @@ def bench_worker(ids, declared_settings=None, thinking="nothink"):
                 return
 
         thinking = bench_tests.normalize_thinking(thinking)
+        apply_bench_options(options)
         label = bench_label(model_slug, n_ctx, thinking)
         base = datetime.now().strftime("%Y-%m-%d_%H%M") + f"__{label}__tests"
         run_dir = BENCH_DIR / base
@@ -2375,7 +2539,8 @@ def bench_worker(ids, declared_settings=None, thinking="nothink"):
             STATE.bench.update({
                 "run_id": run_dir.name, "run_dir": str(run_dir),
                 "run_url": f"/benches/{run_dir.name}/", "label": label,
-                "thinking": thinking,          # nothink | think (v1.6.4)
+                "thinking": thinking,          # nothink | low | medium | xhigh (v1.6.5)
+                "options": bench_options(options),
                 "model_path": model_path, "model_slug": model_slug, "n_ctx": n_ctx,
                 "settings": captured,          # réglages réels du serveur
                 "variant": variant,
@@ -2445,9 +2610,10 @@ def bench_worker(ids, declared_settings=None, thinking="nothink"):
         probe_llm(force=True)
 
 
-def start_bench(ids, declared_settings=None, thinking="nothink"):
+def start_bench(ids, declared_settings=None, thinking="nothink", options=None):
     ids = [str(i) for i in ids]
     thinking = bench_tests.normalize_thinking(thinking)
+    options = bench_options(options)
     with STATE.lock:
         if any_worker_running():
             return False, "un traitement est déjà en cours (duel ou tests)"
@@ -2467,13 +2633,14 @@ def start_bench(ids, declared_settings=None, thinking="nothink"):
             "variant": None,
             "vram_note": bench_tests.vram_now() if llm_is_local() else None,
             "notes": llm_server_note(),
-            "thinking": thinking, "selected_ids": ids, "status": "running",
+            "thinking": thinking, "options": options,
+            "selected_ids": ids, "status": "running",
             "est_total_s": round(sum((cat.get(i) or {}).get("est_s") or 0 for i in ids), 1),
             "results": [make_bench_result(t, (cat.get(t["id"]) or {}).get("est_s"))
                         for t in tests],
         }
         worker = threading.Thread(target=bench_worker,
-                                  args=(ids, declared_settings, thinking),
+                                  args=(ids, declared_settings, thinking, options),
                                   name="prompt-duel-bench", daemon=True)
         STATE.bench_worker = worker
         worker.start()
@@ -2772,6 +2939,8 @@ select{background:#0d0f14;color:var(--fg);border:1px solid var(--line);border-ra
   <button id="retest">Re-tester</button>
   <div class="spacer"></div>
   <a class="navlink" href="/benchmarks">📊 Benchmarks</a>
+  <a class="navlink" href="/llms">🧠 Tests par LLM</a>
+  <a class="navlink" href="/graph">📈 Graphique</a>
   <span class="dim" id="ver">v__APP_VERSION__</span>
 </header>
 <main>
@@ -2797,7 +2966,12 @@ select{background:#0d0f14;color:var(--fg);border:1px solid var(--line);border-ra
       <span class="dim">Réglages du run :</span>
       <label class="chk">température <input type="number" id="set-temp" step="0.05" min="0" max="2" value="0.2"></label>
       <label class="chk">max_tokens <input type="number" id="set-mt" step="1024" min="64" value="16384"></label>
-      <label class="chk" title="Raisonnement du modèle (chat_template_kwargs.enable_thinking). Sur ce build, l'activer peut envoyer la réponse dans reasoning_content : le texte part alors dans le panneau raisonnement et le HTML peut manquer.">raisonnement <input type="checkbox" id="set-think"></label>
+      <label class="chk" title="Niveau de raisonnement du modèle : nothink coupe le raisonnement (enable_thinking=false), low / medium / xhigh envoient reasoning_effort. Le template Qwen3.8 servi par Strata n'accepte que xhigh, medium et low (high est remappé en xhigh).">raisonnement <select id="set-think">
+        <option value="nothink">sans raisonnement</option>
+        <option value="low">low</option>
+        <option value="medium">medium (+ = think historique)</option>
+        <option value="xhigh">xhigh</option>
+      </select></label>
       <button id="set-reset">défauts</button>
       <span id="set-note" class="dim"></span>
     </div>
@@ -2815,6 +2989,23 @@ select{background:#0d0f14;color:var(--fg);border:1px solid var(--line);border-ra
       <span id="t-count" class="dim">0 / 0 sélectionné(s)</span>
     </div>
     <div id="tests">__TESTS_HTML__</div>
+    <div class="row" id="t-options" style="margin-top:8px">
+      <span class="dim">Réglages des tests :</span>
+      <label class="chk" title="Niveau de raisonnement transmis au harnais (enable_thinking + reasoning_effort). Un niveau différent = une série différente dans /graph.">raisonnement <select id="t-think">
+        <option value="nothink">sans raisonnement</option>
+        <option value="low">low</option>
+        <option value="medium">medium</option>
+        <option value="xhigh">xhigh</option>
+      </select></label>
+      <label class="chk" title="Température des batteries d'intelligence. Défaut 0 (greedy), comparable aux campagnes passées. Un modèle à raisonnement préfère souvent 0.6.">température <input type="number" id="t-temp" step="0.05" min="0" max="2" value="0"></label>
+      <label class="chk" title="top_p (vide = défaut du serveur)">top_p <input type="number" id="t-topp" step="0.05" min="0" max="1" placeholder="—"></label>
+      <label class="chk" title="top_k (vide = défaut du serveur)">top_k <input type="number" id="t-topk" step="1" min="0" placeholder="—"></label>
+      <label class="chk" title="Graine d'échantillonnage : la même graine rend un run reproductible.">graine <input type="number" id="t-seed" step="1" min="0" value="42"></label>
+      <label class="chk" title="Nombre de passages par sous-test : le score retenu est le meilleur des passages (pass@k).">répétitions <input type="number" id="t-rep" step="1" min="1" max="5" value="1"></label>
+      <label class="chk" title="Budget global du harnais en secondes (0 = pas de limite).">budget s <input type="number" id="t-budget" step="30" min="0" value="0"></label>
+      <button id="t-reset">défauts</button>
+      <span id="t-optnote" class="dim"></span>
+    </div>
     <div class="row" style="margin-top:10px">
       <button id="t-launch" class="primary" disabled>Lancer les tests</button>
       <button id="t-stop" class="danger" disabled>Stop</button>
@@ -2829,6 +3020,44 @@ select{background:#0d0f14;color:var(--fg);border:1px solid var(--line);border-ra
       <summary>tests passés (<span id="t-pastn">0</span>)</summary>
       <div id="t-pastbox"><span class="dim">—</span></div>
     </details>
+  </section>
+
+  <section class="card" id="engine-card">
+    <div class="row">
+      <h2>Moteur — contexte, MTP, speculation, KV</h2>
+      <span class="dim" id="eng-summary">—</span>
+      <div class="spacer"></div>
+      <button id="eng-refresh">Re-lire</button>
+    </div>
+    <div class="row" id="eng-live" style="margin:4px 0"><span class="dim">—</span></div>
+    <div class="row" id="eng-form">
+      <label class="chk" title="--max-context du moteur : c'est le contexte REELLEMENT servi, celui que les tests comparent.">contexte <select id="eng-ctx">
+        <option value="65536">64k</option>
+        <option value="131072">128k</option>
+        <option value="262144">256k</option>
+      </select></label>
+      <label class="chk" title="MTP + speculation : le plus rapide, mais le draft MTP peut corrompre des réponses (scores HumanEval ~15 % plus bas historiquement).">spéculation <select id="eng-spec">
+        <option value="mtp">MTP + speculation</option>
+        <option value="lookup">speculation sans MTP</option>
+        <option value="off">aucune (reference)</option>
+      </select></label>
+      <label class="chk" title="--kv : int8 et q4_0 prennent moins de VRAM (plus de contexte possible), fp16 est le plus fidele.">cache KV <select id="eng-kv">
+        <option value="int8">int8</option>
+        <option value="fp16">fp16</option>
+        <option value="q4_0">q4_0</option>
+      </select></label>
+      <label class="chk" title="--kv-resident N : garde N cellules de KV en VRAM et streame le reste depuis la RAM (0 = tout en VRAM).">KV résident <input type="number" id="eng-kvres" step="4096" min="0" value="32768"></label>
+      <label class="chk" title="--vram-reserve-mib : VRAM laissee libre pour le reste du bureau.">VRAM réservée <input type="number" id="eng-vram" step="128" min="0" value="700"></label>
+      <label class="chk" title="--vision : le moteur accepte les images (consomme de la VRAM en permanence).">vision <input type="checkbox" id="eng-vision" checked></label>
+      <label class="chk" title="--expert-cache : nombre d'experts gardes en VRAM (auto = laisse le moteur decider).">experts <input type="text" id="eng-experts" size="6" value="auto"></label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="eng-apply" class="primary">Appliquer et relancer le moteur</button>
+      <button id="eng-stop" class="danger">Arrêter le moteur</button>
+      <span class="dim">relancer prend plusieurs minutes (lecture de plusieurs dizaines de Go) — refusé si un run tourne</span>
+    </div>
+    <div id="eng-msg" class="dim"></div>
+    <pre id="eng-log" class="rz" style="max-height:180px;overflow:auto" hidden></pre>
   </section>
 
   <section class="card">
@@ -2907,7 +3136,7 @@ function num(v,d){return (v===null||v===undefined||isNaN(v))?"—":Number(v).toF
 function paramsLabel(p){
   p=p||{};
   return "t"+(p.temperature==null?"?":p.temperature)
-    +" · "+(p.enable_thinking?"think":"nothink")
+    +" · "+THINK_SUFFIX_JS(p.thinking_level,p.enable_thinking)
     +" · mt"+(p.max_tokens==null?"?":p.max_tokens);
 }
 
@@ -3083,7 +3312,8 @@ function render(s){
 async function refresh(force){
   const st=readSettings();
   const q="?t="+encodeURIComponent(st.temperature)+"&mt="+encodeURIComponent(st.max_tokens)
-          +"&think="+(st.enable_thinking?1:0)+(force?"&refresh=1":"");
+          +"&think="+encodeURIComponent(st.thinking_level||(st.enable_thinking?"medium":"nothink"))
+          +(force?"&refresh=1":"");
   try{
     const r=await fetch("/api/state"+q,{cache:"no-store"});
     render(await r.json());
@@ -3112,25 +3342,33 @@ async function pollLog(){
 /* ---------------- réglages du run (v1.3) ----------------
    Température / max_tokens / raisonnement sont choisis ici et envoyés à
    /api/run ; le serveur les range dans le dossier du run (…) et dans run.json. */
-let DEFAULT_SETTINGS={temperature:0.2,max_tokens:16384,enable_thinking:false};
+let DEFAULT_SETTINGS={temperature:0.2,max_tokens:16384,enable_thinking:false,thinking_level:"nothink"};
+/* v1.6.5 — le raisonnement est un NIVEAU (nothink | low | medium | xhigh). « medium »
+   garde le suffixe historique __think pour que les dossiers de runs restent réutilisables. */
+function THINK_SUFFIX_JS(level,thinking){
+  level=level||((thinking)?"medium":"nothink");
+  return ({low:"think-low",medium:"think",xhigh:"think-xhigh"})[level]||"nothink";
+}
 const SETTINGS_KEY="promptduel.settings.v1";
 
 function readSettings(){
   const t=parseFloat(document.getElementById("set-temp").value);
   const mt=parseInt(document.getElementById("set-mt").value,10);
+  const lvl=document.getElementById("set-think").value||"nothink";
   return {
     temperature: isNaN(t)?DEFAULT_SETTINGS.temperature:t,
     max_tokens: isNaN(mt)?DEFAULT_SETTINGS.max_tokens:mt,
-    enable_thinking: document.getElementById("set-think").checked
+    thinking_level: lvl,
+    enable_thinking: lvl!=="nothink"
   };
 }
 function settingsNote(){
   const s=readSettings();
-  const suff="__t"+s.temperature+(s.enable_thinking?"__think":"__nothink")
+  const suff="__t"+s.temperature+"__"+THINK_SUFFIX_JS(s.thinking_level,s.enable_thinking)
              +(s.max_tokens!==DEFAULT_SETTINGS.max_tokens?("__mt"+s.max_tokens):"");
   let txt="→ dossiers de run : …"+suff;
   if(s.max_tokens!==DEFAULT_SETTINGS.max_tokens) txt+=" (max_tokens non standard → run distinct)";
-  if(s.enable_thinking) txt+=" ⚠️ raisonnement activé : le HTML peut partir dans reasoning_content";
+  if(s.enable_thinking) txt+=" ⚠️ raisonnement "+(s.thinking_level||"")+" activé : le HTML peut partir dans reasoning_content";
   document.getElementById("set-note").textContent=txt;
 }
 function saveSettings(s){
@@ -3143,9 +3381,103 @@ function loadSettings(){
   const s=Object.assign({},DEFAULT_SETTINGS,v||{});
   document.getElementById("set-temp").value=s.temperature;
   document.getElementById("set-mt").value=s.max_tokens;
-  document.getElementById("set-think").checked=!!s.enable_thinking;
+  document.getElementById("set-think").value=s.thinking_level||(s.enable_thinking?"medium":"nothink");
   settingsNote();
 }
+
+/* ---------------- moteur : contexte / MTP / KV (v1.6.5) ----------------
+   Ces réglages ne partent PAS dans une requête : ils sont relus depuis la ligne de
+   commande du moteur et changés en le RELANÇANT (d'où le thread et le suivi). */
+const ENGINE={at:0,state:null,job:null,timer:null};
+function engVal(id){const el=document.getElementById(id);return el?el.value:null;}
+function engChk(id){const el=document.getElementById(id);return !!(el&&el.checked);}
+function engOpts(){
+  const o={ctx:parseInt(engVal("eng-ctx"),10),spec_mode:engVal("eng-spec"),kv:engVal("eng-kv"),
+           vision:engChk("eng-vision")};
+  const kr=parseInt(engVal("eng-kvres"),10); if(!isNaN(kr)) o.kv_resident=kr;
+  const vr=parseInt(engVal("eng-vram"),10); if(!isNaN(vr)) o.vram_reserve_mib=vr;
+  const ex=(engVal("eng-experts")||"").trim(); if(ex) o.expert_cache=ex;
+  return o;
+}
+function renderEngine(){
+  const st=ENGINE.state||{}, cur=st.current||{}, eng=st.engine||{}, live=st.live||{};
+  const sum=document.getElementById("eng-summary");
+  if(sum){
+    if(!st.running){ sum.textContent="aucun moteur détecté sur "+esc(st.port||"?")+(st.config_path?(" · "+st.config_path):""); }
+    else{
+      const lvl=st.engine&&st.engine.context?Math.round(st.engine.context/1024)+"k":"?";
+      sum.innerHTML='<code>'+(st.model_name||"?")+'</code> <span class="dim">· pid</span> '+st.pid+
+        ' <span class="dim">· ctx</span> <b>'+lvl+'</b>'+
+        ' <span class="dim">· spéculation</span> <b>'+esc(cur.spec_mode||"?")+'</b>'+
+        ' <span class="dim">· kv</span> '+esc(eng.kv||cur.kv||"?")+
+        (cur.kv_resident?' <span class="dim">· KV résident</span> '+cur.kv_resident:'')+
+        ' <span class="dim">· vision</span> '+(cur.vision?"on":"off")+
+        (eng.vram_free_mib!=null?' <span class="dim">· VRAM libre</span> '+eng.vram_free_mib+' MiB':'');
+    }
+  }
+  const liveEl=document.getElementById("eng-live");
+  if(liveEl){
+    const bits=[];
+    if(live.state) bits.push("etat "+esc(live.state));
+    if(live.phase) bits.push("phase "+esc(live.phase));
+    if(live.generated!=null) bits.push(live.generated+" tokens");
+    if(live.tok_s!=null) bits.push(num(live.tok_s,1)+" tok/s");
+    if(live.elapsed_s!=null) bits.push(num(live.elapsed_s,1)+" s");
+    liveEl.innerHTML=bits.length?('<span class="dim">moteur :</span> '+bits.join(" · ")):'<span class="dim">—</span>';
+  }
+  const msg=document.getElementById("eng-msg");
+  const log=document.getElementById("eng-log");
+  const apply=document.getElementById("eng-apply");
+  const stop=document.getElementById("eng-stop");
+  if(ENGINE.job&&ENGINE.job.running){
+    if(apply){apply.disabled=true;apply.textContent="relance en cours…";}
+    if(msg) msg.textContent="relance du moteur : "+esc(ENGINE.job.step||"…");
+    if(log){log.hidden=false;log.textContent=(ENGINE.job.steps||[]).join("\n");log.scrollTop=log.scrollHeight;}
+  }else{
+    if(apply){apply.disabled=false;apply.textContent="Appliquer et relancer le moteur";}
+    if(ENGINE.job&&ENGINE.job.message&&msg){
+      msg.textContent=(ENGINE.job.ok?"✔ ":"⛔ ")+esc(ENGINE.job.message);
+    }
+    if(log&&ENGINE.job&&ENGINE.job.steps&&ENGINE.job.steps.length){
+      log.hidden=false;log.textContent=ENGINE.job.steps.join("\n");
+    }
+    if(stop) stop.disabled=!st.running;
+  }
+}
+async function pollEngine(force){
+  if(ENGINE.busy) return;
+  if(!force&&Date.now()-ENGINE.at<2500) return;
+  ENGINE.at=Date.now();ENGINE.busy=true;
+  try{
+    const r=await fetch("/api/engine"+(force?"?refresh=1":""),{cache:"no-store"});
+    if(r.ok){const d=await r.json();ENGINE.state=d.engine;ENGINE.job=d.job;renderEngine();}
+  }catch(e){}finally{ENGINE.busy=false;}
+}
+document.getElementById("eng-refresh").onclick=()=>pollEngine(true);
+document.getElementById("eng-apply").onclick=async()=>{
+  const o=engOpts();
+  if(!confirm("Relancer le moteur avec ces réglages ?\n\n"+JSON.stringify(o)+
+      "\n\nLe moteur va s'arrêter puis recharger : plusieurs minutes. Un run en cours est refusé."))
+    return;
+  document.getElementById("eng-msg").textContent="demande envoyée…";
+  try{
+    const r=await fetch("/api/engine/apply",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({options:o})});
+    const d=await r.json();
+    document.getElementById("eng-msg").textContent=d.message||d.error||("HTTP "+r.status);
+    if(d.job){ENGINE.job=d.job;renderEngine();}
+    pollEngine(true);
+  }catch(e){document.getElementById("eng-msg").textContent="Erreur réseau : "+e;}
+};
+document.getElementById("eng-stop").onclick=async()=>{
+  if(!confirm("Arrêter le moteur ? La VRAM sera libérée et l'app n'aura plus de LLM.")) return;
+  try{
+    const r=await fetch("/api/engine/stop",{method:"POST",headers:{"content-type":"application/json"},body:"{}"});
+    const d=await r.json();
+    document.getElementById("eng-msg").textContent=d.message||d.error||"";
+    pollEngine(true);
+  }catch(e){}
+};
 
 /* ---------------- comparaison de deux runs (v1.3) ---------------- */
 const CMP={sig:null,data:null,runs:[]};
@@ -3372,6 +3704,8 @@ function renderTestRun(s){
     '<div class="row"><span class="dim">Modèle :</span> <code>'+esc(run.model_slug||"identification…")+'</code>'+
     ' <span class="dim">· ctx</span> '+esc(run.n_ctx==null?"?":run.n_ctx)+
     ' <span class="dim">· étiquette</span> '+esc(run.label||"?")+
+    ' <span class="dim">· raisonnement</span> '+esc(run.thinking||"nothink")+
+    ((run.options&&Object.keys(run.options).length)?(' <span class="dim">· options</span> '+esc(JSON.stringify(run.options))):'')+
     ' <span class="dim">· début</span> '+esc(run.started_at||"?")+
     ' <span class="dim">· fin</span> '+esc(run.finished_at||"—")+
     ' <span class="dim">· <a href="'+esc(run.run_url||"#")+'" target="_blank">parcourir le dossier</a></span></div>'+
@@ -3380,13 +3714,41 @@ function renderTestRun(s){
     ' <span class="dim">· reste estimé</span> '+dur(p.est_left_s)+
     (run.vram_note?' <span class="dim">· VRAM au lancement</span> '+esc(run.vram_note):"")+'</div>'+
     (T.server_note?('<div class="row" style="color:var(--warn)">⚠️ '+esc(T.server_note)+'</div>'):'');
-  const rows=(run.results||[]).map(r=>'<tr><td>'+esc(r.title)+'</td>'+
+  /* v1.6.5 — le score chiffré et le temps doivent sauter aux yeux : colonnes dédiées
+     « Score » et « Durée », le résumé ne servant plus qu'au détail. */
+  function scoreCell(r){
+    const m=r.metrics||{};
+    if(m.score_pct!=null){
+      const tot=(m.weight_sum!=null?m.weight_sum:(m.tasks!=null?m.tasks:"?"));
+      return '<b>'+num(m.score_pct,1)+' %</b> <span class="dim">('+num(m.score_sum,2)+'/'+tot+
+             (m.score_full!=null?' · '+m.score_full+' parfaits':'')+')</span>';
+    }
+    if(m.passed!=null&&m.total!=null) return '<b>'+num(m.score_pct,1)+' %</b> <span class="dim">('+m.passed+'/'+m.total+')</span>';
+    if(m.needle_ok!=null) return (m.needle_ok?"<b>OK</b>":"<b>ÉCHEC</b>");
+    if(m.tg_tps!=null) return num(m.tg_tps,1)+' t/s TG';
+    return '<span class="dim">—</span>';
+  }
+  function timeCell(r){
+    if(r.duree_s==null||r.duree_s===undefined) return '<span class="dim">—</span>';
+    const m=r.metrics||{};
+    let s='<b>'+dur(r.duree_s)+'</b>';
+    if(m.lat_median!=null) s+=' <span class="dim">méd '+num(m.lat_median,1)+' s</span>';
+    if(m.lat_max!=null) s+=' <span class="dim">max '+num(m.lat_max,1)+' s</span>';
+    if(m.out_tokens) s+=' <span class="dim">'+m.out_tokens+' tok</span>';
+    return s;
+  }
+  const rows=(run.results||[]).map(r=>'<tr><td>'+esc(r.title)+
+    (r.metrics&&r.metrics.mode&&r.metrics.mode!=="nothink"?'<br><span class="dim">raisonnement '+esc(r.metrics.mode)+'</span>':'')+
+    ((run.options&&Object.keys(run.options).length)?'<br><span class="dim">'+esc(JSON.stringify(run.options))+'</span>':'')+
+    '</td>'+
     '<td class="st '+(r.status||"")+'">'+esc(TLABEL[r.status]||r.status||"")+'</td>'+
-    '<td>'+esc(dur(r.est_s))+'</td><td>'+num(r.duree_s,1)+'</td>'+
+    '<td>'+scoreCell(r)+'</td>'+
+    '<td>'+timeCell(r)+'</td>'+
+    '<td>'+esc(dur(r.est_s))+'</td>'+
     '<td>'+esc(r.summary||r.erreur||"—")+
     (r.vram_peak?'<br><span class="dim">VRAM pic '+esc(r.vram_peak)+'</span>':'')+'</td>'+
     '<td>'+(r.log&&run.run_url?'<a href="'+esc(run.run_url+r.log)+'" target="_blank">log</a>':"—")+'</td></tr>').join("");
-  box.innerHTML='<table><thead><tr><th>Test</th><th>Statut</th><th>Estimé</th><th>Réel (s)</th><th>Chiffres</th><th>Brut</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  box.innerHTML='<table><thead><tr><th>Test</th><th>Statut</th><th>Score</th><th>Durée</th><th>Estimé</th><th>Chiffres</th><th>Brut</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 function renderTestPast(s){
@@ -3450,13 +3812,84 @@ function wireTests(){
   tUpdateEstimate();
 }
 
+/* v1.6.5 — réglages des TESTS : niveau de raisonnement + échantillonnage + répétitions.
+   Mémorisés dans localStorage : deux campagnes ne se comparent que si elles partagent
+   ces réglages, et le niveau est écrit dans l'étiquette du bench. */
+const BENCH_KEY="promptduel.bench-settings.v1";
+const DEFAULT_BENCH={thinking:"nothink",temperature:0,top_p:null,top_k:null,seed:42,
+                     repeats:1,budget_s:0};
+const BENCH_STATE={thinking:"nothink",options:{}};
+
+function readBenchOptions(){
+  function numOr(id,dflt){
+    const el=document.getElementById(id);
+    if(!el||String(el.value).trim()==="") return dflt;
+    const v=parseFloat(el.value);
+    return isNaN(v)?dflt:v;
+  }
+  const opt={temperature:numOr("t-temp",0)};
+  const tp=numOr("t-topp",null); if(tp!==null) opt.top_p=tp;
+  const tk=numOr("t-topk",null); if(tk!==null) opt.top_k=tk;
+  const sd=numOr("t-seed",null); if(sd!==null) opt.seed=sd;
+  opt.repeats=Math.max(1,Math.round(numOr("t-rep",1)));
+  const bg=numOr("t-budget",0); if(bg>0) opt.budget_s=bg;
+  return opt;
+}
+function benchNote(){
+  const sel=document.getElementById("t-think");
+  const lvl=sel?sel.value:"nothink";
+  const opt=readBenchOptions();
+  const bits=["raisonnement "+lvl];
+  bits.push("T"+opt.temperature);
+  if(opt.top_p!=null) bits.push("top_p "+opt.top_p);
+  if(opt.top_k!=null) bits.push("top_k "+opt.top_k);
+  if(opt.seed!=null) bits.push("graine "+opt.seed);
+  if(opt.repeats>1) bits.push(opt.repeats+" passages (meilleur retenu)");
+  if(opt.budget_s) bits.push("budget "+opt.budget_s+" s");
+  const el=document.getElementById("t-optnote");
+  if(el) el.textContent="→ "+bits.join(" · ");
+}
+function saveBenchSettings(){
+  try{
+    localStorage.setItem(BENCH_KEY,JSON.stringify({
+      thinking:document.getElementById("t-think").value,options:readBenchOptions()}));
+  }catch(e){}
+  benchNote();
+}
+function loadBenchSettings(){
+  let v=null;
+  try{ v=JSON.parse(localStorage.getItem(BENCH_KEY)||"null"); }catch(e){ v=null; }
+  const st=Object.assign({},DEFAULT_BENCH,v||{});
+  const opt=Object.assign({},DEFAULT_BENCH,st.options||{});
+  document.getElementById("t-think").value=st.thinking||"nothink";
+  document.getElementById("t-temp").value=opt.temperature;
+  document.getElementById("t-topp").value=(opt.top_p==null?"":opt.top_p);
+  document.getElementById("t-topk").value=(opt.top_k==null?"":opt.top_k);
+  document.getElementById("t-seed").value=(opt.seed==null?"":opt.seed);
+  document.getElementById("t-rep").value=opt.repeats||1;
+  document.getElementById("t-budget").value=opt.budget_s||0;
+  benchNote();
+}
+["t-think","t-temp","t-topp","t-topk","t-seed","t-rep","t-budget"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.oninput=saveBenchSettings;
+  el.onchange=saveBenchSettings;
+});
+document.getElementById("t-reset").onclick=()=>{
+  try{ localStorage.removeItem(BENCH_KEY); }catch(e){}
+  loadBenchSettings();
+};
+
 async function launchTests(){
   const ids=Array.from(tchecked);
   document.getElementById("t-msg").textContent="";
   if(!ids.length){document.getElementById("t-msg").textContent="Sélection vide.";return;}
+  saveBenchSettings();
   try{
     const r=await fetch("/api/tests/run",{method:"POST",headers:{"content-type":"application/json"},
-      body:JSON.stringify({ids:ids})});
+      body:JSON.stringify({ids:ids,thinking:document.getElementById("t-think").value,
+                           options:readBenchOptions()})});
     const d=await r.json();
     if(!r.ok||d.error) document.getElementById("t-msg").textContent=d.error||("HTTP "+r.status);
     refresh(true);
@@ -3583,6 +4016,7 @@ async function launch(){
   try{
     const r=await fetch("/api/run",{method:"POST",headers:{"content-type":"application/json"},
       body:JSON.stringify({ids:ids,temperature:st.temperature,max_tokens:st.max_tokens,
+                           thinking_level:st.thinking_level,
                            enable_thinking:st.enable_thinking})});
     const d=await r.json();
     if(!r.ok||d.error) document.getElementById("msg").textContent=d.error||("HTTP "+r.status);
@@ -3603,6 +4037,10 @@ document.getElementById("stop").onclick=stopRun;
 document.getElementById("retest").onclick=()=>refresh(true);
 
 // --- réglages du run
+loadBenchSettings();
+pollEngine(true);
+setInterval(()=>pollEngine(false),3000);
+
 ["set-temp","set-mt","set-think"].forEach(id=>{
   document.getElementById(id).oninput=()=>saveSettings(readSettings());
   document.getElementById(id).onchange=()=>saveSettings(readSettings());
@@ -3610,7 +4048,7 @@ document.getElementById("retest").onclick=()=>refresh(true);
 document.getElementById("set-reset").onclick=()=>{
   document.getElementById("set-temp").value=DEFAULT_SETTINGS.temperature;
   document.getElementById("set-mt").value=DEFAULT_SETTINGS.max_tokens;
-  document.getElementById("set-think").checked=!!DEFAULT_SETTINGS.enable_thinking;
+  document.getElementById("set-think").value=DEFAULT_SETTINGS.thinking_level||"nothink";
   saveSettings(readSettings());refresh(true);
 };
 
@@ -3771,6 +4209,24 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, render_benchmarks_page(visibility_state(), query),
                                   "text/html; charset=utf-8", head)
 
+            if path in ("/llms", "/llms/") and method in ("GET", "HEAD"):
+                # page « Tests par LLM » (v1.7) — tous les tests d'un modele, dates comprises.
+                if llms is None:
+                    return self._send(
+                        503,
+                        "Page /llms indisponible : le module llms.py n'est pas "
+                        "présent sur cette instance (il est livré séparément).\n",
+                        "text/plain; charset=utf-8", head)
+                index = load_bench_index()
+                state = visibility_state()
+                try:
+                    page = llms.render_llms_page(index, state, query)
+                except Exception as exc:
+                    LOG.add(f"ERREUR rendu /llms : {exc!r}")
+                    return self._send(500, f"Erreur de rendu de la page /llms : {exc}\n",
+                                      "text/plain; charset=utf-8", head)
+                return self._send(200, page, "text/html; charset=utf-8", head)
+
             if path in ("/graph", "/graph/") and method in ("GET", "HEAD"):
                 # page du graphique (v1.6) — rendue par page_graph.py (lot parallèle).
                 if page_graph is None:
@@ -3835,7 +4291,7 @@ class Handler(BaseHTTPRequestHandler):
                 wanted = {
                     "temperature": (query.get("t") or [None])[0],
                     "max_tokens": (query.get("mt") or [None])[0],
-                    "enable_thinking": (query.get("think") or [None])[0],
+                    "thinking_level": (query.get("think") or [None])[0],
                 }
                 return self._json(200, build_state(force_probe=force, params=wanted), head)
 
@@ -3947,12 +4403,48 @@ class Handler(BaseHTTPRequestHandler):
                                                                + " | ".join(refused)})
                 ok, msg = start_bench(ids, declared_settings=body.get("settings")
                                       if isinstance(body.get("settings"), dict) else None,
-                                      thinking=body.get("thinking") or "nothink")
+                                      thinking=body.get("thinking") or "nothink",
+                                      options=body.get("options"))
                 return self._json(200 if ok else 409,
                                   {"ok": ok, "message": msg,
                                    "error": None if ok else msg,
                                    "thinking": bench_tests.normalize_thinking(
                                        body.get("thinking") or "nothink")})
+
+            if path == "/api/engine" and method in ("GET", "HEAD"):
+                force = (query.get("refresh") or ["0"])[0] not in ("", "0")
+                return self._json(200, {"ok": True,
+                                        "engine": engine_state(force=force),
+                                        "job": engine_job_snapshot()}, head)
+
+            if path == "/api/engine/apply" and method == "POST":
+                body = self._read_body()
+                opts = body.get("options") if isinstance(body.get("options"), dict) else body
+                allowed = ("ctx", "spec_mode", "spec", "spec_min_p", "suffix_draft", "kv",
+                           "kv_resident", "vision", "vram_reserve_mib", "expert_cache",
+                           "prefill")
+                clean = {k: v for k, v in (opts or {}).items() if k in allowed}
+                if not clean:
+                    return self._json(400, {"ok": False, "error": "aucun réglage moteur fourni",
+                                            "allowed": list(allowed)})
+                ok, msg = start_engine_apply(clean)
+                return self._json(200 if ok else 409,
+                                  {"ok": ok, "message": msg, "error": None if ok else msg,
+                                   "job": engine_job_snapshot()})
+
+            if path == "/api/engine/stop" and method == "POST":
+                if any_worker_running():
+                    return self._json(409, {"ok": False,
+                                            "error": "un run est en cours — arrêt refusé"})
+                try:
+                    ok, msg = engine.stop(port=(urlparse(LLM_BASE).port or 8080),
+                                          busy=any_worker_running)
+                except Exception as exc:
+                    ok, msg = False, f"{exc.__class__.__name__}: {exc}"
+                _ENGINE_CACHE.update({"at": 0.0, "state": None})
+                probe_llm(force=True)
+                return self._json(200 if ok else 409, {"ok": ok, "message": msg,
+                                                       "error": None if ok else msg})
 
             if path == "/api/visibility" and method == "POST":
                 # masquer / réafficher / supprimer / restaurer des résultats (v1.6)

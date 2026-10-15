@@ -34,6 +34,11 @@ import charts       # rendu SVG inline (stdlib pure)
 import metrics      # registre des familles + agregats pour graphique
 import visibility   # etat masque / supprime (lecture seule ici)
 
+try:
+    import llms     # regroupement par LLM (un modele, pas une variante)
+except ImportError:  # pragma: no cover - depend de l'environnement
+    llms = None
+
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 EMPTY_HINT = ("Aucun index trouve. Genere-le depuis ~/apps/prompt-duel :<br>"
               "<code>python3 bench_index.py</code>")
@@ -68,8 +73,17 @@ MAX_RES_ROWS = 600    # garde-fou du tableau de resultats
 MIN_SELECTION = 2
 MAX_SELECTION = 6
 SELECTION_PARAM = "sel"          # parametre ecrit par le formulaire de l'etape 1
-SELECTION_ALIASES = ("sel", "selection", "series", "serie", "llm",
-                     "reglages", "reglage")
+# Deux axes de selection coexistent :
+#   * `?sel=<cle>`  -> une VARIANTE (modele + ses reglages) : l'axe historique ;
+#   * `?llm=<cle>`  -> un LLM (le nom du modele, toutes quantifications, tous
+#     contextes et toutes dates confondus) : l'axe demande par Gabriel (v1.7).
+# `llm` etait un alias de `sel` jusqu'en v1.6.3 : les liens qui l'utilisent
+# encore continuent de fonctionner (une valeur qui est une cle de variante
+# connue reste une variante, cf. `_resoudre_axes`).
+LLM_PARAM = "llm"
+SELECTION_ALIASES = ("sel", "selection", "series", "serie", "llm", "llms",
+                     "modele", "modeles", "model", "reglages", "reglage")
+LLM_ALIASES = ("llm", "llms", "modele", "modeles", "model")
 EDIT_ALIASES = ("edit", "modifier", "choix", "choisir")   # retour volontaire a l'etape 1
 
 # Habillage : memes variables que /benchmarks et l'accueil (theme sombre).
@@ -243,6 +257,8 @@ def parse_query(query):
             values = value if isinstance(value, (list, tuple)) else [value]
             raw[str(key)] = ["" if v is None else str(v) for v in values]
     kinds, variants, selection = [], [], []
+    llm_params = []
+    axe = ""
     show_hidden = False
     show_partial = False
     edit = False
@@ -259,6 +275,10 @@ def parse_query(query):
             elif low in SELECTION_ALIASES:
                 if text and text not in selection:
                     selection.append(text)
+                if low in LLM_ALIASES and text and text not in llm_params:
+                    llm_params.append(text)
+            elif low in ("axe", "axis"):
+                axe = text.lower()
             elif low in EDIT_ALIASES:
                 edit = text.lower() not in ("0", "non", "false", "off", "no")
             elif low in ("masques", "masque", "hidden", "masquee"):
@@ -267,6 +287,7 @@ def parse_query(query):
             elif low in ("partiels", "partiel", "partial", "incomplet", "incomplets"):
                 show_partial = text.lower() not in ("0", "non", "false", "off", "no")
     return {"kinds": kinds, "variants": variants, "selection": selection, "edit": edit,
+            "llm_params": llm_params, "axe": axe,
             "show_hidden": show_hidden, "show_partial": show_partial, "raw": raw}
 
 
@@ -301,9 +322,13 @@ def _jour(value):
     return text[:10]
 
 
-def _url_selection(cles, *, edit=False, kinds=(), variants=(), base="/graph"):
+def _url_selection(cles, *, edit=False, kinds=(), variants=(), base="/graph",
+                   param=SELECTION_PARAM):
     """URL de /graph : ``?sel=<cle>&sel=<cle>`` (etape 2), ou ``?edit=1&sel=…``
-    pour revenir a l'etape 1 avec les cases deja cochees."""
+    pour revenir a l'etape 1 avec les cases deja cochees.
+
+    `param` : l'axe a rappeler — ``sel`` (reglages, defaut) ou ``llm`` (LLM).
+    """
     params = []
     if edit:
         params.append("edit=1")
@@ -312,7 +337,7 @@ def _url_selection(cles, *, edit=False, kinds=(), variants=(), base="/graph"):
     for variant in variants or ():
         params.append("variant=" + quote_plus(str(variant)))
     for cle in cles or ():
-        params.append(SELECTION_PARAM + "=" + quote_plus(str(cle)))
+        params.append(param + "=" + quote_plus(str(cle)))
     return base + ("?" + "&".join(params) if params else "")
 
 
@@ -348,11 +373,226 @@ def _resoudre_selection(filtres, catalogue):
     return selection, inconnues, warning
 
 
+# ---------------------------------------------------------------------------
+# Axe LLM : un catalogue de MODELE, une serie par LLM (v1.7)
+# ---------------------------------------------------------------------------
+
+def _catalogue_llm(entries):
+    """Catalogue des LLM (un LLM = un nom de modele). Jamais d'exception."""
+    if llms is None:
+        return []
+    try:
+        return list(llms.catalogue_llm(entries))
+    except Exception:  # index abime : catalogue vide, la page reste rendue
+        return []
+
+
+def _resoudre_axes(filtres, catalogue, catalogue_llm):
+    """Tranche les DEUX axes de selection.
+
+    -> (axe, selection_var, selection_llm, inconnues, warning_var, warning_llm)
+
+    Une valeur d'adresse ne peut pas etre les deux a la fois : une cle connue du
+    catalogue des VARIANTES reste une variante (les liens `?llm=<cle de variante>`
+    d'avant la v1.7 continuent donc de marcher) ; sinon, si c'est une famille de
+    LLM connue, elle va sur l'axe LLM ; sinon elle est signalee — **jamais
+    appliquee**. `axe` : l'axe retenu pour l'etape 2, ou "" si rien n'est
+    comparable (moins de MIN_SELECTION d'un cote comme de l'autre).
+    """
+    connues_var = {str(item.get("key") or "standard") for item in catalogue}
+    connues_llm = {str(item.get("key") or "") for item in catalogue_llm}
+    var, llm_sel, inconnues = [], [], []
+    for cle in filtres.get("selection") or []:
+        if cle in connues_var:
+            if cle not in var:
+                var.append(cle)
+        elif cle in connues_llm:
+            if cle not in llm_sel:
+                llm_sel.append(cle)
+        elif cle not in inconnues:
+            inconnues.append(cle)
+    warning_var = ""
+    if len(var) > MAX_SELECTION:
+        ignorees = var[MAX_SELECTION:]
+        var = var[:MAX_SELECTION]
+        warning_var = (f"{MAX_SELECTION} réglages au maximum : {len(ignorees)} réglage(s) "
+                       f"ignoré(s) — {', '.join(ignorees)}. Les {MAX_SELECTION} premiers "
+                       "sont tracés : réduis la sélection pour en changer l'ordre.")
+    warning_llm = ""
+    if len(llm_sel) > MAX_SELECTION:
+        ignorees = llm_sel[MAX_SELECTION:]
+        llm_sel = llm_sel[:MAX_SELECTION]
+        warning_llm = (f"{MAX_SELECTION} LLM au maximum : {len(ignorees)} LLM ignoré(s) — "
+                       f"{', '.join(ignorees)}. Les {MAX_SELECTION} premiers sont tracés : "
+                       "réduis la sélection pour en changer l'ordre.")
+    # Priorite a l'axe LLM des qu'il est comparable : c'est la comparaison
+    # demandee, l'axe variante reste accessible (`?sel=`, moteur inchange).
+    if len(llm_sel) >= MIN_SELECTION:
+        axe = "llm"
+    elif len(var) >= MIN_SELECTION:
+        axe = "variant"
+    else:
+        axe = ""
+    return axe, var, llm_sel, inconnues, warning_var, warning_llm
+
+
+def _as_float(value):
+    """Nombre exploitable, ou None (jamais d'exception sur une valeur abimee)."""
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _meilleur_point(actuel, candidat, better):
+    """Meilleure des deux mesures : sens `better`, egalite -> la plus recente."""
+    va, vb = _as_float(actuel.get("value")), _as_float(candidat.get("value"))
+    if va is None:
+        return candidat if vb is not None else _plus_recent(actuel, candidat)
+    if vb is None:
+        return actuel
+    if abs(va - vb) < 1e-12:
+        return _plus_recent(actuel, candidat)
+    gagnant = actuel if (va > vb) else candidat
+    if str(better).lower() == "low":
+        gagnant = candidat if (va > vb) else actuel
+    return gagnant
+
+
+def _plus_recent(a, b):
+    return a if str(a.get("date") or "") >= str(b.get("date") or "") else b
+
+
+def _series_llm(entries, *, metric_key, kind=None, familles_llm=None, ordre=None,
+                include_partial=False):
+    """Donnees a tracer avec **une serie par LLM** (structure de `series_for_chart`).
+
+    Un point par (LLM, test) : la **meilleure** valeur mesuree de la metrique, avec
+    sa date et sa variante. Deux mesures du meme test a deux dates ne sont jamais
+    moyennees : la meilleure est tracee, les autres restent au detail de `/llms` et
+    au tableau des resultats de cette page.
+
+    -> {"metric","groups","series","duplicates","partiels_exclus","include_partial",
+        "par_llm": True}
+    """
+    metric = metrics.metric_spec(metric_key, kind)
+    better = str(metric.get("better") or "high").lower()
+    wanted = metrics.canon_kind(kind) if kind else None
+    norm = metrics.normalize_entries(entries or [])
+    if wanted:
+        norm = [e for e in norm if metrics.canon_kind(e.get("kind")) == wanted]
+    partiels_exclus = 0
+    if not include_partial:
+        gardees = []
+        for entry in norm:
+            if entry.get("partiel"):
+                partiels_exclus += 1
+            else:
+                gardees.append(entry)
+        norm = gardees
+
+    groups, buckets, duplicates = {}, {}, {}
+    for entry in norm:
+        if llms is None:
+            break
+        values = entry.get("metric_values") or {}
+        if metric_key not in values or values[metric_key] is None:
+            continue
+        cle_llm, label_llm = llms.famille_de(entry)
+        if familles_llm and cle_llm not in familles_llm:
+            continue
+        gkey, glabel = metrics.group_of(entry)
+        point = {
+            "group": gkey,
+            "value": values[metric_key],
+            "duration_s": metrics.entry_duration_s(entry),
+            "entry_id": entry.get("entry_id") or metrics.entry_id(entry),
+            "date": entry.get("date"),
+            "status": entry.get("status") or "ok",
+            "variant": str((entry.get("variant") or {}).get("label") or ""),
+        }
+        if gkey not in groups:
+            try:
+                groups[gkey] = (metrics._group_sort(entry, gkey), glabel)
+            except Exception:
+                groups[gkey] = ((9, 0, str(gkey)), glabel)
+        bucket = buckets.setdefault(cle_llm, {"label": label_llm, "points": {}})
+        actuel = bucket["points"].get(gkey)
+        if actuel is None:
+            bucket["points"][gkey] = point
+            continue
+        gagnant = _meilleur_point(actuel, point, better)
+        perdant = point if gagnant is actuel else actuel
+        bucket["points"][gkey] = gagnant
+        dup = duplicates.setdefault((cle_llm, gkey),
+                                    {"series": cle_llm, "group": gkey,
+                                     "kept": gagnant["entry_id"], "dropped": [],
+                                     "better": better})
+        dup["kept"] = gagnant["entry_id"]
+        if perdant["entry_id"] not in dup["dropped"]:
+            dup["dropped"].append(perdant["entry_id"])
+
+    ordered_groups = [{"key": key, "label": label}
+                      for key, (_, label) in sorted(groups.items(), key=lambda kv: kv[1][0])]
+    group_order = {g["key"]: i for i, g in enumerate(ordered_groups)}
+    rang = {str(cle): i for i, cle in enumerate(ordre or [])}
+    series = []
+    for cle in sorted(buckets, key=lambda c: (rang.get(str(c), 999), str(c))):
+        bucket = buckets[cle]
+        points = list(bucket["points"].values())
+        points.sort(key=lambda p: group_order.get(p["group"], 999))
+        series.append({"key": cle, "label": bucket["label"], "hidden": False,
+                       "points": points})
+    return {"metric": metric, "groups": ordered_groups, "series": series,
+            "duplicates": [duplicates[k] for k in sorted(duplicates)],
+            "partiels_exclus": partiels_exclus, "include_partial": bool(include_partial),
+            "par_llm": True}
+
+
+def _charts_for_llm(entries, familles, familles_llm=None, ordre=None, include_partial=False):
+    """Un graphique par metrique principale, une SERIE PAR LLM (au plus MAX_CHARTS)."""
+    out = []
+    for kind in familles:
+        for key in PRIMARY_METRICS.get(kind, ()):
+            if len(out) >= MAX_CHARTS:
+                return out
+            try:
+                data = _series_llm(entries, metric_key=key, kind=kind,
+                                   familles_llm=familles_llm, ordre=ordre,
+                                   include_partial=include_partial)
+            except Exception:  # donnee abimee : on saute ce graphique, pas la page
+                continue
+            if not _has_points(data):
+                continue
+            svg = charts.grouped_bars(data)
+            if not svg:
+                continue
+            out.append({
+                "kind": kind,
+                "kind_label": _kind_label(kind),
+                "metric": data.get("metric") or {"key": key, "label": key, "unit": ""},
+                "data": data,
+                "svg": svg,
+                "legend": charts.legend(data),
+                "points": sum(len(s.get("points") or []) for s in data.get("series") or []),
+            })
+    return out
+
+
 def _bandeaux(view):
     """Messages de la selection : troncature, cles inconnues, selection trop courte."""
     out = []
     if view.get("selection_warning"):
         out.append(f'<div class="banner warn">{_esc(view["selection_warning"])}</div>')
+    if view.get("selection_warning_llm"):
+        out.append(f'<div class="banner warn">{_esc(view["selection_warning_llm"])}</div>')
+    if view.get("axe") == "llm" and view.get("selection"):
+        out.append('<div class="banner warn">Comparaison par LLM : les '
+                   f'{len(view["selection"])} réglage(s) de l\'adresse sont conservés comme '
+                   '<b>filtre</b> — seules ces variantes sont prises en compte dans '
+                   'l\'agrégation par LLM.</div>')
     inconnues = view.get("selection_inconnues") or []
     if inconnues:
         n, pluriel = len(inconnues), "s" if len(inconnues) > 1 else ""
@@ -471,35 +711,64 @@ def build_view(index, state=None, query=None):
     else:
         gardees = visibility.apply(etat_visible, norm)
 
-    # --- etape 1 : la selection porte sur des CLES DE REGLAGE (variantes) ------
+    # --- etape 1 : DEUX catalogues (LLM, variantes) donc DEUX axes ------------
+    # `?llm=`  : comparer des LLM (le modele, toutes quantifications et dates) ;
+    # `?sel=`  : comparer des reglages (le modele ET ses parametres) — axe historique.
     catalogue = _catalogue(norm)
-    selection, inconnues, warning = _resoudre_selection(filtres, catalogue)
-    # 0 ou 1 reglage -> rien a comparer : on reste a l'etape 1 (aucun graphique).
+    catalogue_llm = _catalogue_llm(norm)
+    axe, selection, selection_llm, inconnues, warning, warning_llm = _resoudre_axes(
+        filtres, catalogue, catalogue_llm)
+    # Rien de comparable (0 ou 1 LLM, 0 ou 1 reglage) -> etape 1, aucun graphique.
     # `edit=1` (lien « modifier la selection ») y ramene volontairement, cases
     # cochees, sans message d'erreur.
-    etape = 2 if len(selection) >= MIN_SELECTION else 1
+    etape = 2 if axe else 1
     erreur = ""
     if filtres["selection"] and etape == 1 and not filtres["edit"]:
-        if selection:
+        if selection_llm:
+            texte = ("LLM" if len(selection_llm) == 1 else "réglage")
+            suite = ("Coche un second LLM et relance : c'est justement la comparaison "
+                     "de deux modèles que cette page sert à faire." if texte == "LLM"
+                     else "Coche un second réglage, puis « Comparer ».")
+            erreur = (f"Il en faut au moins {MIN_SELECTION} pour comparer : avec un seul "
+                      f"{texte}, il n'y a rien à comparer. {suite}")
+        elif selection:
             erreur = (f"Il en faut au moins {MIN_SELECTION} pour comparer : avec un seul "
                       "réglage, il n'y a rien à comparer. Coche un second réglage, "
                       "puis « Comparer ».")
         elif inconnues:
-            erreur = ("Sélection non appliquée : aucune des clés de réglage de l'adresse "
-                      f"n'existe dans l'index ({len(inconnues)} inconnue(s)). Coche les "
-                      "réglages dans la liste ci-dessous.")
+            erreur = ("Sélection non appliquée : aucune des clés de l'adresse n'existe "
+                      f"dans l'index ({len(inconnues)} inconnue(s)). Coche les LLM ou les "
+                      "réglages dans les listes ci-dessous.")
         else:
-            erreur = "Sélection non appliquée : aucun réglage reconnu dans l'adresse."
+            erreur = "Sélection non appliquée : aucune clé reconnue dans l'adresse."
     if filtres["edit"]:
         etape, erreur = 1, ""
 
+    # A l'etape 2 : l'axe retenu filtre les resultats. Sur l'axe LLM, des reglages
+    # coches EN PLUS servent de filtre (jamais ignores en silence : cf. bandeau).
+    if etape == 2 and axe == "variant":
+        selection_filtre = selection
+    elif etape == 2 and axe == "llm":
+        selection_filtre = selection or None
+    else:
+        selection_filtre = None
     visibles = [e for e in gardees
                 if _passe_filtres(e, filtres["kinds"], filtres["variants"],
-                                  selection if etape == 2 else None)]
+                                  selection_filtre)]
+    if etape == 2 and axe == "llm":
+        choisis = set(selection_llm)
+        visibles = [e for e in visibles
+                    if llms is not None and llms.famille_de(e)[0] in choisis]
 
     familles = _familles_presentes(visibles)
-    listes = (_charts_for(visibles, familles, include_partial=filtres["show_partial"])
-              if etape == 2 else [])
+    if etape == 2 and axe == "llm":
+        listes = _charts_for_llm(visibles, familles, familles_llm=set(selection_llm),
+                                 ordre=selection_llm,
+                                 include_partial=filtres["show_partial"])
+    elif etape == 2:
+        listes = _charts_for(visibles, familles, include_partial=filtres["show_partial"])
+    else:
+        listes = []
 
     # Variantes presentes (filtre) : tous les libelles, tries par cle.
     variantes = {}
@@ -560,10 +829,14 @@ def build_view(index, state=None, query=None):
         "partiels": partiels,
         "filtres": filtres,
         "etape": etape,
+        "axe": axe,
         "catalogue": catalogue,
+        "catalogue_llm": catalogue_llm,
         "selection": selection,
+        "selection_llm": selection_llm,
         "selection_error": erreur,
         "selection_warning": warning,
+        "selection_warning_llm": warning_llm,
         "selection_inconnues": inconnues,
         "source": _source_of(index),
         "index_error": index_error,
@@ -574,7 +847,9 @@ def build_view(index, state=None, query=None):
             "supprimes": len(supprimes),
             "partiels": len(partiels),
             "catalogue": len(catalogue),
+            "catalogue_llm": len(catalogue_llm),
             "selection": len(selection),
+            "selection_llm": len(selection_llm),
         },
     }
 
@@ -618,11 +893,32 @@ def _filtres_form(view):
     masques_coche = ' checked' if filtres["show_hidden"] else ''
     partiels_coche = ' checked' if filtres["show_partial"] else ''
     etape = view.get("etape", 1)
-    champs_selection = "".join(
-        f'<input type="hidden" name="{SELECTION_PARAM}" value="{_esc(key)}">'
-        for key in (view.get("selection") or []) if etape == 2)
-    reinit = _url_selection(view.get("selection") or []) if etape == 2 else "/graph"
-    titre = ("Filtres &middot; affiner la comparaison" if etape == 2 else "Filtres")
+    axe = view.get("axe") or ""
+    # La selection courante est rappelee en champs caches, sur l'axe reellement
+    # actif : sans eux, « Filtrer » retomberait a l'etape 1.
+    if etape == 2 and axe == "llm":
+        champs_selection = "".join(
+            f'<input type="hidden" name="{LLM_PARAM}" value="{_esc(key)}">'
+            for key in (view.get("selection_llm") or []))
+        champs_selection += "".join(
+            f'<input type="hidden" name="{SELECTION_PARAM}" value="{_esc(key)}">'
+            for key in (view.get("selection") or []))
+    elif etape == 2:
+        champs_selection = "".join(
+            f'<input type="hidden" name="{SELECTION_PARAM}" value="{_esc(key)}">'
+            for key in (view.get("selection") or []))
+    else:
+        champs_selection = ""
+    if etape == 2 and axe == "llm":
+        reinit = _url_selection(view.get("selection_llm") or [], param=LLM_PARAM)
+    elif etape == 2:
+        reinit = _url_selection(view.get("selection") or [])
+    else:
+        reinit = "/graph"
+    titre = "Filtres"
+    if etape == 2:
+        titre = ("Filtres &middot; affiner la comparaison par LLM" if axe == "llm"
+                 else "Filtres &middot; affiner la comparaison")
     return (
         f'<section class="card" id="affiner"><h2>{titre} <span class="dim">'
         'par test et par variante &middot; fonctionnent sans JavaScript (formulaire GET)</span></h2>'
@@ -645,7 +941,97 @@ def _filtres_form(view):
     )
 
 
-def _selection_form(view):
+def _catalogue_llm_lignes(items):
+    """Cases a cocher d'un groupe du catalogue LLM (nom de champ : `llm`)."""
+    lignes = []
+    for item in items:
+        key = str(item.get("key") or "")
+        label = str(item.get("label") or key)
+        detail = f'{int(item.get("points") or 0)} point(s) traçable(s)'
+        if item.get("partiels"):
+            detail += f' · {int(item["partiels"])} partiel(s)'
+        detail += f' · {int(item.get("tests") or 0)} test(s) · {int(item.get("mesures") or 0)} mesure(s)'
+        if item.get("last_date"):
+            detail += " · dernier le " + _jour(item["last_date"])
+        if not item.get("identifie"):
+            detail += " · modèle non identifié"
+        regle = ""
+        if item.get("regles"):
+            regle = f'<br><span class="pts">rattaché : {_esc(" · ".join(item["regles"]))}</span>'
+        lignes.append(
+            f'<label><input type="checkbox" name="{LLM_PARAM}" value="{_esc(key)}">'
+            f'<span><span class="lab">{_esc(label)}</span><br>'
+            f'<span class="pts">{_esc(detail)}</span>{regle}</span></label>')
+    return "".join(lignes)
+
+
+def _selection_form_llm(view, bandeaux=True):
+    """Etape 1, axe LLM : le catalogue des MODELES (2 a 6) puis « Afficher les LLM ».
+
+    Un LLM = un nom de modele : la quantification, le contexte, le mode de
+    raisonnement et la date ne font pas un autre LLM. Le catalogue des reglages
+    reste juste en dessous (`?sel=`) : l'axe variante n'est pas retire.
+
+    `bandeaux` : la carte affiche (ou non) les messages de selection — une seule
+    des deux cartes de l'etape 1 les porte, pour ne pas les afficher deux fois.
+    """
+    items = view.get("catalogue_llm") or []
+    identifiees = [i for i in items if i.get("identifie")]
+    sans_modele = [i for i in items if not i.get("identifie")]
+    filtres = view["filtres"]
+    champs = "".join(
+        f'<input type="hidden" name="{nom}" value="{_esc(valeur)}">'
+        for nom, valeurs in (("kind", filtres["kinds"]), ("variant", filtres["variants"]))
+        for valeur in valeurs)
+    if filtres["show_hidden"]:
+        champs += '<input type="hidden" name="masques" value="1">'
+    if filtres["show_partial"]:
+        champs += '<input type="hidden" name="partiels" value="1">'
+    if llms is None:
+        liste = ('<p class="dim">Le regroupement par LLM est indisponible : le module '
+                 '<code>llms.py</code> n\'est pas installé sur cette instance.</p>')
+    elif not items:
+        liste = ('<p class="dim">Aucun LLM dans l\'index : lance un test puis régénère '
+                 'l\'index (<code>python3 bench_index.py</code>).</p>')
+    else:
+        liste = f'<div class="selection-list">{_catalogue_llm_lignes(identifiees)}</div>'
+        if sans_modele:
+            n = sum(int(i.get("mesures") or 0) for i in sans_modele)
+            liste += (
+                '<details><summary>Mesures sans modèle identifié '
+                f'({n} mesure(s), {len(sans_modele)} nom(s) d\'artefact) — cliquer pour '
+                'ouvrir</summary>'
+                '<p class="dim">Le nom de fichier de ces mesures ne dit pas quel modèle a '
+                'tourné (« dry-run », « smoke-n1 », sonde de vitesse…) : elles restent '
+                'cochables telles quelles, jamais fusionnées avec un LLM reconnu.</p>'
+                f'<div class="selection-list">{_catalogue_llm_lignes(sans_modele)}</div>'
+                '</details>')
+    return (
+        '<section class="card" id="selection-llm"><h2>Comparer des LLM '
+        f'<span class="dim">{len(identifiees)} reconnu(s) · {len(sans_modele)} sans modèle '
+        f'identifié · coche de {MIN_SELECTION} à {MAX_SELECTION}, puis « Afficher les LLM »'
+        '</span></h2>'
+        '<p class="dim">Chaque case est un <b>LLM</b> : le <i>nom</i> du modèle. Toutes ses '
+        'quantifications, tous ses contextes, tous ses modes de raisonnement et toutes ses '
+        'dates sont réunis sous cette case ; les différences restent visibles comme '
+        '<em>variantes</em> (page <a href="/llms">Tests par LLM</a>). '
+        f'<b>{MIN_SELECTION} au minimum</b> — un seul LLM ne se compare à rien ; '
+        f'<b>{MAX_SELECTION} au maximum</b>. La comparaison trace, pour chaque test, la '
+        '<b>meilleure</b> valeur mesurée du LLM (jamais une moyenne entre deux dates).</p>'
+        + (_bandeaux(view) if bandeaux else "")
+        + f'<form class="filtres" method="get" action="/graph">{champs}'
+        + liste
+        + '<div class="actions" style="margin-top:10px;gap:10px;display:flex;'
+          'flex-direction:column">'
+          '<button type="submit">Afficher les LLM</button>'
+          '<a class="navlink" href="/graph?axe=reglages">comparer plutôt des réglages '
+          '(une variante à la fois, 2 à 6) &rarr;</a>'
+          '<span class="dim">formulaire GET, aucun JavaScript requis</span></div>'
+          '</form></section>'
+    )
+
+
+def _selection_form(view, bandeaux=True):
     """Etape 1 : catalogue des reglages (2 a 6 cases a cocher) puis « Comparer ».
 
     Rien d'autre n'est mis en tete de page : ni graphiques ni tableau. Le
@@ -688,7 +1074,7 @@ def _selection_form(view):
         f'<b>{MIN_SELECTION} au minimum</b> — avec un seul réglage, il n\'y a rien à '
         f'comparer ; <b>{MAX_SELECTION} au maximum</b> — au-delà, la légende et les '
         'barres groupées deviennent illisibles.</p>'
-        + _bandeaux(view)
+        + (_bandeaux(view) if bandeaux else "")
         + f'<form method="get" action="/graph">{liste}'
         '<div class="actions" style="margin-top:10px;gap:10px">'
         '<button type="submit">Comparer</button>'
@@ -698,7 +1084,9 @@ def _selection_form(view):
 
 
 def _selection_recap(view):
-    """Etape 2 : rappel des reglages coches + lien de retour vers l'etape 1."""
+    """Etape 2 : rappel des LLM (ou des reglages) coches + retour vers l'etape 1."""
+    if view.get("axe") == "llm":
+        return _selection_recap_llm(view)
     labels = {}
     for item in view.get("catalogue") or []:
         key = str(item.get("key") or "standard")
@@ -715,6 +1103,36 @@ def _selection_recap(view):
         + _bandeaux(view)
         + f'<p><a class="navlink" href="{_esc(retour)}">&larr; modifier la sélection</a> '
         '<span class="dim">revient au choix des réglages, cases conservées</span></p>'
+        '</section>'
+    )
+
+
+def _selection_recap_llm(view):
+    """Etape 2, axe LLM : les LLM coches, et le retour vers le catalogue des LLM."""
+    labels = {}
+    for item in view.get("catalogue_llm") or []:
+        labels[str(item.get("key"))] = str(item.get("label") or item.get("key"))
+    for item in view.get("catalogue") or []:
+        labels.setdefault(str(item.get("key") or "standard"), str(item.get("label") or ""))
+    selection = list(view.get("selection_llm") or [])
+    tags = "".join(f'<span class="tag">{_esc(labels.get(key, key))}</span>' for key in selection)
+    retour = _url_selection(selection, edit=True, param=LLM_PARAM,
+                            kinds=view["filtres"]["kinds"], variants=view["filtres"]["variants"])
+    n = len(selection)
+    return (
+        f'<section class="card" id="selection"><h2>Comparaison de {n} LLM'
+        f'{"s" if n > 1 else ""} <span class="dim">une série par LLM : la meilleure '
+        'valeur mesurée de chaque test, toutes quantifications, tous contextes et toutes '
+        'dates confondus</span></h2>'
+        f'<div class="reglages-coches">{tags}</div>'
+        + _bandeaux(view)
+        + '<p class="dim">Les points masqués par une seule mesure font foi ; un même test '
+        'mesuré plusieurs fois n\'est <b>jamais moyenné</b> — la meilleure mesure est '
+        'tracée, les autres restent listées dans le tableau des résultats ci-dessous et au '
+        'détail chronologique de <a href="/llms">Tests par LLM</a>.</p>'
+        + f'<p><a class="navlink" href="{_esc(retour)}">&larr; modifier la sélection</a> '
+        '<span class="dim">revient au catalogue des LLM, cases conservées</span> '
+        '<a class="navlink" href="/llms">détail chronologique de chaque LLM</a></p>'
         '</section>'
     )
 
@@ -915,17 +1333,22 @@ def _entete(view):
     """Barre d'onglets (meme habillage que /benchmarks et /compare)."""
     counts = view["counts"]
     etape = view.get("etape", 1)
-    if etape == 2:
+    axe = view.get("axe") or ""
+    if etape == 2 and axe == "llm":
+        guide = (f"&eacute;tape 2/2 &middot; une courbe par LLM "
+                 f"({counts['selection_llm']} LLM coch&eacute;(s))")
+    elif etape == 2:
         guide = (f"&eacute;tape 2/2 &middot; graphiques de {counts['selection']} "
                  "r&eacute;glage(s) coch&eacute;(s)")
     else:
-        guide = ("&eacute;tape 1/2 &middot; choisir de 2 &agrave; 6 r&eacute;glages "
-                 "&agrave; comparer")
+        guide = ("&eacute;tape 1/2 &middot; choisir de 2 &agrave; 6 LLM "
+                 "(ou de 2 &agrave; 6 r&eacute;glages) &agrave; comparer")
     return f"""<header>
   <h1>Graphique des tests <span class="dim">&middot; {guide}</span></h1>
   <div class="tabs">
     <a class="navlink" href="/">Prompt Duel</a>
     <a class="navlink" href="/benchmarks">Benchmarks</a>
+    <a class="navlink" href="/llms">Tests par LLM</a>
     <a class="navlink" href="/graph" aria-current="page">Graphique</a>
     <a class="navlink" href="/compare">Comparaison</a>
   </div>
@@ -986,12 +1409,19 @@ def render_graph_page(index, state=None, query=None):
     corps = []
 
     if view["etape"] == 1:
-        # --- etape 1 : le CHOIX des reglages, puis l'existant, replie ---------
-        # Aucun graphique ici (c'est le principe) : les courbes arrivent a l'etape
-        # 2, une fois les reglages coches. Le reste de la page ne disparait pas
-        # pour autant : tableau des resultats, filtres et masquage restent dans un
-        # depliant (accessible en un clic, sans JavaScript).
-        corps.append(_selection_form(view))
+        # --- etape 1 : le CHOIX (catalogue LLM ou catalogue des reglages en tete
+        # selon l'axe de l'adresse), puis l'existant, replie. Aucun graphique ici.
+        # La carte affichee EN PREMIER porte les messages de selection (inconnues,
+        # troncature, « il en faut au moins 2 ») : jamais deux fois, jamais nulle part.
+        variante_d_abord = ((view["filtres"].get("axe") or "") == "reglages"
+                            or bool(view["filtres"]["selection"]
+                                    and not view["filtres"]["llm_params"]))
+        if variante_d_abord:
+            corps.append(_selection_form(view))
+            corps.append(_selection_form_llm(view, bandeaux=False))
+        else:
+            corps.append(_selection_form_llm(view))
+            corps.append(_selection_form(view, bandeaux=False))
         corps.append(_resume(view))
         liste_masques = _masques_table(view)
         corps.append(

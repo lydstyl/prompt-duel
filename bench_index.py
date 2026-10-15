@@ -380,31 +380,51 @@ def parse_fill_out(path):
 
 # ---------------------------------------------------------------- batteries
 def parse_battery_json(path):
+    """Batterie de petites taches OU batterie d'intelligence « niveau 1/2/3 ».
+
+    Les deux harnais partagent le meme contrat de fichier (`summary` + une liste de
+    sous-tests) ; `weight_sum` — present seulement dans les niveaux — les distingue.
+    Les niveaux portent en plus le credit partiel (`score_sum / weight_sum`) et le
+    niveau de raisonnement reellement utilise (`summary.mode`).
+    """
     try:
         with open(path, encoding="utf-8") as fh:
             d = json.load(fh)
     except (OSError, ValueError):
         return None
     s = d.get("summary") or {}
-    res = d.get("results") or []
+    res = d.get("results") or d.get("tasks") or []
     if not s or not res:
         return None
-    label = s.get("label") or os.path.basename(path)
-    return {
-        "kind": "battery",
+    label = d.get("label") or s.get("label") or os.path.basename(path)
+    niveau = s.get("weight_sum") is not None
+    entry = {
+        "kind": "niveau" if niveau else "battery",
         "date": datetime.fromtimestamp(os.path.getmtime(path)).isoformat(timespec="seconds"),
         "label": label,
         "model": pretty_model(label),
-        "mode": label_mode(label) or "nothink",
+        "mode": s.get("mode") or label_mode(label) or "nothink",
         "tasks": s.get("tasks") or len(res),
         "score": s.get("score_full"),
         "score_avg": s.get("score_avg"),
         "lat_median": s.get("lat_median"),
         "lat_max": s.get("lat_max"),
         "total_wall_s": s.get("total_wall_s"),
-        "fails": [r.get("id") for r in res if not r.get("score")],
+        "fails": s.get("fails") or [r.get("id") for r in res if not r.get("score")],
         "source": os.path.relpath(path, os.path.dirname(VAULT_DOCS)),
     }
+    if niveau:
+        entry.update({
+            "title": s.get("title") or d.get("title"),
+            "score_sum": s.get("score_sum"),
+            "weight_sum": s.get("weight_sum"),
+            "score_pct": s.get("score_pct"),
+            "out_tokens": s.get("out_tokens"),
+            "reasoning_chars": s.get("reasoning_chars"),
+            "options": s.get("options"),
+            "test_id": (s.get("title") or "").split("—")[0].strip() or None,
+        })
+    return entry
 
 
 # ---------------------------------------------------------------- HumanEval
@@ -439,10 +459,11 @@ def parse_humaneval(path):
 # Tests lances par l'app elle-meme : un bench.json par run dans benches/<run>/.
 # Le fichier est la PREUVE : on ne recopie jamais un resume, on lit les chiffres
 # reels de results[]. Un resultat par entree (un test = une entree).
-APP_BENCH_FAMILIES = {"vitesse", "memoire", "intelligence"}
+APP_BENCH_FAMILIES = {"vitesse", "memoire", "intelligence", "niveaux"}
 # Repli si `group` manque dans bench.json : deduit du prefixe de l'identifiant.
 APP_BENCH_PREFIX = {"vitesse": "vitesse", "memoire": "memoire",
-                    "batterie": "intelligence", "humaneval": "intelligence"}
+                    "batterie": "intelligence", "humaneval": "intelligence",
+                    "niveau": "niveaux"}
 
 
 def app_bench_family(result):
@@ -462,7 +483,9 @@ def app_bench_entry(run, result, bench_path, family):
     m = result.get("metrics") or {}
     source = f"{os.path.relpath(bench_path, APP_DIR)}#{result.get('id')}"
     entry = {
-        "kind": family,
+        # une seule famille d'index pour les trois niveaux : « niveau » (le pluriel
+        # « niveaux » ne sert qu'a l'INTERFACE, ou il designe le groupe de tests)
+        "kind": "niveau" if family == "niveaux" else family,
         "date": (result.get("finished_at") or result.get("started_at")
                  or run.get("finished_at") or run.get("started_at")),
         "test_id": result.get("id"),
@@ -477,6 +500,7 @@ def app_bench_entry(run, result, bench_path, family):
         "run_url": run.get("run_url") or f"/benches/{os.path.basename(os.path.dirname(bench_path))}/",
         "status": result.get("status"),
         "duree_s": result.get("duree_s"),
+        "family": family,
         "summary": result.get("summary"),
         "erreur": result.get("erreur"),
         "log": result.get("log"),
@@ -752,6 +776,7 @@ MIRROR_RULES = [
     ("vram-*.meta.txt", "vram"),
     ("case-*.json", "vitesse"),
     ("smalltasks/results_*.json", "batteries"),
+    ("niveaux/results_*.json", "niveaux"),
 ]
 
 
